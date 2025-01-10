@@ -41,9 +41,6 @@ all these functions work off the main function
 
 '''
 
-import logging
-import copy
-import json
 
 
 def iterate_through_ubiquitin(parent_dictionary):
