@@ -2,3 +2,4 @@ jupyterlab
 ipywidgets
 matplotlib
 pandas
+pytest

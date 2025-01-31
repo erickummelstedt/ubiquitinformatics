@@ -2,6 +2,12 @@ import json
 import logging
 import copy
 from typing import Dict, List, Any, Union
+import sys
+
+# figure out the path issues
+# home_dir = os.path.expanduser('~')
+local_path = '/Users/ekummelstedt/le_code_base/ubiquitinformatics'
+sys.path.insert(0, local_path)
 
 '''
 	•	turn this into object-oriented code 
@@ -29,7 +35,7 @@ Functions that extract information from the ubiquitin
 - find_number_of_ABOC_SMAC
 - find_number_of_ABOC
 - find_number_of_SMAC
-- relabelling_ubiquitin_numbers
+- iterate_through_ubiquitin
 - find_max_chain_number
 - getting_multimer_string_name
 - find_free_lysines
@@ -161,7 +167,7 @@ def process_branch(branch, working_dictionary, context):
     elif isinstance(branch["children"], dict):
         logging.info(f"NEXT UBIQUITIN: {branch['children']}")
         context["multimer_string_name"] += f"({branch['site_name']}_"
-        branch["children"], context["multimer_string_name"] = inner_wrapper_iterate_through_ubiquitin(
+        branch["children"], context = inner_wrapper_iterate_through_ubiquitin(
             branch["children"], context
         )
         context["multimer_string_name"] += ")"
@@ -331,7 +337,7 @@ def ubiquitin_simulation(
         parent_dictionary, ubi_molecule_to_add, type_of_reaction, chain_number_list, chain_length_list
         )
 
-    return relabelling_ubiquitin_numbers(adapted_dictionary)
+    return iterate_through_ubiquitin(adapted_dictionary)
 
 
 def inner_wrapper_ubiquitin_simulation(

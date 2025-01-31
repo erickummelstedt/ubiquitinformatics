@@ -3,7 +3,11 @@ import json
 import logging
 from copy import deepcopy
 
+import sys
 
+# home_dir = os.path.expanduser('~')
+local_path = '/Users/ekummelstedt/le_code_base/ubiquitinformatics'
+sys.path.insert(0, local_path)
 
 from src.main import (
     iterate_through_ubiquitin,
@@ -17,8 +21,8 @@ from src.main import (
 
 '''
 Explanation of tests for; 
-        •	relabelling_ubiquitin_numbers,
-        •	inner_wrapper_relabelling_ubiquitin_numbers,
+        •	iterate_through_ubiquitin,
+        •	inner_wrapper_iterate_through_ubiquitin,
         •	process_current_protein
 
     1.	Top-Level Tests:
@@ -119,9 +123,9 @@ class TestDeeplyNestedProteinStructure(unittest.TestCase):
             ]
         }
 
-    def test_relabelling_ubiquitin_numbers(self):
+    def test_iterate_through_ubiquitin(self):
         """Test top-level relabeling on a deeply nested structure."""
-        updated_dict = relabelling_ubiquitin_numbers(self.deeply_nested_protein)
+        updated_dict, context = iterate_through_ubiquitin(self.deeply_nested_protein)
         self.assertIn("chain_number", updated_dict)
         self.assertEqual(updated_dict["chain_number"], 1)
         self.assertEqual(updated_dict["chain_length"], 82)
@@ -141,7 +145,7 @@ class TestDeeplyNestedProteinStructure(unittest.TestCase):
         chain_number_list = [1]
         chain_length_list = []
 
-        updated_dict = inner_wrapper_relabelling_ubiquitin_numbers(
+        updated_dict = inner_wrapper_iterate_through_ubiquitin(
             self.deeply_nested_protein, chain_number_list, chain_length_list
         )
 
@@ -157,7 +161,7 @@ class TestDeeplyNestedProteinStructure(unittest.TestCase):
 
     def test_branching_sites_structure(self):
         """Ensure branching sites retain their structure after processing."""
-        updated_dict = relabelling_ubiquitin_numbers(self.deeply_nested_protein)
+        updated_dict = iterate_through_ubiquitin(self.deeply_nested_protein)
 
         # Traverse to a specific nested branch
         branch_k63 = updated_dict["branching_sites"][6]["children"]["branching_sites"][7]
@@ -170,7 +174,7 @@ class TestDeeplyNestedProteinStructure(unittest.TestCase):
 
     def test_no_duplicate_chain_numbers(self):
         # Call the function
-        updated_data = relabelling_ubiquitin_numbers(self.deeply_nested_protein)
+        updated_data = iterate_through_ubiquitin(self.deeply_nested_protein)
 
         # Collect all chain numbers
         chain_numbers = []
@@ -188,7 +192,7 @@ class TestDeeplyNestedProteinStructure(unittest.TestCase):
 
     def test_empty_children(self):
         """Validate behavior when children are empty strings."""
-        updated_dict = relabelling_ubiquitin_numbers(self.deeply_nested_protein)
+        updated_dict = iterate_through_ubiquitin(self.deeply_nested_protein)
 
         # K11 site with no children
         k11_site = updated_dict["branching_sites"][2]
@@ -203,7 +207,7 @@ class TestDeeplyNestedProteinStructure(unittest.TestCase):
             "branching_sites": []
         }
 
-        updated_dict = relabelling_ubiquitin_numbers(test_dict)
+        updated_dict = iterate_through_ubiquitin(test_dict)
         self.assertEqual(updated_dict["chain_number"], 1)
         self.assertEqual(updated_dict["chain_length"], 76)
         self.assertEqual(updated_dict["branching_sites"], [])
@@ -211,9 +215,9 @@ class TestDeeplyNestedProteinStructure(unittest.TestCase):
     def test_invalid_input(self):
         """Check behavior on invalid inputs."""
         with self.assertRaises(TypeError):
-            relabelling_ubiquitin_numbers(None)
+            iterate_through_ubiquitin(None)
         with self.assertRaises(KeyError):
-            relabelling_ubiquitin_numbers({})
+            iterate_through_ubiquitin({})
 
 if __name__ == "__main__":
     unittest.main()
