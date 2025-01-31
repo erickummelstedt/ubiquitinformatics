@@ -10,12 +10,18 @@ Functions that extract information from the ubiquitin
     Only traverse the ubiquitin once
     Let it renumber 
 
+- DONE
+- find_branching_site
+- validate_branching_sites
+- relabelling_ubiquitin_numbers
+- inner_wrapper_relabelling_ubiquitin_numbers
+- getting_multimer_string_name
+
+
 - find_number_of_ABOC_SMAC
 - find_number_of_ABOC
 - find_number_of_SMAC
-- iterate_through_ubiquitin
 - find_max_chain_number
-- getting_multimer_string_name
 - find_free_lysines
 
 all these functions work off the main function
@@ -380,8 +386,10 @@ def inner_wrapper_getting_multimer_string_name(input_dictionary, multimer_string
     ### adding branching_sites... here can use the chain_number and lysine site...
     ### working_branching_sites = loop_through_immediate_branching_sites(working_branching_sites, x_ubi_num)
     ### working_dictionary['branching_sites'] = working_branching_sites
+    first_dash = True
+
     for bra in working_branching_sites:
-        
+
         ## the following two lines finds branching site.... of the particular protein of interest
         working_sequence_id = bra['sequence_id']
         branching_number = find_branching_site(working_sequence_id, working_FASTA_sequence)
@@ -410,12 +418,21 @@ def inner_wrapper_getting_multimer_string_name(input_dictionary, multimer_string
             logging.info("Protecting Group: " + str(bra['children']))
             if bra['children'] =='SMAC':
                 protecting_group = 'SMAC'
-                multimer_string_name = multimer_string_name + '(' + str(bra['site_name']) + '_'
-                multimer_string_name = multimer_string_name + 'SMAC' + ')'
+                if first_dash:
+                    first_dash = False
+                    multimer_string_name = multimer_string_name + str(bra['site_name']) + '_'
+                else: 
+                    multimer_string_name = multimer_string_name + '-' + str(bra['site_name']) + '_'
+                multimer_string_name = multimer_string_name + 'SMAC'
+
             elif bra['children'] =='ABOC':
                 protecting_group = 'ABOC'
-                multimer_string_name = multimer_string_name + '(' + str(bra['site_name']) + '_'
-                multimer_string_name = multimer_string_name + 'ABOC' + ')'
+                if first_dash:
+                    first_dash = False
+                    multimer_string_name = multimer_string_name + str(bra['site_name']) + '_'
+                else: 
+                    multimer_string_name = multimer_string_name + '-' + str(bra['site_name']) + '_'
+                multimer_string_name = multimer_string_name + 'ABOC'
                 
             ### download new ubiquitin molecule
             #if protecting_group == 'SMAC':
@@ -475,9 +492,13 @@ def inner_wrapper_getting_multimer_string_name(input_dictionary, multimer_string
             ## ====================
             ## new ubiquitin addition in JSON, and in 
             #bra['children'], working_ubiAllAtoms, working_ubiAllBonds = inner_wrapper_relabelling_ubiquitin_numbers_and_JSON_to_MOL2(bra['children'], concatUbiAtoms, concatUbiBonds) 
-            multimer_string_name = multimer_string_name + '(' + str(bra['site_name']) + '_'    
+            if first_dash:
+                    first_dash = False
+                    multimer_string_name = multimer_string_name + str(bra['site_name']) + '_'
+            else: 
+                multimer_string_name = multimer_string_name + '-' + str(bra['site_name']) + '_'
             bra['children'], multimer_string_name = inner_wrapper_getting_multimer_string_name(bra['children'], multimer_string_name) 
-            multimer_string_name = multimer_string_name + ')'   
+            multimer_string_name = multimer_string_name   
 
         logging.info(' ===== END OF LYSINE SITE =====  ')
 
