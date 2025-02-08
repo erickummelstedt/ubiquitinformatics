@@ -16,12 +16,14 @@ Functions that extract information from the ubiquitin
 - relabelling_ubiquitin_numbers
 - inner_wrapper_relabelling_ubiquitin_numbers
 - getting_multimer_string_name
-
-
 - find_number_of_ABOC_SMAC
 - find_number_of_ABOC
 - find_number_of_SMAC
 - find_max_chain_number
+- validate all branching sites
+
+
+
 - find_free_lysines
 
 all these functions work off the main function
@@ -805,3 +807,32 @@ def find_number_of_ABOC(parent_dictionary):
 
 def find_number_of_SMAC(parent_dictionary):
     return len(find_number_of_ABOC_SMAC(parent_dictionary)[1])
+
+
+
+### you'll want to change this so that it is not recursive but pops up in each recursive loop
+def validate_all_branching_sites(ubiquitin_structure):
+    """
+    Recursively checks if all required branching sites (M1, K6, K11, K27, K29, K33, K48, K63)
+    are present at every level of the ubiquitin structure.
+
+    If any sites are missing, it raises an AssertionError specifying the missing sites and the chain number.
+    """
+    REQUIRED_SITES = {"M1", "K6", "K11", "K27", "K29", "K33", "K48", "K63"}
+
+    def _check_sites(ubiquitin_dict):
+        chain_number = ubiquitin_dict["chain_number"]  # Extract chain number
+        sites_in_this_ubiquitin = {site["site_name"] for site in ubiquitin_dict["branching_sites"]}
+
+        # Check if any required sites are missing
+        missing_sites = REQUIRED_SITES - sites_in_this_ubiquitin
+        assert not missing_sites, (
+            f"❌ Missing sites {missing_sites} in Ubiquitin {chain_number}."
+        )
+
+        # Recursively validate nested children
+        for site in ubiquitin_dict["branching_sites"]:
+            if isinstance(site["children"], dict):
+                _check_sites(site["children"])
+
+    _check_sites(ubiquitin_structure)
