@@ -21,11 +21,14 @@ Functions that extract information from the ubiquitin
 - find_number_of_SMAC
 - find_max_chain_number
 - validate all branching sites
-
-
-
 - find_free_lysines
 
+Two new functions
+- find ubiquitin connection points
+- find smac points
+- find aboc points
+
+Build all into new function..x
 all these functions work off the main function
 
 - output becomes JSON of the ubiquitin

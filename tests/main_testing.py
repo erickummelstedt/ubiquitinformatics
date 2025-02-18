@@ -948,6 +948,8 @@ from src.main_testing import validate_all_branching_sites
     ({
         "protein": "1ubq",
         "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
         "branching_sites": [
             {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
             {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
@@ -964,6 +966,8 @@ from src.main_testing import validate_all_branching_sites
     ({
         "protein": "1ubq",
         "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
         "branching_sites": [
             {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
             {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
@@ -979,6 +983,8 @@ from src.main_testing import validate_all_branching_sites
     ({
         "protein": "1ubq",
         "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
         "branching_sites": [
             {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
             {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
@@ -986,6 +992,8 @@ from src.main_testing import validate_all_branching_sites
             {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": {
                 "protein": "1ubq",
                 "chain_number": 2,
+                "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+                "chain_length": 76,
                 "branching_sites": [
                     {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
                     {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
@@ -1001,12 +1009,14 @@ from src.main_testing import validate_all_branching_sites
             {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
 
         ]
-    }, True, {"M1", "K29"}, 2),
+    }, True, {"K29", "M1"}, 2),
 
     # ❌ Test Case 4: Deeply Nested Ubiquitin Missing K48
     ({
         "protein": "1ubq",
         "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
         "branching_sites": [
             {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
             {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
@@ -1017,6 +1027,8 @@ from src.main_testing import validate_all_branching_sites
             {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": {
                 "protein": "1ubq",
                 "chain_number": 2,
+                "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+                "chain_length": 76,
                 "branching_sites": [
                     {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
                     {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
@@ -1027,6 +1039,8 @@ from src.main_testing import validate_all_branching_sites
                     {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": {
                         "protein": "1ubq",
                         "chain_number": 3,
+                        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+                        "chain_length": 76,
                         "branching_sites": [
                             {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
                             {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
@@ -1048,6 +1062,8 @@ from src.main_testing import validate_all_branching_sites
     ({
         "protein": "1ubq",
         "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,                
         "branching_sites": [
             {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
             {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
@@ -1058,6 +1074,8 @@ from src.main_testing import validate_all_branching_sites
             {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": {
                 "protein": "1ubq",
                 "chain_number": 2,
+                "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+                "chain_length": 76,        
                 "branching_sites": [
                     {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
                     {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
@@ -1068,6 +1086,8 @@ from src.main_testing import validate_all_branching_sites
                     {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": {
                         "protein": "1ubq",
                         "chain_number": 3,
+                        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+                        "chain_length": 76,
                         "branching_sites": [
                             {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
                             {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
@@ -1098,3 +1118,216 @@ def test_validate_all_branching_sites(ubiquitin_structure, should_raise, expecte
             validate_all_branching_sites(copy.deepcopy(ubiquitin_structure))
     else:
         validate_all_branching_sites(copy.deepcopy(ubiquitin_structure))  # Should not raise any error
+
+
+
+from src.main_testing import find_free_lysines
+
+@pytest.mark.parametrize("ubiquitin_structure, expected_free_lysines", [
+    # ✅ Test Case 1: Basic Monomer (No Free Lysines)
+    ({
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
+        "branching_sites": [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": "ABOC"},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": "SMAC"}
+        ]
+    }, []),
+
+    # ✅ Test Case 2: Dimer with One Free Lysine (K48)
+    ({
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
+        "branching_sites": [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": {
+                "protein": "1ubq",
+                "chain_number": 2,
+                "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+                "chain_length": 76,
+                "branching_sites": [
+                    {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+                    {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+                    {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+                    {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+                    {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+                    {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+                    {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": "ABOC"},
+                    {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+                ]
+            }},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": "SMAC"}
+
+        ]
+    }, [[2, "K63"]]),
+
+    # ✅ Test Case 3: Trimer with Multiple Free Lysines (K48 and K63 at different depths)
+    ({
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
+        "branching_sites": [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": {
+                "protein": "1ubq",
+                "chain_number": 2,
+                "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+                "chain_length": 76,
+                "branching_sites": [
+                    {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+                    {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+                    {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+                    {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+                    {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+                    {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+                    {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": {
+                        "protein": "1ubq",
+                        "chain_number": 3,
+                        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+                        "chain_length": 76,
+                        "branching_sites": [
+                            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+                            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+                            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+                            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+                            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+                            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+                            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": "ABOC"},
+                            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+                        ]
+                    }},
+                    {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": "ABOC"},
+                ]
+            }},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": "ABOC"},
+        ]
+    }, [[3, "K63"]]),
+
+    # ✅ Test Case 4: Deeply Nested Structure with Multiple Free Lysines
+    ({
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
+        "branching_sites": [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": {
+                "protein": "1ubq",
+                "chain_number": 2,
+                "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+                "chain_length": 76,
+                "branching_sites": [
+                    {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+                    {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+                    {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+                    {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+                    {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+                    {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+                    {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": {
+                        "protein": "1ubq",
+                        "chain_number": 3,
+                        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+                        "chain_length": 76,
+                        "branching_sites": [
+                            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+                            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+                            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+                            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+                            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+                            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+                            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+                            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+                        ]
+                    }},
+                    {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""},
+                ]
+            }},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": "ABOC"},
+        ]
+    }, [[3, "K48"], [3, "K63"], [2, "K63"]]),
+
+    # ✅ Test Case 5: His-Tagged Ubiquitin with Free Lysine
+    ({
+        "protein": "1ubq-his",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH",
+        "chain_length": 83,
+        "branching_sites": [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+        ]
+    }, [[1, "K48"], [1, "K63"]]),
+
+    # ✅ Test Case 6: Complex Multi-Protected Ubiquitin with Multiple Free Lysines
+    ({
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH",
+        "chain_length": 83,
+        "branching_sites": [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": {
+                "protein": "1ubq",
+                "chain_number": 2,
+                "FASTA_sequence": "MQIFVKTLTG...",
+                "chain_length": 76,
+                "branching_sites": [
+                    {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+                    {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+                    {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+                    {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+                    {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+                    {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+                    {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+                    {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+                ]
+            }},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+        ]
+    }, [[2, "K48"], [2, "K63"], [1, "K63"]])
+])
+def test_find_free_lysines(ubiquitin_structure, expected_free_lysines):
+    """
+    Test `find_free_lysines()` to ensure it correctly identifies free lysines (K48, K63)
+    across different ubiquitin configurations, including deeply nested structures.
+    """
+    _, free_lysines = find_free_lysines(copy.deepcopy(ubiquitin_structure))
+    assert sorted(free_lysines) == sorted(expected_free_lysines), \
+        f"Expected {expected_free_lysines}, got {free_lysines}"
