@@ -27,35 +27,19 @@ Use descriptive names for variables, functions, and classes: Avoid abbreviations
 '''
 
 '''
-Functions that extract information from the ubiquitin
-    Pull them all together into one function --- getting_multimer_string_name 
-    Only traverse the ubiquitin once
-    Let it renumber 
-
-- find_number_of_ABOC_SMAC
-- find_number_of_ABOC
-- find_number_of_SMAC
-- iterate_through_ubiquitin
+Everything works; now build tests and clean up code for each of the following functions
+- find_branching_site
+- validate_protein_keys
+- affirm_branching_sites
+- validate_branching_sites
+- convert_json_to_dict
+- process_current_protein
+- process_branch
+- log_branching_details
+- log_end_of_branching
+- log_protein_details
+- log_end_of_protein
 - find_max_chain_number
-- getting_multimer_string_name
-- find_free_lysines
-
-all these functions work off the main function
-
-- output becomes JSON of the ubiquitin
-- and the context which is a separate information file
-
-
-INSERT CODE FOR;
-- getting_multimer_string_name
-- find_free_lysines
-- find_max_chain_number
-- find_number_of_ABOC_SMAC
-- find_number_of_ABOC
-- find_number_of_SMAC
-- find_conjugated_lysines
-- find_SMAC_ABOC_lysines
-
 
 
 '''
@@ -241,10 +225,12 @@ def process_branch(branch, working_dictionary, context):
     if branch["children"] in ["SMAC"]:
         ## add protecting group
         context["multimer_string_name"] += f"<{branch['site_name']}_SMAC>"
+        context["SMAC_lysines"] += [[working_dictionary['chain_number'], str(branch['site_name'])]]
 
     elif branch["children"] in ["ABOC"]:
         ## add protecting group
         context["multimer_string_name"] += f"<{branch['site_name']}_ABOC>"
+        context["ABOC_lysines"] += [[working_dictionary['chain_number'], str(branch['site_name'])]]
 
     # Handle free lysines
     elif (branch['children'] == "") & (branch['site_name'] in ['M1','K6','K11','K27','K29','K33']): 
@@ -252,7 +238,7 @@ def process_branch(branch, working_dictionary, context):
 
     # Handle K48 & K63 lysines
     elif (branch['children'] == "") & (branch['site_name'] in ['K48', 'K63']): 
-        context["free_lysines"] += [working_dictionary['chain_number'], str(branch['site_name'])]
+        context["free_lysines"] += [[working_dictionary['chain_number'], str(branch['site_name'])]]
 
     # Handle branches that have proteins bound  
     elif isinstance(branch["children"], dict):
@@ -260,6 +246,7 @@ def process_branch(branch, working_dictionary, context):
         branch["children"], context = inner_wrapper_iterate_through_ubiquitin(
             branch["children"], context
         )
+        context["conjugated_lysines"] += [[working_dictionary['chain_number'], str(branch['site_name'])]]
         context["multimer_string_name"] += ">"
 
     return branch, working_dictionary, context
@@ -410,16 +397,10 @@ def inner_wrapper_iterate_through_ubiquitin(input_dictionary, context):
     
     return working_dictionary, context
 
-    
-
-
-
-
-
-
-
-
-
+def find_max_chain_number(context):
+    chain_number_list = context['chain_number_list']
+    max_chain_number = chain_number_list[-1]-1
+    return max_chain_number
 
 
 

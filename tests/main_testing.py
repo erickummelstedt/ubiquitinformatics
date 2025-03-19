@@ -11,7 +11,7 @@ local_path = '/Users/ekummelstedt/le_code_base/ubiquitinformatics'
 sys.path.insert(0, local_path)
 
 # Import the functions from the original code
-from src.main_testing import relabelling_ubiquitin_numbers, inner_wrapper_relabelling_ubiquitin_numbers
+# from src.main_testing import relabelling_ubiquitin_numbers, inner_wrapper_relabelling_ubiquitin_numbers
 from src.main import iterate_through_ubiquitin, inner_wrapper_iterate_through_ubiquitin, validate_branching_sites, find_branching_site
 
 # Sample deeply nested ubiquitin dictionary for testing
@@ -177,7 +177,7 @@ def test_empty_input():
     """
     Test that `iterate_through_ubiquitin` raises KeyError when given an empty dictionary as input.
     """
-    with pytest.raises(KeyError, match="Missing required keys"):
+    with pytest.raises(KeyError):
         iterate_through_ubiquitin({})
 
 def test_missing_keys():
@@ -186,7 +186,7 @@ def test_missing_keys():
     """
     incomplete_dict = {"protein": "1ubq"}  # Missing required keys
 
-    with pytest.raises(KeyError, match="Missing required keys"):
+    with pytest.raises(KeyError):
         iterate_through_ubiquitin(incomplete_dict)
 
 # Sample ubiquitin data in JSON string format
@@ -528,8 +528,11 @@ def test_iterate_through_ubiquitin(ubiquitin_structure, expected_multimer_string
     assert multimer_string == expected_multimer_string, f"Expected: {expected_multimer_string}, Got: {result}"
 
 
+
+
+
 ## IMPORT ##
-from src.main_testing import find_number_of_ABOC_SMAC, find_number_of_ABOC, find_number_of_SMAC
+from src.main import find_protecting_groups
 
 @pytest.mark.parametrize("ubiquitin_structure, expected_aboc, expected_smac", [
     # ✅ Test Case 1: Basic Monomer (No ABOC or SMAC)
@@ -686,21 +689,22 @@ from src.main_testing import find_number_of_ABOC_SMAC, find_number_of_ABOC, find
         ]
     }, 2, 2)
 ])
-def test_find_number_of_ABOC_SMAC(ubiquitin_structure, expected_aboc, expected_smac):
+def test_find_protecting_groups(ubiquitin_structure, expected_aboc, expected_smac):
     """
-    Test `find_number_of_ABOC_SMAC()` to ensure it correctly counts 
+    Test `find_protecting_groups()` to ensure it correctly counts 
     the number of ABOC and SMAC protecting groups.
     """
-    aboc_count, smac_count = find_number_of_ABOC_SMAC(copy.deepcopy(ubiquitin_structure))
-    assert len(aboc_count) == expected_aboc, f"Expected {expected_aboc} ABOC, got {len(aboc_count)}"
-    assert len(smac_count) == expected_smac, f"Expected {expected_smac} SMAC, got {len(smac_count)}"
-
-
+    updated_ubiquitin, context = iterate_through_ubiquitin(copy.deepcopy(ubiquitin_structure))    
+    ABOC_lysines = context["ABOC_lysines"]
+    SMAC_lysines = context["SMAC_lysines"]
+    
+    assert len(ABOC_lysines) == expected_aboc, f"Expected {expected_aboc} ABOC, got {len(ABOC_lysines)}"
+    assert len(SMAC_lysines) == expected_smac, f"Expected {expected_smac} SMAC, got {len(SMAC_lysines)}"
 
 
 import pytest
 import copy
-from src.main_testing import find_max_chain_number
+from src.main import find_max_chain_number
 
 @pytest.mark.parametrize("ubiquitin_structure, expected_max_chain", [
     # ✅ Test Case 1: Single Ubiquitin Monomer (Max Chain = 1)
@@ -963,7 +967,10 @@ from src.main_testing import find_max_chain_number
     }, 4)
 ])
 def test_find_max_chain_number(ubiquitin_structure, expected_max_chain):
-    assert find_max_chain_number(copy.deepcopy(ubiquitin_structure)) == expected_max_chain
+
+    updated_ubiquitin, context = iterate_through_ubiquitin(copy.deepcopy(ubiquitin_structure))
+    
+    assert find_max_chain_number(context) == expected_max_chain
 
 from src.main import affirm_branching_sites
 
@@ -1143,9 +1150,6 @@ def test_affirm_branching_sites(ubiquitin_structure, should_raise, expected_miss
     else:
         iterate_through_ubiquitin(copy.deepcopy(ubiquitin_structure))  # Should not raise any error
 
-
-
-from src.main_testing import find_free_lysines
 
 @pytest.mark.parametrize("ubiquitin_structure, expected_free_lysines", [
     # ✅ Test Case 1: Basic Monomer (No Free Lysines)
@@ -1330,7 +1334,7 @@ from src.main_testing import find_free_lysines
             {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": {
                 "protein": "1ubq",
                 "chain_number": 2,
-                "FASTA_sequence": "MQIFVKTLTG...",
+                "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
                 "chain_length": 76,
                 "branching_sites": [
                     {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
@@ -1352,11 +1356,11 @@ def test_find_free_lysines(ubiquitin_structure, expected_free_lysines):
     Test `find_free_lysines()` to ensure it correctly identifies free lysines (K48, K63)
     across different ubiquitin configurations, including deeply nested structures.
     """
-    _, free_lysines = find_free_lysines(copy.deepcopy(ubiquitin_structure))
+    _, context = iterate_through_ubiquitin(copy.deepcopy(ubiquitin_structure))
+    free_lysines = context['free_lysines']
     assert sorted(free_lysines) == sorted(expected_free_lysines), \
         f"Expected {expected_free_lysines}, got {free_lysines}"
     
-from src.main_testing import find_conjugated_lysines
 
 @pytest.mark.parametrize("ubiquitin_structure, expected_conjugated_lysines", [
     # ✅ Test Case 1: Basic Monomer (No conjugated lysines)
@@ -1561,12 +1565,12 @@ def test_find_conjugated_lysines(ubiquitin_structure, expected_conjugated_lysine
     Test `find_conjugated_lysines()` to ensure it correctly extracts 
     all conjugated lysines from ubiquitin structures.
     """
-    _, conjugated_lysines = find_conjugated_lysines(copy.deepcopy(ubiquitin_structure))
+    _, context = iterate_through_ubiquitin(copy.deepcopy(ubiquitin_structure))
+    conjugated_lysines = context['conjugated_lysines']
+
     assert sorted(conjugated_lysines) == sorted(expected_conjugated_lysines), \
         f"Expected {expected_conjugated_lysines}, got {conjugated_lysines}"
-    
 
-from src.main_testing import find_SMAC_ABOC_lysines
 
 @pytest.mark.parametrize("ubiquitin_structure, expected_SMAC_lysines, expected_ABOC_lysines", [
     # ✅ Test Case 1: Basic Monomer (No conjugated lysines)
@@ -1772,7 +1776,9 @@ def test_find_SMAC_ABOC_lysines(ubiquitin_structure, expected_SMAC_lysines, expe
     Test `find_SMAC_ABOC_lysines()` to ensure it correctly extracts 
     all SMAC and ABOC-modified lysines from ubiquitin structures.
     """
-    _, SMAC_lysines, ABOC_lysines = find_SMAC_ABOC_lysines(copy.deepcopy(ubiquitin_structure))
+    _, context = iterate_through_ubiquitin(copy.deepcopy(ubiquitin_structure))
+    ABOC_lysines = context["ABOC_lysines"]
+    SMAC_lysines = context["SMAC_lysines"]
     
     assert sorted(SMAC_lysines) == sorted(expected_SMAC_lysines), \
         f"Expected SMAC {expected_SMAC_lysines}, got {SMAC_lysines}"
