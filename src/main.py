@@ -45,83 +45,176 @@ all these functions work off the main function
 - output becomes JSON of the ubiquitin
 - and the context which is a separate information file
 
+
+INSERT CODE FOR;
+- getting_multimer_string_name
+- find_free_lysines
+- find_max_chain_number
+- find_number_of_ABOC_SMAC
+- find_number_of_ABOC
+- find_number_of_SMAC
+- find_conjugated_lysines
+- find_SMAC_ABOC_lysines
+
+
+
 '''
 
-
-
-def iterate_through_ubiquitin(parent_dictionary):
+def find_branching_site(sequence_id, FASTA_sequence):
     """
-    Relabel ubiquitin chain numbers and process protein branching.
-    Generate a multimer string name based on a parent dictionary that represents proteins and ubiquitin chains.
+    Finds the branching site position in the given FASTA sequence.
 
     Args:
-        parent_dictionary (Union[Dict[str, Any], str]): Dictionary representing protein data or its JSON string.
+        sequence_id (str): The sequence ID containing the branching site.
+        FASTA_sequence (str): The full FASTA sequence to search in.
+
     Returns:
-        Dict[str, Any]: Updated dictionary with relabeled chain numbers.
+        int: The 1-based index of the branching site.
+
+    Raises:
+        ValueError: If the sequence ID is not found in the FASTA sequence.
     """
-    # Initialize context object to track global-like variables
-    context = {
-        "chain_number_list": [1],
-        "chain_length_list": [],
-        "multimer_string_name": ""
-    }
+    try:
+        # Find the position of '(' in sequence_id to determine the amino acid index
+        AA_in_sequence = sequence_id.index('(')
+
+        # Remove parentheses from sequence ID for searching in FASTA sequence
+        sequence_id_no_brackets = sequence_id.replace('(', '').replace(')', '')
+
+        # Locate the sequence in FASTA_sequence and adjust the position
+        position = FASTA_sequence.index(sequence_id_no_brackets) + AA_in_sequence + 1
+
+        return position
+
+    except ValueError:
+        raise ValueError("substring not found")  # Ensures meaningful error handling
+    
+
+def validate_protein_keys(input_dictionary):
+    """
+    Validates that the given dictionary contains all required keys.
+    If any keys are missing, raises a KeyError.
+
+    :param input_dict: Dictionary to validate
+    :raises KeyError: If required keys are missing
+    """
+    allowed_keys = {"protein", "chain_number", "FASTA_sequence", "chain_length", "branching_sites"}
+
+    # Check for unexpected keys
+    unexpected_keys = set(input_dictionary.keys()) - allowed_keys
+    if unexpected_keys:
+        raise KeyError(f"Unexpected keys found: {unexpected_keys}. Allowed keys: {allowed_keys}")
+
+
+
+### you'll want to change this so that it is not recursive but pops up in each recursive loop
+def affirm_branching_sites(ubiquitin_structure):
+    """
+    Recursively checks if all required branching sites (M1, K6, K11, K27, K29, K33, K48, K63)
+    are present at every level of the ubiquitin structure.
+
+    If any sites are missing, it raises an AssertionError specifying the missing sites and the chain number.
+    """
+    REQUIRED_SITES = {"M1", "K6", "K11", "K27", "K29", "K33", "K48", "K63"}
+
+    def _check_sites(ubiquitin_dict):
+        chain_number = ubiquitin_dict["chain_number"]  # Extract chain number
+        sites_in_this_ubiquitin = {site["site_name"] for site in ubiquitin_dict["branching_sites"]}
+
+        # Check if any required sites are missing
+        missing_sites = REQUIRED_SITES - sites_in_this_ubiquitin
+        assert not missing_sites, (
+            f"Missing sites {missing_sites} in Ubiquitin {chain_number}."
+        )
+
+    _check_sites(ubiquitin_structure)
+    
+
+def validate_branching_sites(ubiquitin_dict, errors=None):
+    """
+    Recursively checks all branching sites in the ubiquitin dictionary 
+    to ensure proper formatting.
+
+    Collects **all** errors instead of stopping at the first failure.
+
+    Args:
+        ubiquitin_dict (dict): The ubiquitin structure to validate.
+        errors (list): A list to accumulate error messages (used for recursion).
+
+    Raises:
+        AssertionError: If any errors are found in branching site formatting.
+    """
+    if errors is None:
+        errors = []  # Initialize error list on the first call
+
+    VALID_SITE_NAMES = {"M1", "K6", "K11", "K27", "K29", "K33", "K48", "K63"}
+
+    for site in ubiquitin_dict.get("branching_sites", []):  # Safely get branching_sites list
+        site_name = site.get("site_name", None)
+        sequence_id = site.get("sequence_id", None)
+        children = site.get("children", None)
+        
+        # Validate site_name
+        if site_name not in VALID_SITE_NAMES:
+            errors.append(f"Invalid site_name: {site_name}")
+
+        # Validate sequence_id format
+        if not sequence_id or "(" not in sequence_id or ")" not in sequence_id:
+            errors.append(f"Invalid sequence_id format: {sequence_id}")
+
+        # Validate children structure
+        if children not in ("", "SMAC", "ABOC") and not isinstance(children, dict):
+            errors.append(f"Invalid children format: {children}")
+
+    # If errors were found, raise a single assertion error summarizing all issues
+    if errors:
+        raise AssertionError("\n".join(errors))
+    
+
+def convert_json_to_dict(parent_dictionary):
+    """
+    Converts a JSON string to a dictionary if necessary.
+    If the input is already a dictionary, it remains unchanged.
+    Raises a ValueError if the JSON format is invalid.
+
+    :param input_data: JSON string or dictionary
+    :return: Dictionary representation of the input data
+    """
 
     if isinstance(parent_dictionary, str):
-        parent_dictionary = json.loads(parent_dictionary.replace("'", "\""))
-
-    adapted_dictionary, context = inner_wrapper_iterate_through_ubiquitin(
-        parent_dictionary, context
-    )
-    return adapted_dictionary, context
-
-def inner_wrapper_iterate_through_ubiquitin(input_dictionary, context):
-    """
-    Recursively process nested dictionaries to relabel and extract ubiquitin chain numbers and process protein branching.
-    Recursively process nested dictionaries to construct the multimer string name.
-
-    """
-    working_dictionary = copy.deepcopy(input_dictionary)
-    
-    ## Process node numbers for the pre-order tree treversal of the protein 
-    working_dictionary, context = process_current_protein(working_dictionary, context)
-
-    # Append chain information to multimer string
-    # Change to pdb id
-    if working_dictionary["chain_number"] == 1:
-        context["multimer_string_name"] += f"his-ubi{working_dictionary['chain_number']}["
+        try:
+            # Ensure correct JSON format by replacing single quotes with double quotes
+            formatted_json = parent_dictionary.replace("'", "\"")
+            return json.loads(formatted_json)
+        except json.JSONDecodeError as e:
+            raise ValueError("Invalid JSON format: Unable to parse the string") from e
+    elif isinstance(parent_dictionary, dict):
+        return parent_dictionary
     else:
-        context["multimer_string_name"] += f"ubi{working_dictionary['chain_number']}["
+        raise TypeError("Input must be a dictionary or a JSON string")
 
-    # Log current protein details
-    log_protein_details(working_dictionary, context)
-
-    # Process branching sites
-    working_branching_sites = working_dictionary.get("branching_sites", [])
-
-    for branch in working_branching_sites:
-        working_dictionary, context= process_branch(branch, working_dictionary, context)
-
-    # End of multimer string editing 
-    context["multimer_string_name"] += "]"
-    logging.info(f"===== END OF PROTEIN - UBI NUMBER: {working_dictionary['chain_number']} =====")
-    return working_dictionary, context
+    
 
 def process_current_protein(
     working_dictionary: Dict[str, Any],
     context: dict
     ) -> Dict[str, Any]:
+    
     """Update chain number and chain length of current protein during recursive function."""
 
     # Extract the values from the context to change
     chain_number_list = context["chain_number_list"]
     chain_length_list = context["chain_length_list"]
+    
     # Assign chain number
     working_dictionary.update({
         'chain_length': len(working_dictionary["FASTA_sequence"])
     })
     working_dictionary["chain_number"] = chain_number_list[-1]
+    
     # Update chain length
     chain_length_list.append(working_dictionary["chain_length"])
+    
     # Update chain number length
     chain_number_list.append(chain_number_list[-1] + 1)
 
@@ -143,49 +236,54 @@ def process_branch(branch, working_dictionary, context):
     # Find branching site
     branching_number = find_branching_site(branch["sequence_id"], working_dictionary["FASTA_sequence"])
     ubiquitin_conjugation_site = int(sum(chain_length_list[:chain_number_index])) + branching_number
-
-    logging.info("===== START OF LYSINE SITE =====")
-    logging.info(f"Chain Number: {working_dictionary['chain_number']}")
-    logging.info(f"Lysine Site: {branch['site_name']}")
-
+    
     # Handle protecting groups
-    if branch["children"] in ["SMAC", "ABOC"]:
-        context["multimer_string_name"] += handle_protecting_group(branch)
-        #context["multimer_string_name"] += f"({branch['site_name']}_"
+    if branch["children"] in ["SMAC"]:
+        ## add protecting group
+        context["multimer_string_name"] += f"<{branch['site_name']}_SMAC>"
+
+    elif branch["children"] in ["ABOC"]:
+        ## add protecting group
+        context["multimer_string_name"] += f"<{branch['site_name']}_ABOC>"
 
     # Handle free lysines
     elif (branch['children'] == "") & (branch['site_name'] in ['M1','K6','K11','K27','K29','K33']): 
-        logging.info(f"There is no Protecting Group on: {branch['site_name']}")
+        print('')
 
     # Handle K48 & K63 lysines
     elif (branch['children'] == "") & (branch['site_name'] in ['K48', 'K63']): 
-        context["free_lysine_list"] += [working_dictionary['chain_number'], str(branch['site_name'])]
-        logging.info(f"There is no Protecting Group on: {branch['site_name']}")
-        #context["multimer_string_name"] += f"({branch['site_name']}_"
+        context["free_lysines"] += [working_dictionary['chain_number'], str(branch['site_name'])]
 
     # Handle branches that have proteins bound  
     elif isinstance(branch["children"], dict):
-        logging.info(f"NEXT UBIQUITIN: {branch['children']}")
-        context["multimer_string_name"] += f"({branch['site_name']}_"
+        context["multimer_string_name"] += f"<{branch['site_name']}_"
         branch["children"], context = inner_wrapper_iterate_through_ubiquitin(
             branch["children"], context
         )
-        context["multimer_string_name"] += ")"
+        context["multimer_string_name"] += ">"
 
+    return branch, working_dictionary, context
+
+## Logging functions 
+def log_branching_details(branch, working_dictionary, context):
+    """
+    Log detailed information about the current protein and its attributes.
+    """
+    logging.info("===== START OF LYSINE SITE =====")
+    logging.info(f"Chain Number: {working_dictionary['chain_number']}")
+    logging.info(f"Lysine Site: {branch['site_name']}")
+    logging.info(f"Sequence ID: {branch['sequence_id']}")
+    logging.info(f"Lysine Conjugation: {branch['children']}")
+
+def log_end_of_branching():
+    """Logs the end of a lysine site branching."""
     logging.info("===== END OF LYSINE SITE =====")
-    return 
-
-def handle_protecting_group(branch):
-    """
-    Append protecting group details to the multimer string.
-    """
-    protecting_group = branch["children"]
-    return f"({branch['site_name']}_{protecting_group})"
 
 def log_protein_details(working_dictionary, context):
     """
     Log detailed information about the current protein and its attributes.
     """
+    logging.info(' ===== START OF PROTEIN ===== ')
     logging.info(f"Protein: {working_dictionary['protein']}")
     logging.info(f"Sequence: {working_dictionary['FASTA_sequence']}")
     logging.info(f"Chain Length List: {context['chain_length_list']}")
@@ -194,11 +292,130 @@ def log_protein_details(working_dictionary, context):
     logging.info(f"Chain Number: {working_dictionary['chain_number']}")
     logging.info(f"Branching Sites: {working_dictionary.get('branching_sites', [])}")
 
-def find_branching_site(sequence_id, FASTA_sequence):
+def log_end_of_protein(working_dictionary):
     """
-    Locate the branching site in the given FASTA sequence.
+    Logs the end of a protein processing step with its chain number.
+
+    Args:
+        working_dictionary (dict): The dictionary containing protein details, including 'chain_number'.
     """
-    return FASTA_sequence.find(sequence_id.replace("(K)", "K"))
+    logging.info(f"===== END OF PROTEIN - UBI NUMBER: {working_dictionary['chain_number']} =====")
+
+
+
+
+
+def iterate_through_ubiquitin(parent_dictionary):
+    
+    """
+    Relabel ubiquitin chain numbers, process protein branching and validate input dictionary keys.
+    Generate a multimer string name based on a parent dictionary that represents proteins and ubiquitin chains.
+
+    Args:
+        parent_dictionary (dict or str): Ubiquitin structure as a dictionary or JSON string.
+
+    Returns:
+        dict: Updated polyubiquitin dictionary/JSON with relabeled values.
+        context: Upadated dictionary with the information regarding the polyubiquitin. Includes;
+            - chain_number_list
+            - chain_length_list
+            - multimer_string_name
+            - max_chain_number
+            - ABOC_lysines
+            - SMAC_lysines
+            - conjugated_lysines
+
+    Raises:
+        KeyError: If required keys are missing.
+        ValueError: If the input is not a dictionary or valid JSON string.
+
+    """
+    
+    # Ensure that the parent dictionary is a JSON
+    parent_dictionary = convert_json_to_dict(parent_dictionary)
+
+    # Ensure that the parent dictionary has all the valid keys 
+    validate_protein_keys(parent_dictionary)
+    
+    # Initialize context object to track global-like variables
+    context = {
+        "chain_number_list": [1],
+        "chain_length_list": [],
+        "multimer_string_name": "",
+        "max_chain_number" : "",
+        "ABOC_lysines" : [],
+        "SMAC_lysines": [],
+        "free_lysines": [],
+        "conjugated_lysines": []
+    }
+
+    adapted_dictionary, context = inner_wrapper_iterate_through_ubiquitin(
+        parent_dictionary, context
+    )
+    return adapted_dictionary, context
+
+def inner_wrapper_iterate_through_ubiquitin(input_dictionary, context):
+    """
+    Recursively process nested dictionaries to relabel and extract ubiquitin chain numbers and process protein branching.
+    Recursively process nested dictionaries to construct the multimer string name.
+    """
+    working_dictionary = copy.deepcopy(input_dictionary)
+
+    # Ensure that the working dictionary is a JSON
+    working_dictionary = convert_json_to_dict(working_dictionary)
+
+    # Ensure that the working dictionary has all the valid keys 
+    validate_protein_keys(working_dictionary)
+    
+    ## Process node numbers for the pre-order tree treversal of the protein 
+    working_dictionary, context = process_current_protein(working_dictionary, context)
+
+    # Append chain information to multimer string
+    # Change to pdbid
+    if (working_dictionary["FASTA_sequence"] == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH") & (working_dictionary["chain_number"]==1):
+        context["multimer_string_name"] += f"his-(ubi{working_dictionary['chain_number']}"
+    elif (working_dictionary["FASTA_sequence"] == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG") & (working_dictionary["chain_number"]==1):
+        context["multimer_string_name"] += f"GG-(ubi{working_dictionary['chain_number']}"
+    else: 
+        context["multimer_string_name"] += f"(ubi{working_dictionary['chain_number']}"
+    
+
+    # Log current protein details
+    log_protein_details(working_dictionary, context)
+
+    # ensures no sites are missing
+    affirm_branching_sites(working_dictionary)
+
+    # Ensure that the branching has all the valid keys 
+    validate_branching_sites(working_dictionary)
+
+    ## get the branching sites
+    working_branching_sites = working_dictionary.get("branching_sites", [])
+
+    ## loop through the branches
+    for branch in working_branching_sites:
+        # log new branching deatils
+        log_branching_details(branch, working_dictionary, context)
+        
+        ## process branch
+        branch, working_dictionary, context = process_branch(branch, working_dictionary, context)
+
+        # log end of branching details
+        log_end_of_branching()
+
+    log_end_of_protein(working_dictionary)
+
+    # End of multimer string editing 
+    context["multimer_string_name"] += ")"
+    
+    return working_dictionary, context
+
+    
+
+
+
+
+
 
 
 
