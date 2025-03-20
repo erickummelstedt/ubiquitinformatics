@@ -1,9 +1,7 @@
 import pytest
 import json
 import copy
-
 from copy import deepcopy
-
 import sys
 
 # home_dir = os.path.expanduser('~')
@@ -12,7 +10,36 @@ sys.path.insert(0, local_path)
 
 # Import the functions from the original code
 # from src.main_testing import relabelling_ubiquitin_numbers, inner_wrapper_relabelling_ubiquitin_numbers
-from src.main import iterate_through_ubiquitin, inner_wrapper_iterate_through_ubiquitin, validate_branching_sites, find_branching_site
+from src.main import \
+    iterate_through_ubiquitin, \
+    inner_wrapper_iterate_through_ubiquitin, \
+    validate_branching_sites, \
+    find_branching_site, \
+    validate_protein_keys, \
+    affirm_branching_sites
+
+'''
+Done
+- find_branching_site
+- validate_protein_keys
+- affirm_branching_sites
+
+Build tests for the following
+Everything works; now build tests and clean up code for each of the following functions
+
+- validate_branching_sites
+- convert_json_to_dict
+- process_current_protein
+- process_branch
+- log_branching_details
+- log_end_of_branching
+- log_protein_details
+- log_end_of_protein
+- find_max_chain_number
+- iterate_through_ubiquitin (all tests on deeply nested ubiquitins)
+
+
+'''
 
 # Sample deeply nested ubiquitin dictionary for testing
 k48_dimer_ubiquitin = {
@@ -114,6 +141,280 @@ def test_find_branching_site_empty():
 
     with pytest.raises(ValueError, match="substring not found"):
         find_branching_site(empty_sequence, k48_dimer_ubiquitin["FASTA_sequence"])
+
+
+@pytest.mark.parametrize("valid_dict", [
+    # ✅ Test Case 1: Valid ubiquitin dictionary
+    {
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
+        "branching_sites": [{"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+                            {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
+                            {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
+                            {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
+                            {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+                            {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+                            {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
+                            {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}]
+    },
+    # ✅ Test Case 2: Another valid ubiquitin with different sequence and length
+    {
+        "protein": "2ubq",
+        "chain_number": 2,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH",
+        "chain_length": 82,
+        "branching_sites": [{"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+                            {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
+                            {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
+                            {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
+                            {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+                            {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+                            {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
+                            {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}]
+    }
+])
+def test_validate_protein_keys_valid(valid_dict):
+    """
+    Test that `validate_protein_keys` does not raise an error for valid dictionaries.
+    """
+    try:
+        validate_protein_keys(valid_dict)  # Should not raise an error
+        assert True  # Pass the test
+    except KeyError:
+        pytest.fail("validate_protein_keys raised KeyError unexpectedly for a valid dictionary.")
+
+@pytest.mark.parametrize("invalid_dict, missing_keys", [
+    # ❌ Test Case 3: Missing "chain_number"
+    (
+        {
+            "protein": "1ubq",
+            "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+            "chain_length": 76,
+            "branching_sites": [{"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+                                {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
+                                {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
+                                {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
+                                {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+                                {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+                                {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
+                                {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}]
+        },
+        {"chain_number"}
+    ),
+    # ❌ Test Case 4: Missing multiple required keys
+    (
+        {
+            "protein": "1ubq",
+            "branching_sites": [{"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+                                {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
+                                {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
+                                {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
+                                {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+                                {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+                                {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
+                                {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}]
+        },
+        {'chain_number', 'FASTA_sequence', 'chain_length'}
+    )
+])
+def test_validate_protein_keys_missing_keys(invalid_dict, missing_keys):
+    """
+    Test that `validate_protein_keys` raises a KeyError when required keys are missing.
+    """
+    allowed_keys = {"protein", "chain_number", "FASTA_sequence", "chain_length", "branching_sites"}
+
+    with pytest.raises(KeyError, match=f"Missing required keys: {missing_keys}. Allowed keys: {allowed_keys}"):
+        validate_protein_keys(invalid_dict)
+
+@pytest.mark.parametrize("invalid_dict, invalid_keys", [
+    # ❌ Test Case 5: Dictionary with an invalid key
+    (
+        {
+            "protein": "1ubq",
+            "chain_number": 1,
+            "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+            "chain_length": 76,
+            "branching_sites": [{"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+                                {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
+                                {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
+                                {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
+                                {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+                                {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+                                {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
+                                {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}],
+            "extra_key": "invalid_value"
+        },
+        {"extra_key"}
+    ),
+    # ❌ Test Case 6: Dictionary with multiple invalid keys
+    (
+        {
+            "protein": "1ubq",
+            "chain_number": 1,
+            "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+            "chain_length": 76,
+            "branching_sites": [{"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+                                {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
+                                {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
+                                {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
+                                {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+                                {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+                                {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
+                                {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}],
+            "extra_key_1": "value1",
+            "extra_key_2": "value2"
+        },
+        {"extra_key_1", "extra_key_2"}
+    )
+])
+
+def test_validate_protein_keys_invalid_keys(invalid_dict, invalid_keys):
+    """
+    Test that `validate_protein_keys` raises a KeyError when invalid keys are present.
+    """
+    allowed_keys = {"protein", "chain_number", "FASTA_sequence", "chain_length", "branching_sites"}
+    
+    with pytest.raises(KeyError, match=f"Invalid keys found: {invalid_keys}. Allowed keys: {allowed_keys}"):
+        validate_protein_keys(invalid_dict)
+
+
+def test_validate_protein_keys_missing_and_invalid_keys():
+    """
+    Test `validate_protein_keys` when the input dictionary has both missing required keys and unexpected keys.
+    It should raise a KeyError with the correct message.
+    """
+    invalid_protein_data = {
+        "protein": "1ubq",  # Valid key
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",  # Valid key
+        "extra_key": "unexpected_value",  # Invalid key
+    }
+
+    with pytest.raises(KeyError, match=r"Missing required keys: .*Invalid keys found: .*Allowed keys: .*"):
+        validate_protein_keys(invalid_protein_data)
+
+
+@pytest.mark.parametrize("ubiquitin_structure, should_raise, expected_exception_message", [
+    
+    # ✅ Test Case 1: Correct Ubiquitin Structure (No Errors)
+    ({
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
+        "branching_sites": [
+            {"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+            {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
+            {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
+            {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
+            {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+            {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+            {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
+            {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}]
+        
+    }, False, None),
+
+    # ❌ Test Case 2: Missing Required Sites
+    ({
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
+        "branching_sites": [
+            {"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+            {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
+            {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
+            {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""}# Missing K29, K33, K48, K63
+        ]
+    }, True, "Missing required sites: {'K29', 'K33', 'K48', 'K63'} in Ubiquitin 2"),
+    
+    # ❌ Test Case 3: Invalid Site Present
+    ({
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
+        "branching_sites": [
+            {"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+            {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
+            {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
+            {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
+            {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+            {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+            {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
+            {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""},
+            {"site_name": "K99","sequence_id": "NIQ(K)EST","children": ""}  # Invalid site
+        ]
+    }, True, "Invalid sites found: {'K99'} in Ubiquitin 3"),
+
+    # ❌ Test Case 4: Both Missing and Invalid Sites
+    ({
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
+        "branching_sites": [
+            {"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+            {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
+            {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
+            {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+            {"site_name": "K100","sequence_id": "NIQ(K)EST","children": ""}]  # Invalid site
+    }, True, "Missing required sites: {'K27', 'K29', 'K48', 'K63'}. Invalid sites found: {'K100'} in Ubiquitin 4"),
+
+    # ✅ Test Case 5: Deeply Nested Ubiquitin (Correct)
+    ({
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH",
+        "chain_length": 83,
+        "branching_sites": [
+            {"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+            {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
+            {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
+            {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
+            {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+            {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+            {"site_name": "K48","sequence_id": "FAG(K)QLE","children": ""}, 
+            {"site_name": "K48", "children": {
+                "chain_number": 2,
+                "branching_sites": [
+                    {"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+                    {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
+                    {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
+                    {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
+                    {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+                    {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+                    {"site_name": "K48","sequence_id": "FAG(K)QLE","children": ""},
+                    {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}
+                ]
+            }},
+            {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}
+        ]
+    }, False, None)
+
+])
+def test_affirm_branching_sites(ubiquitin_structure, should_raise, expected_exception_message):
+    """
+    Test `affirm_branching_sites()` with various ubiquitin structures to verify correct
+    validation of required branching sites.
+    """
+    if should_raise:
+        with pytest.raises(KeyError, match=expected_exception_message):
+            affirm_branching_sites(ubiquitin_structure)
+    else:
+        # Should not raise an error
+        affirm_branching_sites(ubiquitin_structure)
+
+
+
+
+
+
+
+
+
+
 
 def test_iterate_through_ubiquitin():
     """
@@ -245,21 +546,21 @@ def test_json_loading_non_json_string():
 
 def test_json_loading_with_extra_keys():
     """
-    Test iterate_through_ubiquitin with additional unexpected keys in JSON. 
-    Assert the the additional unexpected keys create errors.
+    Test iterate_through_ubiquitin with additional invalid keys in JSON. 
+    Assert the the additional invalid keys create errors.
     """
     erroneous_json = json.dumps({
         "protein": "1ubq",
         "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGHHHHHH",
-        "unexpected_key": "some_value"
+        "invalid_key": "some_value"
     })
     
     with pytest.raises(KeyError):
         iterate_through_ubiquitin(erroneous_json)
 
-def test_json_loading_with_unexpected_keys():
+def test_json_loading_with_invalid_keys():
     """
-    Test iterate_through_ubiquitin with JSON containing unexpected values as keys.
+    Test iterate_through_ubiquitin with JSON containing invalid values as keys.
     """
     invalid_json = copy.deepcopy(k48_dimer_ubiquitin)
     invalid_json[123]= "value"
@@ -277,7 +578,7 @@ def test_deeply_nested_erroneous_key():
     # Introduce an erroneous key deep in the nested structure
     test_ubiquitin["branching_sites"][6]["children"]['chain_number1'] = test_ubiquitin["branching_sites"][6]["children"]['chain_number']
 
-    with pytest.raises(KeyError, match="Unexpected keys found"):
+    with pytest.raises(KeyError, match="Invalid keys found"):
         iterate_through_ubiquitin(test_ubiquitin)
 
 
@@ -290,9 +591,7 @@ VALID_SITE_NAMES = {"K6", "K11", "K27", "K29", "K33", "K48", "K63", "M1"}
     ("K11", "LTG(K)TIT", {}, None),  # ✅ Valid case with a nested dictionary
     ("K29", "VKA(K)IQD", "ABOC", None),  # ✅ Valid case with ABOC
     ("K27", "ENV(K)AKI", "INVALID_CHILD", "Invalid children format"),  # ❌ Invalid children
-    ("K33", "IQD(K)EGI", None, "Invalid children format"),  # ❌ None is not allowed
-    ("K99", "XYZ(K)ABC", "", "Invalid site_name"),  # ❌ Invalid site name
-    ("K48", "XYZ_K_ABC", "", "Invalid sequence_id format"),  # ❌ Missing parentheses in sequence_id
+    ("K33", "IQD(K)EGI", None, "Invalid children format")  # ❌ None is not allowed
 ])
 
 def test_branching_sites_format(site_name, sequence_id, children, expected_error):
@@ -532,8 +831,6 @@ def test_iterate_through_ubiquitin(ubiquitin_structure, expected_multimer_string
 
 
 ## IMPORT ##
-from src.main import find_protecting_groups
-
 @pytest.mark.parametrize("ubiquitin_structure, expected_aboc, expected_smac", [
     # ✅ Test Case 1: Basic Monomer (No ABOC or SMAC)
     ({
@@ -1144,8 +1441,10 @@ def test_affirm_branching_sites(ubiquitin_structure, should_raise, expected_miss
     """
     Tests affirm_branching_sites() within iterate_through_ubiquitin to ensure that missing sites are detected at all levels.
     """
+    allowed_sites = {"M1", "K6", "K11", "K27", "K29", "K33", "K48", "K63"}
+
     if should_raise:
-        with pytest.raises(AssertionError, match=f"Missing sites {expected_missing_sites} in Ubiquitin {expected_chain_number}"):
+        with pytest.raises(KeyError, match=f"Missing required sites: {expected_missing_sites} in Ubiquitin {expected_chain_number}. Allowed sites: {allowed_sites}."):
             iterate_through_ubiquitin(copy.deepcopy(ubiquitin_structure))
     else:
         iterate_through_ubiquitin(copy.deepcopy(ubiquitin_structure))  # Should not raise any error

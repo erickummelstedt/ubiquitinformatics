@@ -27,9 +27,11 @@ Use descriptive names for variables, functions, and classes: Avoid abbreviations
 '''
 
 '''
-Everything works; now build tests and clean up code for each of the following functions
+DONE
 - find_branching_site
 - validate_protein_keys
+
+Everything works; now build tests and clean up code for each of the following functions
 - affirm_branching_sites
 - validate_branching_sites
 - convert_json_to_dict
@@ -77,42 +79,83 @@ def find_branching_site(sequence_id, FASTA_sequence):
 def validate_protein_keys(input_dictionary):
     """
     Validates that the given dictionary contains all required keys.
-    If any keys are missing, raises a KeyError.
+    If any keys are missing or invalid keys are present, raises a KeyError.
 
-    :param input_dict: Dictionary to validate
-    :raises KeyError: If required keys are missing
+    :param input_dictionary: Dictionary to validate
+    :raises KeyError: If required keys are missing or invalid keys are found.
     """
     allowed_keys = {"protein", "chain_number", "FASTA_sequence", "chain_length", "branching_sites"}
 
-    # Check for unexpected keys
-    unexpected_keys = set(input_dictionary.keys()) - allowed_keys
-    if unexpected_keys:
-        raise KeyError(f"Unexpected keys found: {unexpected_keys}. Allowed keys: {allowed_keys}")
+    # Identify missing and invalid keys
+    missing_keys = allowed_keys - set(input_dictionary.keys())
+    invalid_keys = set(input_dictionary.keys()) - allowed_keys
+
+    if missing_keys or invalid_keys:
+        error_messages = []
+        if missing_keys:
+            error_messages.append(f"Missing required keys: {missing_keys}")
+        if invalid_keys:
+            error_messages.append(f"Invalid keys found: {invalid_keys}")
+        
+        raise KeyError(". ".join(error_messages) + f". Allowed keys: {allowed_keys}")
+    
 
 
 
-### you'll want to change this so that it is not recursive but pops up in each recursive loop
-def affirm_branching_sites(ubiquitin_structure):
+def affirm_branching_sites(ubiquitin_dict):
     """
-    Recursively checks if all required branching sites (M1, K6, K11, K27, K29, K33, K48, K63)
-    are present at every level of the ubiquitin structure.
+    Checks if all required branching sites (M1, K6, K11, K27, K29, K33, K48, K63)
+    are present at that level of the ubiquitin structure.
 
     If any sites are missing, it raises an AssertionError specifying the missing sites and the chain number.
     """
     REQUIRED_SITES = {"M1", "K6", "K11", "K27", "K29", "K33", "K48", "K63"}
-
-    def _check_sites(ubiquitin_dict):
-        chain_number = ubiquitin_dict["chain_number"]  # Extract chain number
-        sites_in_this_ubiquitin = {site["site_name"] for site in ubiquitin_dict["branching_sites"]}
-
-        # Check if any required sites are missing
-        missing_sites = REQUIRED_SITES - sites_in_this_ubiquitin
-        assert not missing_sites, (
-            f"Missing sites {missing_sites} in Ubiquitin {chain_number}."
-        )
-
-    _check_sites(ubiquitin_structure)
     
+    # sites in this ubiquitin 
+    sites_in_this_ubiquitin = {site["site_name"] for site in ubiquitin_dict["branching_sites"]}
+    chain_number = ubiquitin_dict["chain_number"]  # Extract chain number
+
+    # Identify missing and invalid sites
+    missing_sites = REQUIRED_SITES - sites_in_this_ubiquitin
+    invalid_sites = sites_in_this_ubiquitin - REQUIRED_SITES
+    
+    if missing_sites or invalid_sites:
+        error_messages = []
+        if missing_sites:
+            error_messages.append(f"Missing required sites: {missing_sites} in Ubiquitin {chain_number}")
+        if invalid_sites:
+            error_messages.append(f"Invalid sites found: {invalid_sites} in Ubiquitin {chain_number}")
+        raise KeyError(". ".join(error_messages) + f". Allowed sites: {REQUIRED_SITES}.")
+
+### you'll want to change this so that it is not recursive but pops up in each recursive loop
+def affirm_branching_sequences(ubiquitin_dict):
+    """
+    Checks if all required branching sequence ids
+    ((M)QIF, IFV(K)TLT, LTG(K)TIT, ENV(K)AKI, VKA(K)IQD, IQD(K)EGI, FAG(K)QLE, NIQ(K)EST)
+    are present at that level of the ubiquitin structure.
+
+    If any sites are missing, it raises an AssertionError specifying the missing sites and the chain number.
+    """
+    REQUIRED_SEQUENCE_IDS = {"(M)QIF", "IFV(K)TLT", "LTG(K)TIT", "ENV(K)AKI", "VKA(K)IQD", "IQD(K)EGI", "FAG(K)QLE", "NIQ(K)EST"}
+    
+    # sites in this ubiquitin 
+    sequences_in_this_ubiquitin = {sequence["sequence_id"] for sequence in ubiquitin_dict["branching_sites"]}
+    chain_number = ubiquitin_dict["chain_number"]  # Extract chain number
+    
+    # Identify missing and invalid sequences
+    missing_sequences = REQUIRED_SEQUENCE_IDS - sequences_in_this_ubiquitin
+    invalid_sequences = sequences_in_this_ubiquitin - REQUIRED_SEQUENCE_IDS
+
+    if missing_sequences or invalid_sequences:
+        error_messages = []
+        if missing_sequences:
+            error_messages.append(f"Missing required sequences: {missing_sequences} in Ubiquitin {chain_number}")
+        if invalid_sequences:
+            error_messages.append(f"Invalid sequences found: {invalid_sequences} in Ubiquitin {chain_number}")
+        raise KeyError(". ".join(error_messages) + f". Allowed sequences: {REQUIRED_SEQUENCE_IDS}.")
+
+
+
 
 def validate_branching_sites(ubiquitin_dict, errors=None):
     """
@@ -131,20 +174,25 @@ def validate_branching_sites(ubiquitin_dict, errors=None):
     if errors is None:
         errors = []  # Initialize error list on the first call
 
-    VALID_SITE_NAMES = {"M1", "K6", "K11", "K27", "K29", "K33", "K48", "K63"}
+    MATCHING_SITE_SEQUENCE = {"M1":"(M)QIF", 
+                              "K6":"IFV(K)TLT", 
+                              "K11":"LTG(K)TIT", 
+                              "K27":"ENV(K)AKI", 
+                              "K29":"VKA(K)IQD", 
+                              "K33":"IQD(K)EGI", 
+                              "K48":"FAG(K)QLE", 
+                              "K63":"NIQ(K)EST"}
+    
+    affirm_branching_sites(ubiquitin_dict)
+    affirm_branching_sequences(ubiquitin_dict)
 
     for site in ubiquitin_dict.get("branching_sites", []):  # Safely get branching_sites list
         site_name = site.get("site_name", None)
         sequence_id = site.get("sequence_id", None)
         children = site.get("children", None)
-        
-        # Validate site_name
-        if site_name not in VALID_SITE_NAMES:
-            errors.append(f"Invalid site_name: {site_name}")
 
-        # Validate sequence_id format
-        if not sequence_id or "(" not in sequence_id or ")" not in sequence_id:
-            errors.append(f"Invalid sequence_id format: {sequence_id}")
+        if sequence_id != MATCHING_SITE_SEQUENCE[site_name]:
+            errors.append(f"site_name: {site_name}, does not correspond to the correct sequence_id : {sequence_id}")
 
         # Validate children structure
         if children not in ("", "SMAC", "ABOC") and not isinstance(children, dict):
@@ -154,7 +202,6 @@ def validate_branching_sites(ubiquitin_dict, errors=None):
     if errors:
         raise AssertionError("\n".join(errors))
     
-
 def convert_json_to_dict(parent_dictionary):
     """
     Converts a JSON string to a dictionary if necessary.
@@ -178,6 +225,8 @@ def convert_json_to_dict(parent_dictionary):
         raise TypeError("Input must be a dictionary or a JSON string")
 
     
+
+
 
 def process_current_protein(
     working_dictionary: Dict[str, Any],
