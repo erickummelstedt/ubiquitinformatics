@@ -1,0 +1,9 @@
+Features; 
+1. Build, test and connect the following aspects
+    a. iterating through ubiquitin
+        i. really robustly fix the errors in affirm_branching sites/sequences -- make the string adaptable (str contains)
+    b. simulation of ubiquitin synthesis 
+    c. building reaction maps and inventory checks -- by end of april
+    d. build 2D representation of ubiquitin
+    e. build 3D representation of ubiquitin
+    f. featurise gui to sift through reaction schemes in 2D and 3D

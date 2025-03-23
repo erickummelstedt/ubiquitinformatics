@@ -33,6 +33,7 @@ DONE
 
 Everything works; now build tests and clean up code for each of the following functions
 - affirm_branching_sites
+- affirm_branching_sequences
 - validate_branching_sites
 - convert_json_to_dict
 - process_current_protein
@@ -97,7 +98,9 @@ def validate_protein_keys(input_dictionary):
         if invalid_keys:
             error_messages.append(f"Invalid keys found: {invalid_keys}")
         
-        raise KeyError(". ".join(error_messages) + f". Allowed keys: {allowed_keys}")
+        error_messages.append(f"Allowed keys: {allowed_keys}")
+
+        raise KeyError(". ".join(error_messages))
     
 
 
@@ -109,7 +112,7 @@ def affirm_branching_sites(ubiquitin_dict):
 
     If any sites are missing, it raises an AssertionError specifying the missing sites and the chain number.
     """
-    REQUIRED_SITES = {"M1", "K6", "K11", "K27", "K29", "K33", "K48", "K63"}
+    REQUIRED_SITES = {'M1', 'K6', 'K11', 'K27', 'K29', 'K33', 'K48', 'K63'}
     
     # sites in this ubiquitin 
     sites_in_this_ubiquitin = {site["site_name"] for site in ubiquitin_dict["branching_sites"]}
@@ -119,13 +122,15 @@ def affirm_branching_sites(ubiquitin_dict):
     missing_sites = REQUIRED_SITES - sites_in_this_ubiquitin
     invalid_sites = sites_in_this_ubiquitin - REQUIRED_SITES
     
+    error_messages = []
     if missing_sites or invalid_sites:
-        error_messages = []
         if missing_sites:
             error_messages.append(f"Missing required sites: {missing_sites} in Ubiquitin {chain_number}")
         if invalid_sites:
             error_messages.append(f"Invalid sites found: {invalid_sites} in Ubiquitin {chain_number}")
-        raise KeyError(". ".join(error_messages) + f". Allowed sites: {REQUIRED_SITES}.")
+        error_messages.append("Allowed sites: {'M1', 'K6', 'K11', 'K27', 'K29', 'K33', 'K48', 'K63'}")
+    
+    return error_messages
 
 ### you'll want to change this so that it is not recursive but pops up in each recursive loop
 def affirm_branching_sequences(ubiquitin_dict):
@@ -146,16 +151,19 @@ def affirm_branching_sequences(ubiquitin_dict):
     missing_sequences = REQUIRED_SEQUENCE_IDS - sequences_in_this_ubiquitin
     invalid_sequences = sequences_in_this_ubiquitin - REQUIRED_SEQUENCE_IDS
 
+    # sort the sequences for testing reliability - so they always appear on the same format..
+
+
+    # joining error messages 
+    error_messages = []
     if missing_sequences or invalid_sequences:
-        error_messages = []
         if missing_sequences:
             error_messages.append(f"Missing required sequences: {missing_sequences} in Ubiquitin {chain_number}")
         if invalid_sequences:
             error_messages.append(f"Invalid sequences found: {invalid_sequences} in Ubiquitin {chain_number}")
-        raise KeyError(". ".join(error_messages) + f". Allowed sequences: {REQUIRED_SEQUENCE_IDS}.")
-
-
-
+        error_messages.append(f"Allowed sequences: {REQUIRED_SEQUENCE_IDS}")
+    
+    return error_messages
 
 def validate_branching_sites(ubiquitin_dict, errors=None):
     """
@@ -183,8 +191,11 @@ def validate_branching_sites(ubiquitin_dict, errors=None):
                               "K48":"FAG(K)QLE", 
                               "K63":"NIQ(K)EST"}
     
-    affirm_branching_sites(ubiquitin_dict)
-    affirm_branching_sequences(ubiquitin_dict)
+    site_errors = affirm_branching_sites(ubiquitin_dict)
+    sequence_errors = affirm_branching_sequences(ubiquitin_dict)
+
+    errors = errors + site_errors
+    errors = errors + sequence_errors
 
     for site in ubiquitin_dict.get("branching_sites", []):  # Safely get branching_sites list
         site_name = site.get("site_name", None)
@@ -192,15 +203,16 @@ def validate_branching_sites(ubiquitin_dict, errors=None):
         children = site.get("children", None)
 
         if sequence_id != MATCHING_SITE_SEQUENCE[site_name]:
-            errors.append(f"site_name: {site_name}, does not correspond to the correct sequence_id : {sequence_id}")
+            errors.append(f"site_name: {site_name}, does not correspond with the sequence_id : {sequence_id}")
 
         # Validate children structure
         if children not in ("", "SMAC", "ABOC") and not isinstance(children, dict):
             errors.append(f"Invalid children format: {children}")
 
     # If errors were found, raise a single assertion error summarizing all issues
+    
     if errors:
-        raise AssertionError("\n".join(errors))
+        raise AssertionError(". ".join(errors))
     
 def convert_json_to_dict(parent_dictionary):
     """
