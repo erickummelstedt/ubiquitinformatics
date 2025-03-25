@@ -10,6 +10,7 @@ python -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements_pip.txt
+
 ```
 
 ```Conda 

@@ -6,8 +6,9 @@ import sys
 
 # figure out the path issues
 # home_dir = os.path.expanduser('~')
-local_path = '/Users/ekummelstedt/le_code_base/ubiquitinformatics'
+local_path = '/home/erickummelstedt/lecodebase/ubiquitinformatics/src/main.py'
 sys.path.insert(0, local_path)
+
 
 '''
 	•	turn this into object-oriented code 
@@ -32,8 +33,8 @@ DONE
 - validate_protein_keys
 
 Everything works; now build tests and clean up code for each of the following functions
-- affirm_branching_sites
-- affirm_branching_sequences
+- check_branching_sites
+- check_branching_sequences
 - validate_branching_sites
 - convert_json_to_dict
 - process_current_protein
@@ -102,10 +103,7 @@ def validate_protein_keys(input_dictionary):
 
         raise KeyError(". ".join(error_messages))
     
-
-
-
-def affirm_branching_sites(ubiquitin_dict):
+def check_branching_sites(ubiquitin_dict):
     """
     Checks if all required branching sites (M1, K6, K11, K27, K29, K33, K48, K63)
     are present at that level of the ubiquitin structure.
@@ -133,7 +131,7 @@ def affirm_branching_sites(ubiquitin_dict):
     return error_messages
 
 ### you'll want to change this so that it is not recursive but pops up in each recursive loop
-def affirm_branching_sequences(ubiquitin_dict):
+def check_branching_sequences(ubiquitin_dict):
     """
     Checks if all required branching sequence ids
     ((M)QIF, IFV(K)TLT, LTG(K)TIT, ENV(K)AKI, VKA(K)IQD, IQD(K)EGI, FAG(K)QLE, NIQ(K)EST)
@@ -165,6 +163,45 @@ def affirm_branching_sequences(ubiquitin_dict):
     
     return error_messages
 
+def check_branching_site_sequence_match(site, errors):
+    """
+    Validates if the given site_name matches its expected sequence_id.
+
+    Appends an error to `errors` if the sequence_id is incorrect.
+    """
+    MATCHING_SITE_SEQUENCE = {
+        "M1": "(M)QIF",
+        "K6": "IFV(K)TLT",
+        "K11": "LTG(K)TIT",
+        "K27": "ENV(K)AKI",
+        "K29": "VKA(K)IQD",
+        "K33": "IQD(K)EGI",
+        "K48": "FAG(K)QLE",
+        "K63": "NIQ(K)EST"
+    }
+
+    site_name = site.get("site_name")
+    sequence_id = site.get("sequence_id")
+
+    expected_seq = MATCHING_SITE_SEQUENCE[site_name]
+    if sequence_id != expected_seq:
+        errors.append(f"site_name: {site_name}, does not correspond with the sequence_id: {sequence_id}")
+
+
+def check_children_format(site, errors):
+    """
+    Validates the format of the 'children' field in a branching site.
+
+    Acceptable formats: "", "SMAC", "ABOC", or a dictionary.
+    Appends an error to `errors` if invalid.
+    """
+  
+    children = site.get("children")
+
+    if children not in ("", "SMAC", "ABOC") and not isinstance(children, dict):
+        errors.append(f"Invalid children format: {children}")
+
+
 def validate_branching_sites(ubiquitin_dict, errors=None):
     """
     Recursively checks all branching sites in the ubiquitin dictionary 
@@ -191,28 +228,23 @@ def validate_branching_sites(ubiquitin_dict, errors=None):
                               "K48":"FAG(K)QLE", 
                               "K63":"NIQ(K)EST"}
     
-    site_errors = affirm_branching_sites(ubiquitin_dict)
-    sequence_errors = affirm_branching_sequences(ubiquitin_dict)
+    site_errors = check_branching_sites(ubiquitin_dict)
+    sequence_errors = check_branching_sequences(ubiquitin_dict)
 
     errors = errors + site_errors
     errors = errors + sequence_errors
 
-    for site in ubiquitin_dict.get("branching_sites", []):  # Safely get branching_sites list
-        site_name = site.get("site_name", None)
-        sequence_id = site.get("sequence_id", None)
-        children = site.get("children", None)
-
-        if sequence_id != MATCHING_SITE_SEQUENCE[site_name]:
-            errors.append(f"site_name: {site_name}, does not correspond with the sequence_id : {sequence_id}")
-
-        # Validate children structure
-        if children not in ("", "SMAC", "ABOC") and not isinstance(children, dict):
-            errors.append(f"Invalid children format: {children}")
-
-    # If errors were found, raise a single assertion error summarizing all issues
-    
+    # If errors were found in the first two check, raise a single assertion error summarizing all issues    
     if errors:
-        raise AssertionError(". ".join(errors))
+        raise AssertionError("\n".join(errors))
+    
+    for site in ubiquitin_dict.get("branching_sites", []):
+        check_branching_site_sequence_match(site, errors)
+        check_children_format(site, errors)
+
+    # If errors were found, raise a single assertion error summarizing all issues    
+    if errors:
+        raise AssertionError("\n".join(errors))
     
 def convert_json_to_dict(parent_dictionary):
     """
@@ -272,7 +304,7 @@ def process_current_protein(
 def process_branch(branch, working_dictionary, context):
     """
     Handle the logic for each branch site in the protein structure.
-    - Must deal with the following; 
+    - Must deal with the following;  
     """
     chain_length_list = context["chain_length_list"]
     chain_number_list = context["chain_number_list"]
@@ -432,7 +464,7 @@ def inner_wrapper_iterate_through_ubiquitin(input_dictionary, context):
     log_protein_details(working_dictionary, context)
 
     # ensures no sites are missing
-    affirm_branching_sites(working_dictionary)
+    check_branching_sites(working_dictionary)
 
     # Ensure that the branching has all the valid keys 
     validate_branching_sites(working_dictionary)
@@ -462,6 +494,8 @@ def find_max_chain_number(context):
     chain_number_list = context['chain_number_list']
     max_chain_number = chain_number_list[-1]-1
     return max_chain_number
+
+
 
 
 
