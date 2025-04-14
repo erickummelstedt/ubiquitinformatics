@@ -10,6 +10,9 @@ import sys
 local_path = '/Users/ekummelstedt/le_code_base/ubiquitinformatics'
 sys.path.insert(0, local_path)
 
+from src.utils import convert_json_to_dict
+from src.logging_utils import log_protein_details, log_branching_details, log_end_of_branching, log_end_of_protein
+
 '''
 	•	turn this into object-oriented code 
 	•	correctly introduce logging 
@@ -28,23 +31,42 @@ Use descriptive names for variables, functions, and classes: Avoid abbreviations
 '''
 
 '''
-DONE
+From main:
 - find_branching_site
 - validate_protein_keys
-
-Everything works; now build tests and clean up code for each of the following functions
 - check_branching_sites
 - check_branching_sequences
 - validate_branching_sites
+- check_branching_site_sequence_match
+- check_children_format
+- validate_branching_sites
+
+From Utils
+- match_assertion_error_contains
+- all_strings_exist
+- all_strings_exist_in_list
 - convert_json_to_dict
+
+Build tests for the following
+Everything works; now build tests and clean up code for each of the following functions
+
+Redo cover all: 
+- iterate_through_ubiquitin
+- inner_wrapper_iterate_through_ubiquitin
+
+In utils
 - process_current_protein
 - process_branch
+
+For logging_utils
 - log_branching_details
 - log_end_of_branching
 - log_protein_details
 - log_end_of_protein
-- find_max_chain_number
 
+
+- find_max_chain_number
+- iterate_through_ubiquitin (all tests on deeply nested ubiquitins)
 
 '''
 
@@ -151,7 +173,6 @@ def check_branching_sequences(ubiquitin_dict):
 
     # sort the sequences for testing reliability - so they always appear on the same format..
 
-
     # joining error messages 
     error_messages = []
     if missing_sequences or invalid_sequences:
@@ -246,27 +267,6 @@ def validate_branching_sites(ubiquitin_dict, errors=None):
     if errors:
         raise AssertionError("\n".join(errors))
     
-def convert_json_to_dict(parent_dictionary):
-    """
-    Converts a JSON string to a dictionary if necessary.
-    If the input is already a dictionary, it remains unchanged.
-    Raises a ValueError if the JSON format is invalid.
-
-    :param input_data: JSON string or dictionary
-    :return: Dictionary representation of the input data
-    """
-
-    if isinstance(parent_dictionary, str):
-        try:
-            # Ensure correct JSON format by replacing single quotes with double quotes
-            formatted_json = parent_dictionary.replace("'", "\"")
-            return json.loads(formatted_json)
-        except json.JSONDecodeError as e:
-            raise ValueError("Invalid JSON format: Unable to parse the string") from e
-    elif isinstance(parent_dictionary, dict):
-        return parent_dictionary
-    else:
-        raise TypeError("Input must be a dictionary or a JSON string")
 
     
 
@@ -325,6 +325,7 @@ def process_branch(branch, working_dictionary, context):
         context["multimer_string_name"] += f"<{branch['site_name']}_ABOC>"
         context["ABOC_lysines"] += [[working_dictionary['chain_number'], str(branch['site_name'])]]
 
+    # this can change later
     # Handle free lysines
     elif (branch['children'] == "") & (branch['site_name'] in ['M1','K6','K11','K27','K29','K33']): 
         print('')
@@ -343,46 +344,6 @@ def process_branch(branch, working_dictionary, context):
         context["multimer_string_name"] += ">"
 
     return branch, working_dictionary, context
-
-## Logging functions 
-def log_branching_details(branch, working_dictionary, context):
-    """
-    Log detailed information about the current protein and its attributes.
-    """
-    logging.info("===== START OF LYSINE SITE =====")
-    logging.info(f"Chain Number: {working_dictionary['chain_number']}")
-    logging.info(f"Lysine Site: {branch['site_name']}")
-    logging.info(f"Sequence ID: {branch['sequence_id']}")
-    logging.info(f"Lysine Conjugation: {branch['children']}")
-
-def log_end_of_branching():
-    """Logs the end of a lysine site branching."""
-    logging.info("===== END OF LYSINE SITE =====")
-
-def log_protein_details(working_dictionary, context):
-    """
-    Log detailed information about the current protein and its attributes.
-    """
-    logging.info(' ===== START OF PROTEIN ===== ')
-    logging.info(f"Protein: {working_dictionary['protein']}")
-    logging.info(f"Sequence: {working_dictionary['FASTA_sequence']}")
-    logging.info(f"Chain Length List: {context['chain_length_list']}")
-    logging.info(f"Chain Length: {working_dictionary['chain_length']}")
-    logging.info(f"Chain Number List: {context['chain_number_list']}")
-    logging.info(f"Chain Number: {working_dictionary['chain_number']}")
-    logging.info(f"Branching Sites: {working_dictionary.get('branching_sites', [])}")
-
-def log_end_of_protein(working_dictionary):
-    """
-    Logs the end of a protein processing step with its chain number.
-
-    Args:
-        working_dictionary (dict): The dictionary containing protein details, including 'chain_number'.
-    """
-    logging.info(f"===== END OF PROTEIN - UBI NUMBER: {working_dictionary['chain_number']} =====")
-
-
-
 
 
 def iterate_through_ubiquitin(parent_dictionary):
@@ -453,11 +414,12 @@ def inner_wrapper_iterate_through_ubiquitin(input_dictionary, context):
     # Append chain information to multimer string
     # Change to pdbid
     if (working_dictionary["FASTA_sequence"] == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH") & (working_dictionary["chain_number"]==1):
-        context["multimer_string_name"] += f"his-(ubi{working_dictionary['chain_number']}"
+        context["multimer_string_name"] += f"his-GG-{working_dictionary['protein']}-{working_dictionary['chain_number']}-("
     elif (working_dictionary["FASTA_sequence"] == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG") & (working_dictionary["chain_number"]==1):
-        context["multimer_string_name"] += f"GG-(ubi{working_dictionary['chain_number']}"
+        context["multimer_string_name"] += f"GG-{working_dictionary['protein']}-{working_dictionary['chain_number']}-("
     else: 
-        context["multimer_string_name"] += f"(ubi{working_dictionary['chain_number']}"
+        print(working_dictionary["chain_number"])
+        context["multimer_string_name"] += f"{working_dictionary['protein']}-{working_dictionary['chain_number']}-("
     
 
     # Log current protein details

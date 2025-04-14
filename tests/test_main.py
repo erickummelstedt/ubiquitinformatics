@@ -20,7 +20,9 @@ from src.main import \
     check_branching_sequences,\
     validate_branching_sites,\
     check_branching_site_sequence_match, \
-    check_children_format
+    check_children_format,\
+    process_current_protein, \
+    process_branch
 
 from src.utils import \
     match_assertion_error_contains,\
@@ -37,31 +39,30 @@ From main:
 - validate_branching_sites
 - check_branching_site_sequence_match
 - check_children_format
-
-Redo: 
-- iterate_through_ubiquitin
-- inner_wrapper_iterate_through_ubiquitin
+- validate_branching_sites
+- process_current_protein
+- process_branch
 
 From Utils
 - match_assertion_error_contains
 - all_strings_exist
 - all_strings_exist_in_list
-
-
-Build tests for the following
-Everything works; now build tests and clean up code for each of the following functions
-
-- validate_branching_sites
 - convert_json_to_dict
-- process_current_protein
-- process_branch
+
+For logging_utils
 - log_branching_details
 - log_end_of_branching
 - log_protein_details
 - log_end_of_protein
-- find_max_chain_number
-- iterate_through_ubiquitin (all tests on deeply nested ubiquitins)
 
+
+
+Build tests for the following
+Everything works; now build tests and clean up code for each of the following functions
+Redo cover all: 
+- iterate_through_ubiquitin
+- inner_wrapper_iterate_through_ubiquitin
+- find_max_chain_number
 
 '''
 
@@ -1086,7 +1087,7 @@ def test_branching_sites_format(site_name, sequence_id, children, expected_error
             {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
             {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
         ]
-    }, "GG-(ubi1)"),
+    }, "GG-1ubq-1-()"),
     
     # Test Case 2: Basic Ubiquitin Monomer with Histag(All Branching Sites Present but Empty)
     ({
@@ -1104,7 +1105,7 @@ def test_branching_sites_format(site_name, sequence_id, children, expected_error
             {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
             {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
         ]
-    }, "his-(ubi1)"),
+    }, "his-GG-1ubq-1-()"),
 
     # Test Case 3: Ubiquitin Dimer with K48 Linkage no Histag
     ({
@@ -1137,7 +1138,7 @@ def test_branching_sites_format(site_name, sequence_id, children, expected_error
             }},
             {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
         ]
-    }, "GG-(ubi1<K48_(ubi2)>)"),
+    }, "GG-1ubq-1-(<K48_1ubq-2-()>)"),
 
     # Test Case 3: Ubiquitin Trimer with K48 and K63 Linkages
     ({
@@ -1186,7 +1187,7 @@ def test_branching_sites_format(site_name, sequence_id, children, expected_error
             {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
 
         ]
-    }, "his-(ubi1<K48_(ubi2<K63_(ubi3)>)>)"),
+    }, "his-GG-1ubq-1-(<K48_1ubq-2-(<K63_1ubq-3-()>)>)"),
 
     # Test Case 4: Ubiquitin with Protecting Groups (SMAC and ABOC)
     ({
@@ -1204,7 +1205,7 @@ def test_branching_sites_format(site_name, sequence_id, children, expected_error
             {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": "SMAC"},
             {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": "ABOC"}
         ]
-    }, "his-(ubi1<K48_SMAC><K63_ABOC>)"),
+    }, "his-GG-1ubq-1-(<K48_SMAC><K63_ABOC>)"),
 
     # Test Case 5: Deeply Nested Ubiquitin with All Branching Sites Used
     ({
@@ -1267,7 +1268,7 @@ def test_branching_sites_format(site_name, sequence_id, children, expected_error
             }},
             {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
         ]
-    }, "his-(ubi1<K48_(ubi2<K48_(ubi3<K48_(ubi4)>)><K63_SMAC>)>)"),
+    }, "his-GG-1ubq-1-(<K48_1ubq-2-(<K48_1ubq-3-(<K48_1ubq-4-()>)><K63_SMAC>)>)"),
 ])
 def test_iterate_through_ubiquitin(ubiquitin_structure, expected_multimer_string):
     """
@@ -2357,9 +2358,418 @@ def test_find_SMAC_ABOC_lysines(ubiquitin_structure, expected_SMAC_lysines, expe
         f"Expected ABOC {expected_ABOC_lysines}, got {ABOC_lysines}"
     
 
+@pytest.mark.parametrize(
+    "working_dictionary, context, expected_working_dict, expected_context",
+    [
+        # ✅ Test 1: Standard Case
+        (
+            {"FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"},
+            {"chain_number_list": [1], "chain_length_list": []},
+            {"FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG", "chain_length": 76, "chain_number": 1},
+            {"chain_number_list": [1, 2], "chain_length_list": [76]}
+        ),
+
+        # ✅ Test 2: Chain number list already has progress
+        (
+            {"FASTA_sequence": "ABCDEF"},
+            {"chain_number_list": [1, 2, 3], "chain_length_list": [10, 20]},
+            {"FASTA_sequence": "ABCDEF", "chain_length": 6, "chain_number": 3},
+            {"chain_number_list": [1, 2, 3, 4], "chain_length_list": [10, 20, 6]}
+        ),
+
+        # ✅ Test 3: Empty FASTA sequence
+        (
+            {"FASTA_sequence": ""},
+            {"chain_number_list": [1], "chain_length_list": []},
+            {"FASTA_sequence": "", "chain_length": 0, "chain_number": 1},
+            {"chain_number_list": [1, 2], "chain_length_list": [0]}
+        ),
+
+        # ✅ Test 4: Single character FASTA sequence
+        (
+            {"FASTA_sequence": "M"},
+            {"chain_number_list": [3], "chain_length_list": [5, 6]},
+            {"FASTA_sequence": "M", "chain_length": 1, "chain_number": 3},
+            {"chain_number_list": [3, 4], "chain_length_list": [5, 6, 1]}
+        ),
+
+        # ✅ Test 5: Long FASTA sequence
+        (
+            {"FASTA_sequence": "M" * 1000},
+            {"chain_number_list": [10], "chain_length_list": [76, 200]},
+            {"FASTA_sequence": "M" * 1000, "chain_length": 1000, "chain_number": 10},
+            {"chain_number_list": [10, 11], "chain_length_list": [76, 200, 1000]}
+        ),
+    ]
+)
+def test_process_current_protein(working_dictionary, context, expected_working_dict, expected_context):
+    updated_working_dict, updated_context = process_current_protein(working_dictionary.copy(), context.copy())
+
+    assert updated_working_dict == expected_working_dict, f"Expected working dictionary: {expected_working_dict}, but got: {updated_working_dict}"
+    assert updated_context == expected_context, f"Expected context: {expected_context}, but got: {updated_context}"
 
 
+@pytest.mark.parametrize("branch, working_dict, starting_context, expected_context", [
+    # ✅ Test 1: SMAC protecting group
+    (
+        {"site_name": "K27", "sequence_id": "HIJ(K)LMN", "children": "SMAC"},
+        {"chain_number": 1, "FASTA_sequence": "ABCDEFGHIJKLMNOPQ"},
+        {"chain_length_list": [76], "chain_number_list": [1], "multimer_string_name": "", "SMAC_lysines": [], "ABOC_lysines": [], "free_lysines": [], "conjugated_lysines": []},
+        {"multimer_string_name": "" + "<K27_SMAC>", "SMAC_lysines": [[1, "K27"]]}
+    ),
+    # ✅ Test 2: ABOC protecting group
+    (
+        {"site_name": "K33", "sequence_id": "ENV(K)AKI", "children": "ABOC"},
+        {"chain_number": 2, "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"},
+        {"chain_length_list": [76, 76], "chain_number_list": [1, 2], "multimer_string_name": "", "SMAC_lysines": [], "ABOC_lysines": [], "free_lysines": [], "conjugated_lysines": []},
+        {"multimer_string_name": "<K33_ABOC>", "ABOC_lysines": [[2, "K33"]]}
+    ),
+    # ✅ Test 3-6: Free lysines (M1, K6, K11, K27, K29, K33)
+    *[
+        (
+            {"site_name": site, "sequence_id": sequence, "children": ""},
+            {"chain_number": 1, "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"},
+            {"chain_length_list": [76], "chain_number_list": [1], "multimer_string_name": "", "SMAC_lysines": [], "ABOC_lysines": [], "free_lysines": [], "conjugated_lysines": []},
+            {"multimer_string_name": ""}
+        )
+        for site, sequence in zip(["M1", "K6", "K11", "K27", "K29", "K33"], ["(M)QIF" ,"IFV(K)TLT" ,"LTG(K)TIT" ,"ENV(K)AKI" ,"VKA(K)IQD" ,"IQD(K)EGI"])
+    ],
+    # ✅ Test 7-8: Free lysines special cases K48, K63
+    (
+        {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+        {"chain_number": 1, "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"},
+        {"chain_length_list": [76], "chain_number_list": [1], "multimer_string_name": "", "SMAC_lysines": [], "ABOC_lysines": [], "free_lysines": [], "conjugated_lysines": []},
+        {"free_lysines": [[1, "K48"]]}
+    ),
+    (
+        {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""},
+        {"chain_number": 2, "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"},
+        {"chain_length_list": [76, 76], "chain_number_list": [1, 2], "multimer_string_name": "", "SMAC_lysines": [], "ABOC_lysines": [], "free_lysines": [], "conjugated_lysines": []},
+        {"free_lysines": [[2, "K63"]]}
+    ),
+    # ✅ Test 9: Recursive children call
+    (
+        {"site_name": "K48", 
+         "sequence_id": "FAG(K)QLE", 
+         "children": {"protein": "dummy_protein",
+                        "chain_number": 2,
+                        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+                        "chain_length": 76,
+                        "branching_sites": [
+                            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+                            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+                            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": "ABOC"},
+                            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+                            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": "SMAC"},
+                            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": "SMAC"},
+                            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+                            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+                        ]}},
+        {"chain_number": 1, "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"},
+        {"chain_length_list": [76], "chain_number_list": [1, 2], "multimer_string_name": "", "SMAC_lysines": [], "ABOC_lysines": [], "free_lysines": [], "conjugated_lysines": []},
+        {"chain_length_list": [76, 76], "chain_number_list": [1, 2, 3], "multimer_string_name": "<K48_dummy_protein-2-(<K11_ABOC><K29_SMAC><K33_SMAC>)>", "SMAC_lysines": [[2, 'K29'], [2, 'K33']], "conjugated_lysines": [[1, "K48"]], "ABOC_lysines": [[2, 'K11']], "free_lysines": [[2, 'K48'], [2, 'K63']]}
+    ),
+    # ✅ Test 10: Recursive children with existing multimer_string_name
+    (
+        {"site_name": "K63", 
+         "sequence_id": "NIQ(K)EST", 
+         "children": {"protein": "dummy_protein",
+                        "chain_number": 2,
+                        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+                        "chain_length": 76,
+                        "branching_sites": [
+                            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+                            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+                            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": "ABOC"},
+                            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+                            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": "SMAC"},
+                            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": "SMAC"},
+                            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+                            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+                        ]}},
+        {"chain_number": 2, "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"},
+        {"chain_length_list": [76], "chain_number_list": [1, 2], "multimer_string_name": "PREVIOUS", "SMAC_lysines": [], "ABOC_lysines": [], "free_lysines": [], "conjugated_lysines": []},
+        {"multimer_string_name": "PREVIOUS<K63_dummy_protein-2-(<K11_ABOC><K29_SMAC><K33_SMAC>)>", "conjugated_lysines": [[2, "K63"]]}
+    ),
+    # ✅ Test 11: Add to existing SMAC list
+    (
+        {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": "SMAC"},
+        {"chain_number": 1, "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"},
+        {"chain_length_list": [76], "chain_number_list": [1], "multimer_string_name": "", "SMAC_lysines": [[0, "K6"]], "ABOC_lysines": [], "free_lysines": [], "conjugated_lysines": []},
+        {"multimer_string_name": "<K27_SMAC>", "SMAC_lysines": [[0, "K6"], [1, "K27"]]}
+    ),
+    # ✅ Test 12: Add to existing ABOC list
+    (
+        {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": "ABOC"},
+        {"chain_number": 1, "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"},
+        {"chain_length_list": [76], "chain_number_list": [1], "multimer_string_name": "", "SMAC_lysines": [], "ABOC_lysines": [[0, "K33"]], "free_lysines": [], "conjugated_lysines": []},
+        {"multimer_string_name": "<K29_ABOC>", "ABOC_lysines": [[0, "K33"], [1, "K29"]]}
+    ),
+    # ✅ Test 13: Already populated context
+    (
+        {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+        {"chain_number": 3, "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"},
+        {"chain_length_list": [76, 76], "chain_number_list": [1, 2, 3], "multimer_string_name": "PREVIOUS", "SMAC_lysines": [[0, "K6"]], "ABOC_lysines": [[1, "K33"]], "free_lysines": [[2, "K63"]], "conjugated_lysines": [[0, "K48"]]},
+        {"free_lysines": [[2, "K63"], [3, "K48"]]}
+    ),
+    # ✅ Test 14: Recursive children, deeply nested
+    (
+        {"site_name": "K63", 
+         "sequence_id": "NIQ(K)EST", 
+         "children": {"protein": "dummy_protein",
+                        "chain_number": 4,
+                        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+                        "chain_length": 76,
+                        "branching_sites": [
+                            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+                            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+                            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": "ABOC"},
+                            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+                            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": "SMAC"},
+                            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": "SMAC"},
+                            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+                            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+                        ]}},
+        {"chain_number": 3, "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"},
+        {"chain_length_list": [76, 76, 76], "chain_number_list": [1, 2, 3, 4], "multimer_string_name": "", "SMAC_lysines": [], "ABOC_lysines": [], "free_lysines": [], "conjugated_lysines": []},
+        {"multimer_string_name": "<K63_dummy_protein-4-(<K11_ABOC><K29_SMAC><K33_SMAC>)>", "conjugated_lysines": [[3, "K63"]], "SMAC_lysines": [[4, "K29"],[4, "K33"]], "ABOC_lysines": [[4, "K11"]], "free_lysines": [[4, "K48"], [4, "K63"]]}
+    )
+])
+def test_process_branch(branch, working_dict, starting_context, expected_context):
+    updated_branch, updated_working_dict, updated_context = process_branch(branch.copy(), working_dict.copy(), starting_context.copy())
+
+    # Check updates in context
+    for key, expected_value in expected_context.items():
+        assert updated_context[key] == expected_value, f"Context key '{key}' mismatch: expected {expected_context}, got {updated_context[key]}"
 
 
+# Mock helper: minimal working_dictionary
+BASE_WORKING_DICT = {
+    "protein": "dummy_protein",
+    "chain_number": 1,
+    "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+    "chain_length": 76,
+    "branching_sites": [
+        {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+        {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+        {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+        {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+        {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+        {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+        {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+        {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+    ]
+}
+
+# Mock helper: minimal context
+BASE_CONTEXT = {
+    "chain_length_list": [],
+    "chain_number_list": [1],
+    "free_lysines": [],
+    "conjugated_lysines": [],
+    "SMAC_lysines": [],
+    "ABOC_lysines": [],
+    "multimer_string_name": ""
+}
 
 
+@pytest.mark.parametrize("branch, expected_in_context", [
+
+    # ✅ Test 1: SMAC protecting group
+    ({"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": "SMAC"},
+     {"SMAC_lysines": [[1, "K29"]], "multimer_string_name": "<K29_SMAC>"}),
+
+    # ✅ Test 2: ABOC protecting group
+    ({"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": "ABOC"},
+     {"ABOC_lysines": [[1, "K29"]], "multimer_string_name": "<K29_ABOC>"}),
+
+    # ✅ Test 3: Free lysine (K48)
+    ({"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+     {"free_lysines": [[1, "K48"]]}),
+
+    # ✅ Test 4: Neutral lysine (M1)
+    ({"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+     {}),  # No changes expected
+
+    # ✅ Test 5: Recursive child (nested protein)
+    ({"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": BASE_WORKING_DICT},
+     {"multimer_string_name": "<K48_GG-dummy_protein-1-()>", "conjugated_lysines": [[1, "K48"]]}),
+
+    # ✅ Test 6: Very large chain number for scalability
+    ({"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+     {"free_lysines": [[10_000, "K48"]]}),
+
+])
+def test_process_branch_valid_cases(branch, expected_in_context):
+    """Test process_branch() with valid scenarios."""
+    # Setup
+    working_dict = copy.deepcopy(BASE_WORKING_DICT)
+    context = copy.deepcopy(BASE_CONTEXT)
+
+    # Edge case: simulate high chain number for scalability test
+    if expected_in_context.get("free_lysines") == [[10_000, "K48"]]:
+        working_dict["chain_number"] = 10_000
+
+    # Process
+    _, _, updated_context = process_branch(branch, working_dict, context)
+
+    # Assertions
+    for key, expected_value in expected_in_context.items():
+        assert updated_context[key] == expected_value, f"Failed for key: {key}"
+
+
+# ✅ Test 7: Missing 'site_name'
+def test_process_branch_missing_site_name():
+    branch = {"sequence_id": "FAG(K)QLE", "children": ""}
+    working_dict = copy.deepcopy(BASE_WORKING_DICT)
+    context = copy.deepcopy(BASE_CONTEXT)
+
+    with pytest.raises(KeyError):
+        process_branch(branch, working_dict, context)
+
+
+# ✅ Test 8: Missing 'sequence_id'
+def test_process_branch_missing_sequence_id():
+    branch = {"site_name": "K48", "children": ""}
+    working_dict = copy.deepcopy(BASE_WORKING_DICT)
+    context = copy.deepcopy(BASE_CONTEXT)
+
+    with pytest.raises(KeyError):
+        process_branch(branch, working_dict, context)
+
+
+# ✅ Test 9: Children is None
+def test_process_branch_children_none():
+    branch = {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": None}
+    working_dict = copy.deepcopy(BASE_WORKING_DICT)
+    context = copy.deepcopy(BASE_CONTEXT)
+
+    # Should trigger invalid children format inside inner function if error handling exists
+    _, _, updated_context = process_branch(branch, working_dict, context)
+    # Safe fallback: no changes expected
+    assert updated_context == context
+
+
+# ✅ Test 10: Children is int
+def test_process_branch_children_int():
+    branch = {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": 123}
+    working_dict = copy.deepcopy(BASE_WORKING_DICT)
+    context = copy.deepcopy(BASE_CONTEXT)
+    # Safe fallback: no changes expected
+    _, _, updated_context = process_branch(branch, working_dict, context)
+    assert updated_context == context
+
+
+# ✅ Test 11: Children is list
+def test_process_branch_children_list():
+    branch = {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": []}
+    working_dict = copy.deepcopy(BASE_WORKING_DICT)
+    context = copy.deepcopy(BASE_CONTEXT)
+
+    # Safe fallback: no changes expected
+    _, _, updated_context = process_branch(branch, working_dict, context)
+    assert updated_context == context
+
+
+# ✅ Test 12: Empty context dictionary
+def test_process_branch_empty_context():
+    branch = {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""}
+    working_dict = copy.deepcopy(BASE_WORKING_DICT)
+    context = {}
+
+    with pytest.raises(KeyError):
+        process_branch(branch, working_dict, context)
+
+
+# ✅ Test 13: Empty working dictionary
+def test_process_branch_empty_working_dict():
+    branch = {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""}
+    working_dict = {}
+    context = copy.deepcopy(BASE_CONTEXT)
+
+    with pytest.raises(KeyError):
+        process_branch(branch, working_dict, context)
+
+
+# ✅ Test 14: Invalid FASTA sequence
+def test_process_branch_invalid_fasta_sequence():
+    branch = {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""}
+    working_dict = {"chain_number": 1, "FASTA_sequence": ""}  # Invalid empty sequence
+    context = copy.deepcopy(BASE_CONTEXT)
+
+    with pytest.raises(ValueError):
+        process_branch(branch, working_dict, context)
+
+
+# ✅ Test 15: Unicode in sequence_id
+def test_process_branch_unicode_sequence_id():
+    branch = {"site_name": "K48", "sequence_id": "SEQ🔥123", "children": ""}
+    working_dict = copy.deepcopy(BASE_WORKING_DICT)
+    context = copy.deepcopy(BASE_CONTEXT)
+
+    with pytest.raises(ValueError):
+        process_branch(branch, working_dict, context)
+
+
+# ✅ Test 16: Deep nested children (depth > 2)
+def test_process_branch_deep_nested_children():
+    deep_child = {
+    "protein": "dummy_protein",
+    "chain_number": 1,
+    "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+    "chain_length": 76,
+    "branching_sites": [
+        {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+        {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+        {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+        {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": BASE_WORKING_DICT},
+        {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+        {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+        {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+        {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+    ]}
+    branch = {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": deep_child}
+
+    working_dict = copy.deepcopy(BASE_WORKING_DICT)
+    context = copy.deepcopy(BASE_CONTEXT)
+
+    _, _, updated_context = process_branch(branch, working_dict, context)
+
+    assert "multimer_string_name" in updated_context
+    assert updated_context["multimer_string_name"].startswith("<K48_")  # partial check
+
+
+# ✅ Test 18: Verify input immutability
+def test_process_branch_input_immutability():
+    branch = {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""}
+    working_dict = copy.deepcopy(BASE_WORKING_DICT)
+    context = copy.deepcopy(BASE_CONTEXT)
+
+    original_branch = copy.deepcopy(branch)
+    original_context = copy.deepcopy(context)
+
+    process_branch(branch, working_dict, context)
+
+    assert branch == original_branch, "Branch mutated!"
+    # Context is expected to change — no assertion
+
+
+# ✅ Test 19: Unexpected field in branch
+def test_process_branch_unexpected_branch_field():
+    branch = {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": "", "unexpected": "value"}
+    working_dict = copy.deepcopy(BASE_WORKING_DICT)
+    context = copy.deepcopy(BASE_CONTEXT)
+
+    _, _, updated_context = process_branch(branch, working_dict, context)
+    assert updated_context is not None
+
+
+# ✅ Test 20: Large FASTA sequence
+def test_process_branch_large_fasta_sequence():
+    branch = {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""}
+    working_dict = {"chain_number": 1, "FASTA_sequence": "MMMMMFAGKQLE" + "M" * 10_000}
+    context = copy.deepcopy(BASE_CONTEXT)
+
+    _, _, updated_context = process_branch(branch, working_dict, context)
+    assert updated_context is not None
+    

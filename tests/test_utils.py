@@ -3,6 +3,7 @@ import json
 import copy
 from copy import deepcopy
 import sys
+import logging
 
 # home_dir = os.path.expanduser('~')
 # local_path = '/home/erickummelstedt/lecodebase/ubiquitinformatics/src/main.py'
@@ -12,7 +13,15 @@ sys.path.insert(0, local_path)
 from src.utils import \
     match_assertion_error_contains,\
     all_strings_exist, \
-    all_strings_exist_in_list
+    all_strings_exist_in_list, \
+    convert_json_to_dict
+
+
+from src.logging_utils import \
+    log_branching_details,\
+    log_end_of_branching, \
+    log_protein_details, \
+    log_end_of_protein
 
 def test_match_all_parts_present():
     msg = "Missing sites: K48. Invalid format: 1234"
@@ -131,3 +140,217 @@ def test_length_mismatch_raises():
 
 
 
+@pytest.mark.parametrize("input_data, expected_output", [
+    # ✅ Case 1: Input already dictionary
+    (
+        {"protein": "1ubq", "chain_number": 1},
+        {"protein": "1ubq", "chain_number": 1}
+    ),
+    # ✅ Case 2: Valid JSON string with double quotes
+    (
+        '{"protein": "1ubq", "chain_number": 1}',
+        {"protein": "1ubq", "chain_number": 1}
+    ),
+    # ✅ Case 3: Valid JSON string with single quotes (handled)
+    (
+        "{'protein': '1ubq', 'chain_number': 1}",
+        {"protein": "1ubq", "chain_number": 1}
+    ),
+    # ✅ Case 4: JSON string with spaces and formatting
+    (
+        '{ "protein" : "1ubq" , "chain_number" : 1 }',
+        {"protein": "1ubq", "chain_number": 1}
+    )
+])
+def test_convert_json_to_dict_valid(input_data, expected_output):
+    result = convert_json_to_dict(input_data)
+    assert result == expected_output, f"Expected {expected_output}, got {result}"
+
+
+@pytest.mark.parametrize("invalid_input", [
+    "invalid_json",                  # Not JSON
+    "{'protein': '1ubq', 'chain_number': }",  # Malformed JSON
+    123,                            # Integer input
+    ["not", "a", "dict"],            # List input
+    None                             # None input
+])
+def test_convert_json_to_dict_invalid(invalid_input):
+    if isinstance(invalid_input, str):
+        with pytest.raises(ValueError, match="Invalid JSON format"):
+            convert_json_to_dict(invalid_input)
+    else:
+        with pytest.raises(TypeError, match="Input must be a dictionary or a JSON string"):
+            convert_json_to_dict(invalid_input)
+
+@pytest.mark.parametrize("branch, working_dictionary, expected_logs", [
+
+    # ✅ Test 1: Standard branch with normal lysine
+    (
+        {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+        {"chain_number": 1},
+        [
+            "===== START OF LYSINE SITE =====",
+            "Chain Number: 1",
+            "Lysine Site: K48",
+            "Sequence ID: FAG(K)QLE",
+            "Lysine Conjugation: "
+        ]
+    ),
+
+    # ✅ Test 2: Branch with protecting group SMAC
+    (
+        {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": "SMAC"},
+        {"chain_number": 2},
+        [
+            "===== START OF LYSINE SITE =====",
+            "Chain Number: 2",
+            "Lysine Site: K29",
+            "Sequence ID: VKA(K)IQD",
+            "Lysine Conjugation: SMAC"
+        ]
+    ),
+
+    # ✅ Test 3: Branch with protecting group ABOC
+    (
+        {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": "ABOC"},
+        {"chain_number": 3},
+        [
+            "===== START OF LYSINE SITE =====",
+            "Chain Number: 3",
+            "Lysine Site: K6",
+            "Sequence ID: IFV(K)TLT",
+            "Lysine Conjugation: ABOC"
+        ]
+    ),
+
+    # ✅ Test 4: Branch with special characters
+    (
+        {"site_name": "K🔥", "sequence_id": "🔥SEQ🔥", "children": "ABOC"},
+        {"chain_number": 4},
+        [
+            "===== START OF LYSINE SITE =====",
+            "Chain Number: 4",
+            "Lysine Site: K🔥",
+            "Sequence ID: 🔥SEQ🔥",
+            "Lysine Conjugation: ABOC"
+        ]
+    ),
+
+    # ✅ Test 5: Large chain number stress test
+    (
+        {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+        {"chain_number": 99999},
+        [
+            "===== START OF LYSINE SITE =====",
+            "Chain Number: 99999",
+            "Lysine Site: K48",
+            "Sequence ID: FAG(K)QLE",
+            "Lysine Conjugation: "
+        ]
+    ),
+
+])
+def test_log_branching_details(caplog, branch, working_dictionary, expected_logs):
+    """Test logging output of log_branching_details with various branches."""
+    with caplog.at_level(logging.INFO):
+        log_branching_details(branch, working_dictionary, context=None)  # context is not used
+
+    logs = [record.message for record in caplog.records]
+
+    for expected_line in expected_logs:
+        assert any(expected_line in log for log in logs), f"Expected log line '{expected_line}' not found in logs: {logs}"
+
+
+# ✅ Test 6: Branch missing 'children' field
+def test_log_branching_details_missing_children(caplog):
+    branch = {"site_name": "K48", "sequence_id": "FAG(K)QLE"}  # Missing 'children'
+    working_dictionary = {"chain_number": 1}
+
+    with pytest.raises(KeyError, match='children'):
+        log_branching_details(branch, working_dictionary, context=None)
+    
+
+# ✅ Test 7: Branch missing 'sequence_id' field
+def test_log_branching_details_missing_sequence_id(caplog):
+    branch = {"site_name": "K48", "children": "SMAC"}  # Missing 'sequence_id'
+    working_dictionary = {"chain_number": 1}
+
+    with pytest.raises(KeyError, match='sequence_id'):
+        log_branching_details(branch, working_dictionary, context=None)
+    
+
+# ✅ Test 8: Branch missing 'site_name' field
+def test_log_branching_details_missing_site_name(caplog):
+    branch = {"sequence_id": "FAG(K)QLE", "children": "ABOC"}  # Missing 'site_name'
+    working_dictionary = {"chain_number": 1}
+
+    with pytest.raises(KeyError, match='site_name'):
+        log_branching_details(branch, working_dictionary, context=None)
+
+def test_log_end_of_branching(caplog):
+    """
+    Test that `log_end_of_branching` logs the correct message.
+    """
+    with caplog.at_level(logging.INFO):
+        log_end_of_branching()
+
+    # Get all log messages
+    logs = [record.message for record in caplog.records]
+
+    # Check that the expected message is in the logs
+    assert "===== END OF LYSINE SITE =====" in logs, f"Expected log message not found. Got: {logs}"
+
+@pytest.fixture
+def sample_working_dictionary():
+    return {
+        "protein": "1ubq",
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
+        "chain_number": 1,
+        "branching_sites": [
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""}
+        ]
+    }
+
+@pytest.fixture
+def sample_context():
+    return {
+        "chain_length_list": [76],
+        "chain_number_list": [1]
+    }
+
+def test_log_protein_details(caplog, sample_working_dictionary, sample_context):
+    """
+    Test that `log_protein_details` logs correct protein information.
+    """
+    with caplog.at_level(logging.INFO):
+        log_protein_details(sample_working_dictionary, sample_context)
+
+    logs = [record.message for record in caplog.records]
+
+    # Check for expected messages
+    expected_logs = [
+        " ===== START OF PROTEIN ===== ",
+        f"Protein: {sample_working_dictionary['protein']}",
+        f"Sequence: {sample_working_dictionary['FASTA_sequence']}",
+        f"Chain Length List: {sample_context['chain_length_list']}",
+        f"Chain Length: {sample_working_dictionary['chain_length']}",
+        f"Chain Number List: {sample_context['chain_number_list']}",
+        f"Chain Number: {sample_working_dictionary['chain_number']}",
+        f"Branching Sites: {sample_working_dictionary.get('branching_sites', [])}"
+    ]
+
+    for expected in expected_logs:
+        assert expected in logs, f"Expected log message '{expected}' not found in logs."
+
+def test_log_end_of_protein(caplog, sample_working_dictionary):
+    """
+    Test that `log_end_of_protein` logs correct end message.
+    """
+    with caplog.at_level(logging.INFO):
+        log_end_of_protein(sample_working_dictionary)
+
+    logs = [record.message for record in caplog.records]
+    expected_log = f"===== END OF PROTEIN - UBI NUMBER: {sample_working_dictionary['chain_number']} ====="
+
+    assert expected_log in logs, f"Expected log message '{expected_log}' not found in logs."
