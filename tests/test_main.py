@@ -28,7 +28,8 @@ from src.utils import \
     match_assertion_error_contains,\
     all_strings_exist, \
     all_strings_exist_in_list, \
-    inject_fasta_sequence_at_chain
+    inject_fasta_sequence_at_chain,\
+    inject_protein_key
 
 from tests.test_data import \
     five_level_nested_ubiquitin_,\
@@ -82,6 +83,7 @@ Redo cover all:
 # === Tests for find_branching_site ===
 # Tests for validating the indexing of branching sites
 # and handling of invalid or empty inputs.
+# =====================================
 
 @pytest.mark.parametrize("sequence_id, expected_position", [
     ("(M)QIF", 1),
@@ -159,6 +161,7 @@ def test_find_branching_site_nested_not_found(chain_number, altered_sequence):
 
 # === Tests for validate_protein_keys ===
 # Tests for validating the presence of required keys and handling of invalid or extra keys.
+# =====================================
 
 @pytest.mark.parametrize("valid_dict", [
     # ✅ Test Case 1: Valid ubiquitin dictionary
@@ -311,6 +314,51 @@ def test_validate_protein_keys_missing_and_invalid_keys():
 
     with pytest.raises(KeyError, match=r"Missing required keys: .*Invalid keys found: .*Allowed keys: .*"):
         validate_protein_keys(invalid_protein_data)
+
+
+@pytest.mark.parametrize("chain_number, key_to_remove, expected_missing_key", [
+    (3, "chain_number", "chain_number"),
+    (2, "FASTA_sequence", "FASTA_sequence"),
+    (4, "chain_length", "chain_length"),
+])
+def test_validate_protein_keys_missing_nested(chain_number, key_to_remove, expected_missing_key):
+    """Test that a missing key in a nested ubiquitin triggers KeyError via recursive traversal."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    inject_protein_key(data["branching_sites"], chain_number, key_to_remove, remove=True)
+
+    with pytest.raises(KeyError) as exc_info:
+        iterate_through_ubiquitin(data)
+
+    assert expected_missing_key in str(exc_info.value)
+
+
+@pytest.mark.parametrize("chain_number, key_to_add, value", [
+    (5, "bad_key", "oops"),
+    (3, "wrong_field", 123),
+])
+def test_validate_protein_keys_invalid_nested(chain_number, key_to_add, value):
+    """Ensure that unexpected keys in nested ubiquitins raise KeyError."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    inject_protein_key(data["branching_sites"], chain_number, key_to_add, value)
+
+    with pytest.raises(KeyError) as exc_info:
+        iterate_through_ubiquitin(data)
+
+    assert key_to_add in str(exc_info.value)
+
+def test_validate_protein_keys_missing_and_invalid_nested():
+    """Trigger both a missing and an unexpected key in a nested ubiquitin."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+
+    inject_protein_key(data["branching_sites"], 4, "chain_length", remove=True)
+    inject_protein_key(data["branching_sites"], 4, "unexpected_key", "bad")
+
+    with pytest.raises(KeyError) as exc_info:
+        iterate_through_ubiquitin(data)
+
+    msg = str(exc_info.value)
+    assert "chain_length" in msg and "unexpected_key" in msg
+
 
 
 

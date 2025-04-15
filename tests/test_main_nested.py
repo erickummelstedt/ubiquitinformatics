@@ -17,3 +17,27 @@ from src.main import \
     find_branching_site, \
     iterate_through_ubiquitin
 
+from tests.test_data import \
+    five_level_nested_ubiquitin_,\
+    k48_dimer_ubiquitin,\
+    string_k48_dimer_ubiquitin,\
+    ubiquitin_monomer, \
+    histag_ubiquitin_monomer
+
+
+def inject_protein_key(branches, target_chain_number, key, value=None, remove=False):
+    """
+    Recursively modifies or removes a key in a specific ubiquitin's dictionary by chain number.
+    """
+    for site in branches:
+        child = site.get("children")
+        if isinstance(child, dict):
+            if child.get("chain_number") == target_chain_number:
+                if remove:
+                    child.pop(key, None)
+                else:
+                    child[key] = value
+                return  # stop after injection
+            inject_protein_key(child.get("branching_sites", []), target_chain_number, key, value, remove)
+
+

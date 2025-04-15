@@ -93,3 +93,20 @@ def inject_fasta_sequence_at_chain(
                 new_fasta_sequence,
                 current_chain_number + 1
             )
+
+def inject_protein_key(branches, target_chain_number, key, value=None, remove=False):
+    """
+    Recursively modifies or removes a key in a specific ubiquitin's dictionary by chain number.
+    """
+    for site in branches:
+        child = site.get("children")
+        if isinstance(child, dict):
+            if child.get("chain_number") == target_chain_number:
+                if remove:
+                    child.pop(key, None)
+                else:
+                    child[key] = value
+                return  # stop after injection
+            inject_protein_key(child.get("branching_sites", []), target_chain_number, key, value, remove)
+
+

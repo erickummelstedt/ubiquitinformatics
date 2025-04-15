@@ -15,9 +15,11 @@ from src.utils import \
     all_strings_exist, \
     all_strings_exist_in_list, \
     convert_json_to_dict, \
-    inject_fasta_sequence_at_chain
+    inject_fasta_sequence_at_chain,\
+    inject_protein_key
 
-from tests.test_data import five_level_nested_ubiquitin_
+from tests.test_data import \
+    five_level_nested_ubiquitin_
 
 from src.logging_utils import \
     log_branching_details,\
@@ -369,7 +371,7 @@ def test_inject_fasta_sequence_at_chain(chain_number, new_fasta_sequence):
     Test that inject_fasta_sequence_at_chain correctly updates the FASTA_sequence
     at the target chain number.
     """
-    nested_ub = copy.deepcopy(five_level_nested_ubiquitin)
+    nested_ub = copy.deepcopy(five_level_nested_ubiquitin_)
 
     inject_fasta_sequence_at_chain(
         nested_ub["branching_sites"],
@@ -395,3 +397,94 @@ def test_inject_fasta_sequence_at_chain(chain_number, new_fasta_sequence):
     assert modified_fasta == new_fasta_sequence, (
         f"Expected FASTA sequence at chain {chain_number} to be '{new_fasta_sequence}', got '{modified_fasta}'"
     )
+
+
+@pytest.mark.parametrize("chain_number, key, value", [
+    (2, "new_key", "new_value"),
+    (3, "chain_label", 777),
+    (5, "note", "terminal protein"),
+])
+def test_inject_protein_key_add_key(chain_number, key, value):
+    """Ensure a key is correctly injected at a specific chain number."""
+    nested = copy.deepcopy(five_level_nested_ubiquitin_)
+    inject_protein_key(nested["branching_sites"], target_chain_number=chain_number, key=key, value=value)
+
+    def get_key_value(branches, target):
+        for site in branches:
+            child = site.get("children")
+            if isinstance(child, dict):
+                if child.get("chain_number") == target:
+                    return child.get(key)
+                result = get_key_value(child.get("branching_sites", []), target)
+                if result:
+                    return result
+        return None
+
+    assert get_key_value(nested["branching_sites"], chain_number) == value
+
+
+@pytest.mark.parametrize("chain_number, key", [
+    (2, "chain_length"),
+    (5, "FASTA_sequence"),
+    (4, "protein")
+])
+def test_inject_protein_key_remove_key(chain_number, key):
+    """Ensure a key is correctly removed from a specific chain (non-recursive per case)."""
+    nested = copy.deepcopy(five_level_nested_ubiquitin_)
+
+    # Apply removal
+    inject_protein_key(nested["branching_sites"], target_chain_number=chain_number, key=key, remove=True)
+
+    # Manual path lookup for each chain level
+    if chain_number == 2:
+        # Chain 2 is at K48 of root (chain 1)
+        target = nested["branching_sites"][6]["children"]
+    elif chain_number == 4:
+        # Chain 4 is at K6 of chain 3 → K63 of chain 2 → K48 of root
+        target = (
+            nested["branching_sites"][6]["children"]  # chain 2
+            ["branching_sites"][7]["children"]        # chain 3
+            ["branching_sites"][0]["children"]        # chain 4
+        )
+    elif chain_number == 5:
+        # Chain 5 is at K11 of chain 3 → K63 of chain 2 → K48 of root
+        target = (
+            nested["branching_sites"][6]["children"]  # chain 2
+            ["branching_sites"][7]["children"]        # chain 3
+            ["branching_sites"][2]["children"]        # chain 5
+        )
+    else:
+        raise ValueError(f"Unsupported chain number for test: {chain_number}")
+
+    assert key not in target, f"Key '{key}' was not removed from chain {chain_number}"
+
+
+def test_inject_protein_key_stops_after_first_match():
+    """Ensure it modifies only the first matching chain (no duplicates in tree)."""
+    nested = copy.deepcopy(five_level_nested_ubiquitin_)
+    inject_protein_key(nested["branching_sites"], 3, "unique_marker", "FOUND")
+
+    def count_key_occurrences(branches, key_name):
+        count = 0
+        for site in branches:
+            child = site.get("children")
+            if isinstance(child, dict):
+                if key_name in child:
+                    count += 1
+                count += count_key_occurrences(child.get("branching_sites", []), key_name)
+        return count
+
+    assert count_key_occurrences(nested["branching_sites"], "unique_marker") == 1
+
+
+def test_inject_protein_key_no_crash_on_missing_children():
+    """Ensure no crash if children are not present or not a dict."""
+    structure = {
+        "branching_sites": [
+            {"site_name": "K48", "children": ""},  # no child dict
+            {"site_name": "K63", "children": "SMAC"}  # protected group, not dict
+        ]
+    }
+
+    # Should not raise even though there are no valid children
+    inject_protein_key(structure["branching_sites"], 2, "key", "value")

@@ -1,23 +1,5 @@
 import logging
 
-'''
-Create test for the following..
- 'find_branching_site',
- 'validate_protein_keys',
- 'check_branching_sites',
- 'check_branching_sequences',
- 'check_branching_site_sequence_match',
- 'check_children_format',
- 'validate_branching_sites',
- 'convert_json_to_dict',
- 'process_current_protein',
- 'process_branch',
- 'iterate_through_ubiquitin',
- 'inner_wrapper_iterate_through_ubiquitin',
- 'find_max_chain_number',
-'''
-
-
 ## Logging functions 
 def log_branching_details(branch, working_dictionary, context):
     """
