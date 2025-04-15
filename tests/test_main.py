@@ -27,8 +27,21 @@ from src.main import \
 from src.utils import \
     match_assertion_error_contains,\
     all_strings_exist, \
-    all_strings_exist_in_list
+    all_strings_exist_in_list, \
+    inject_fasta_sequence_at_chain
 
+from tests.test_data import \
+    five_level_nested_ubiquitin_,\
+    k48_dimer_ubiquitin,\
+    string_k48_dimer_ubiquitin,\
+    ubiquitin_monomer, \
+    histag_ubiquitin_monomer
+
+from src.logging_utils import \
+    log_branching_details,\
+    log_end_of_branching,\
+    log_protein_details,\
+    log_end_of_protein
 
 '''
 From main:
@@ -66,62 +79,9 @@ Redo cover all:
 
 '''
 
-# Sample deeply nested ubiquitin dictionary for testing
-k48_dimer_ubiquitin = {
-    "protein": "1ubq-histag",
-    "chain_number": 1,
-    "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH",
-    "chain_length": 83,
-    "branching_sites": [
-        {"site_name": "M1","sequence_id": "(M)QIF","children": ""},
-        {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
-        {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
-        {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
-        {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
-        {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
-        {"site_name": "K48","sequence_id": "FAG(K)QLE","children": {"protein": "1ubq",
-                                                                    "chain_number": 2,
-                                                                    "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
-                                                                    "chain_length": 76,
-                                                                    "branching_sites": [{"site_name": "M1","sequence_id": "(M)QIF","children": ""},
-                                                                                        {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
-                                                                                        {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
-                                                                                        {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
-                                                                                        {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
-                                                                                        {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
-                                                                                        {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
-                                                                                        {"site_name": "K63","sequence_id": "NIQ(K)EST","children": "SMAC"}]}},
-        {"site_name": "K63","sequence_id": "NIQ(K)EST","children": "SMAC"}]}
-
-string_k48_dimer_ubiquitin = str(k48_dimer_ubiquitin)
-
-ubiquitin_monomer = {
-    "protein": "1ubq",
-    "chain_number": 1,
-    "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
-    "chain_length": 76,
-    "branching_sites": [{"site_name": "M1","sequence_id": "(M)QIF","children": ""},
-                        {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
-                        {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
-                        {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
-                        {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
-                        {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
-                        {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
-                        {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}]}
-
-histag_ubiquitin_monomer = {
-    "protein": "1ubq",
-    "chain_number": 1,
-    "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH",
-    "chain_length": 83,
-    "branching_sites": [{"site_name": "M1","sequence_id": "(M)QIF","children": ""},
-                        {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
-                        {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
-                        {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
-                        {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
-                        {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
-                        {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
-                        {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}]}
+# === Tests for find_branching_site ===
+# Tests for validating the indexing of branching sites
+# and handling of invalid or empty inputs.
 
 @pytest.mark.parametrize("sequence_id, expected_position", [
     ("(M)QIF", 1),
@@ -167,6 +127,38 @@ def test_find_branching_site_empty():
     with pytest.raises(ValueError, match="substring not found"):
         find_branching_site(empty_sequence, k48_dimer_ubiquitin["FASTA_sequence"])
 
+
+@pytest.mark.parametrize("chain_number, altered_sequence", [
+    # Chain 4, K33 altered (to break IQD(K)EGI)
+    (4, "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEHIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"),
+
+    # Chain 5, K6 altered (to break IFV(K)TLT)
+    (5, "MQIFVTKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"),
+
+    # Chain 2, K48 altered (to break FAG(K)QLE)
+    (2, "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQJEGRTLSDYNIQKESTLHLVLRLRGG")
+])
+def test_find_branching_site_nested_not_found(chain_number, altered_sequence):
+    """
+    Recursively modify the FASTA sequence for a nested ubiquitin and assert
+    that find_branching_site raises a ValueError when the sequence is missing.
+    """
+    # Copy the test structure
+    nested_ub = copy.deepcopy(five_level_nested_ubiquitin_)
+
+    # Inject a modified sequence at the specified chain number
+    inject_fasta_sequence_at_chain(
+        nested_ub["branching_sites"],
+        target_chain_number=chain_number,
+        new_fasta_sequence=altered_sequence
+    )
+
+    # Now test that the sequence is not found
+    with pytest.raises(ValueError, match="substring not found"):
+        iterate_through_ubiquitin(nested_ub)
+
+# === Tests for validate_protein_keys ===
+# Tests for validating the presence of required keys and handling of invalid or extra keys.
 
 @pytest.mark.parametrize("valid_dict", [
     # ✅ Test Case 1: Valid ubiquitin dictionary
@@ -319,6 +311,13 @@ def test_validate_protein_keys_missing_and_invalid_keys():
 
     with pytest.raises(KeyError, match=r"Missing required keys: .*Invalid keys found: .*Allowed keys: .*"):
         validate_protein_keys(invalid_protein_data)
+
+
+
+
+
+
+
 
 
 @pytest.mark.parametrize("ubiquitin_structure, expected_errors", [
@@ -565,32 +564,31 @@ def test_check_branching_sequences(ubiquitin_structure, expected_errors):
 # Tests for check_children_format
 # ----------------------------
 
-@pytest.mark.parametrize("site, expected_error", [
+@pytest.mark.parametrize("ubiquitin_dict, site, expected_error", [
     # ✅ Empty string
-    ({"children": ""}, []),
+    ({"chain_number": 1}, {"children": ""}, []),
 
     # ✅ SMAC
-    ({"children": "SMAC"}, []),
+    ({"chain_number": 1}, {"children": "SMAC"}, []),
 
     # ✅ ABOC
-    ({"children": "ABOC"}, []),
+    ({"chain_number": 1}, {"children": "ABOC"}, []),
 
     # ✅ Dictionary (valid nested ubiquitin)
-    ({"children": {"protein": "1ubq", "chain_number": 1}}, []),
+    ({"chain_number": 1}, {"children": {"protein": "1ubq", "chain_number": 1}}, []),
 
     # ❌ List (invalid type)
-    ({"children": ["invalid_structure"]}, 
-     ["Invalid children format: ['invalid_structure']"]),
+    ({"chain_number": 4}, {"children": ["invalid_structure"]}, 
+     ["Invalid children format: ['invalid_structure'] in Ubiquitin 4"]),
 
     # ❌ Integer (invalid type)
-    ({"children": 1234}, 
-     ["Invalid children format: 1234"]),
+    ({"chain_number": 1000}, {"children": 1234}, 
+     ["Invalid children format: 1234 in Ubiquitin 1000"]),
 ])
-def test_check_children_format(site, expected_error):
+def test_check_children_format(ubiquitin_dict, site, expected_error):
     errors = []
-    check_children_format(site, errors)
+    check_children_format(ubiquitin_dict, site, errors)
     assert errors == expected_error
-
 
 # ----------------------------
 # Tests for check_branching_site_sequence_match
@@ -2772,4 +2770,4 @@ def test_process_branch_large_fasta_sequence():
 
     _, _, updated_context = process_branch(branch, working_dict, context)
     assert updated_context is not None
-    
+

@@ -14,8 +14,10 @@ from src.utils import \
     match_assertion_error_contains,\
     all_strings_exist, \
     all_strings_exist_in_list, \
-    convert_json_to_dict
+    convert_json_to_dict, \
+    inject_fasta_sequence_at_chain
 
+from tests.test_data import five_level_nested_ubiquitin_
 
 from src.logging_utils import \
     log_branching_details,\
@@ -354,3 +356,42 @@ def test_log_end_of_protein(caplog, sample_working_dictionary):
     expected_log = f"===== END OF PROTEIN - UBI NUMBER: {sample_working_dictionary['chain_number']} ====="
 
     assert expected_log in logs, f"Expected log message '{expected_log}' not found in logs."
+
+
+@pytest.mark.parametrize("chain_number, new_fasta_sequence", [
+    (2, "MODSEQ_CHAIN_2"),
+    (3, "MODSEQ_CHAIN_3"),
+    (4, "MODSEQ_CHAIN_4"),
+    (5, "MODSEQ_CHAIN_5")
+])
+def test_inject_fasta_sequence_at_chain(chain_number, new_fasta_sequence):
+    """
+    Test that inject_fasta_sequence_at_chain correctly updates the FASTA_sequence
+    at the target chain number.
+    """
+    nested_ub = copy.deepcopy(five_level_nested_ubiquitin)
+
+    inject_fasta_sequence_at_chain(
+        nested_ub["branching_sites"],
+        target_chain_number=chain_number,
+        new_fasta_sequence=new_fasta_sequence
+    )
+
+    def get_fasta_at_chain(branches, target, current=1):
+        """
+        Recursively find the FASTA_sequence at a specified chain number.
+        """
+        for site in branches:
+            if isinstance(site.get("children"), dict):
+                if site["children"].get("chain_number") == target:
+                    return site["children"]["FASTA_sequence"]
+                result = get_fasta_at_chain(site["children"]["branching_sites"], target, current + 1)
+                if result:
+                    return result
+        return None
+
+    modified_fasta = get_fasta_at_chain(nested_ub["branching_sites"], chain_number)
+
+    assert modified_fasta == new_fasta_sequence, (
+        f"Expected FASTA sequence at chain {chain_number} to be '{new_fasta_sequence}', got '{modified_fasta}'"
+    )

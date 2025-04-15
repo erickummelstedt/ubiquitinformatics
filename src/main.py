@@ -65,8 +65,31 @@ For logging_utils
 - log_end_of_protein
 
 
-- find_max_chain_number
+NEED TO DO ThE FOLLOWING:
 - iterate_through_ubiquitin (all tests on deeply nested ubiquitins)
+For iterate_through_ubiquitin test the following:
+- validate_protein_keys
+- check_branching_sites
+- check_branching_sequences
+- validate_branching_sites
+- check_branching_site_sequence_match
+- check_children_format
+
+Context tests left: 
+- chain_number_list
+- chain_length_list
+
+Maybe add the following to iterate_through_ubiquitin
+def context_template():
+    return {
+        "chain_number_list": [1],
+        "chain_length_list": [],
+        "free_lysines": [],
+        "conjugated_lysines": [],
+        "SMAC_lysines": [],
+        "ABOC_lysines": [],
+        "multimer_string_name": ""
+    }
 
 '''
 
@@ -209,7 +232,7 @@ def check_branching_site_sequence_match(site, errors):
         errors.append(f"site_name: {site_name}, does not correspond with the sequence_id: {sequence_id}")
 
 
-def check_children_format(site, errors):
+def check_children_format(ubiquitin_dict, site, errors):
     """
     Validates the format of the 'children' field in a branching site.
 
@@ -218,9 +241,10 @@ def check_children_format(site, errors):
     """
   
     children = site.get("children")
+    chain_number = ubiquitin_dict.get("chain_number")
 
     if children not in ("", "SMAC", "ABOC") and not isinstance(children, dict):
-        errors.append(f"Invalid children format: {children}")
+        errors.append(f"Invalid children format: {children} in Ubiquitin {chain_number}")
 
 
 def validate_branching_sites(ubiquitin_dict, errors=None):
@@ -261,7 +285,7 @@ def validate_branching_sites(ubiquitin_dict, errors=None):
     
     for site in ubiquitin_dict.get("branching_sites", []):
         check_branching_site_sequence_match(site, errors)
-        check_children_format(site, errors)
+        check_children_format(ubiquitin_dict,site, errors)
 
     # If errors were found, raise a single assertion error summarizing all issues    
     if errors:
@@ -418,10 +442,8 @@ def inner_wrapper_iterate_through_ubiquitin(input_dictionary, context):
     elif (working_dictionary["FASTA_sequence"] == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG") & (working_dictionary["chain_number"]==1):
         context["multimer_string_name"] += f"GG-{working_dictionary['protein']}-{working_dictionary['chain_number']}-("
     else: 
-        print(working_dictionary["chain_number"])
         context["multimer_string_name"] += f"{working_dictionary['protein']}-{working_dictionary['chain_number']}-("
     
-
     # Log current protein details
     log_protein_details(working_dictionary, context)
 

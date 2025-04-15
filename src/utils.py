@@ -58,3 +58,38 @@ def convert_json_to_dict(parent_dictionary):
         return parent_dictionary
     else:
         raise TypeError("Input must be a dictionary or a JSON string")
+    
+
+def inject_fasta_sequence_at_chain(
+    branches,
+    target_chain_number,
+    new_fasta_sequence,
+    current_chain_number=1
+):
+    """
+    Recursively modifies the FASTA_sequence of the ubiquitin structure at a specific chain number.
+
+    Args:
+        branches (list): The branching_sites list of the current ubiquitin.
+        target_chain_number (int): The chain number at which to inject the new FASTA sequence.
+        new_fasta_sequence (str): The modified sequence to inject.
+        current_chain_number (int): Tracks the depth of recursion (default: 1).
+    """
+    # Check each branching site
+    for site in branches:
+        # Recurse if there's a nested child
+        if isinstance(site.get("children"), dict):
+            child = site["children"]
+
+            # Update if it's the target chain number
+            if child.get("chain_number") == target_chain_number:
+                child["FASTA_sequence"] = new_fasta_sequence
+                return  # Early exit once found and replaced
+
+            # Continue searching deeper
+            inject_fasta_sequence_at_chain(
+                child["branching_sites"],
+                target_chain_number,
+                new_fasta_sequence,
+                current_chain_number + 1
+            )
