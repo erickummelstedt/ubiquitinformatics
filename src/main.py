@@ -447,9 +447,6 @@ def inner_wrapper_iterate_through_ubiquitin(input_dictionary, context):
     # Log current protein details
     log_protein_details(working_dictionary, context)
 
-    # ensures no sites are missing
-    check_branching_sites(working_dictionary)
-
     # Ensure that the branching has all the valid keys 
     validate_branching_sites(working_dictionary)
 

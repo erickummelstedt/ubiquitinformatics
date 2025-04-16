@@ -132,3 +132,32 @@ histag_ubiquitin_monomer = {
                         {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
                         {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
                         {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}]}
+
+# Mock helper: minimal working_dictionary
+BASE_WORKING_DICT = {
+    "protein": "dummy_protein",
+    "chain_number": 1,
+    "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+    "chain_length": 76,
+    "branching_sites": [
+        {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+        {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+        {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+        {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+        {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+        {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+        {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+        {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+    ]
+}
+
+# Mock helper: minimal context
+BASE_CONTEXT = {
+    "chain_length_list": [],
+    "chain_number_list": [1],
+    "free_lysines": [],
+    "conjugated_lysines": [],
+    "SMAC_lysines": [],
+    "ABOC_lysines": [],
+    "multimer_string_name": ""
+}

@@ -22,21 +22,25 @@ from src.main import \
     check_branching_site_sequence_match, \
     check_children_format,\
     process_current_protein, \
-    process_branch
+    process_branch, \
+    find_max_chain_number
 
 from src.utils import \
     match_assertion_error_contains,\
     all_strings_exist, \
     all_strings_exist_in_list, \
     inject_fasta_sequence_at_chain,\
-    inject_protein_key
+    inject_protein_key,\
+    inject_branching_sites
 
 from tests.test_data import \
     five_level_nested_ubiquitin_,\
     k48_dimer_ubiquitin,\
     string_k48_dimer_ubiquitin,\
     ubiquitin_monomer, \
-    histag_ubiquitin_monomer
+    histag_ubiquitin_monomer,\
+    BASE_WORKING_DICT, \
+    BASE_CONTEXT
 
 from src.logging_utils import \
     log_branching_details,\
@@ -80,9 +84,9 @@ Redo cover all:
 
 '''
 
+# =====================================
 # === Tests for find_branching_site ===
-# Tests for validating the indexing of branching sites
-# and handling of invalid or empty inputs.
+# Tests for validating the indexing of branching sites and handling of invalid or empty inputs.
 # =====================================
 
 @pytest.mark.parametrize("sequence_id, expected_position", [
@@ -159,6 +163,7 @@ def test_find_branching_site_nested_not_found(chain_number, altered_sequence):
     with pytest.raises(ValueError, match="substring not found"):
         iterate_through_ubiquitin(nested_ub)
 
+# =====================================
 # === Tests for validate_protein_keys ===
 # Tests for validating the presence of required keys and handling of invalid or extra keys.
 # =====================================
@@ -360,13 +365,10 @@ def test_validate_protein_keys_missing_and_invalid_nested():
     assert "chain_length" in msg and "unexpected_key" in msg
 
 
-
-
-
-
-
-
-
+# =====================================
+# === Tests for check_branching_sites ===
+# Tests for validating the presence of required branching sites and handling of invalid or extra sites.
+# =====================================
 
 @pytest.mark.parametrize("ubiquitin_structure, expected_errors", [
     
@@ -486,6 +488,77 @@ def test_check_branching_sites(ubiquitin_structure, expected_errors):
     
     else:
         assert len(site_errors) == 0
+
+@pytest.mark.parametrize("chain_number, new_branching_sites, expected_error_substrings", [
+    # ❌ Missing branching sites: omit K63, K29
+    (
+        3,
+        [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""}
+        ],
+        [["Missing required sites", "K29", "K63", "Ubiquitin 3"],
+         ["Allowed sites", "M1", "K6", "K11", "K27", "K29", "K33", "K48", "K63"],
+         ["Allowed sequences", '(M)QIF', 'IFV(K)TLT', '(M)QIF', 'IQD(K)EGI', 'LTG(K)TIT', 'ENV(K)AKI', 'VKA(K)IQD', 'FAG(K)QLE', 'NIQ(K)EST']]
+    ),
+
+    # ❌ Invalid site present
+    (
+        4,
+        [
+            {"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+            {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
+            {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
+            {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
+            {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+            {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+            {"site_name": "K48","sequence_id": "FAG(K)QLE","children": ""},
+            {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""},
+            {"site_name": "K99", "sequence_id": "INVALID(K)SEQ", "children": ""}
+        ],
+        [["Invalid sites found", "K99", "Ubiquitin 4"],
+         ["Invalid sequences found", "INVALID(K)SEQ", "Ubiquitin 4"],
+         ["Allowed sites", "M1", "K6", "K11", "K27", "K29", "K33", "K48", "K63"],
+         ["Allowed sequences", '(M)QIF', 'IFV(K)TLT', '(M)QIF', 'IQD(K)EGI', 'LTG(K)TIT', 'ENV(K)AKI', 'VKA(K)IQD', 'FAG(K)QLE', 'NIQ(K)EST']]
+    ),
+
+    # ❌ Missing and invalid
+    (
+        2,
+        [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K100", "sequence_id": "WTF(K)OMG", "children": ""}
+        ],
+        [["Missing required sites", "K6", "K11", "K27", "K29", "K33", "K48", "K63", "Ubiquitin 2"],
+         ["Invalid sites found", "K100", "Ubiquitin 2"],
+         ["Allowed sites", "M1", "K6", "K11", "K27", "K29", "K33", "K48", "K63"],
+         ["Allowed sequences", '(M)QIF', 'IFV(K)TLT', '(M)QIF', 'IQD(K)EGI', 'LTG(K)TIT', 'ENV(K)AKI', 'VKA(K)IQD', 'FAG(K)QLE', 'NIQ(K)EST']]
+    )
+])
+def test_check_branching_sites_nested(chain_number, new_branching_sites, expected_error_substrings):
+    """
+    Recursively inject errors into nested branching_sites and ensure `check_branching_sites`
+    captures them via `iterate_through_ubiquitin`.
+    """
+    nested = copy.deepcopy(five_level_nested_ubiquitin_)
+    inject_branching_sites(nested["branching_sites"], target_chain_number=chain_number, new_branching_sites=new_branching_sites)
+
+    with pytest.raises(AssertionError) as exc_info:
+            iterate_through_ubiquitin(nested)
+    
+    error_msg = str(exc_info.value)
+    combined_substrings = [item for sublist in expected_error_substrings for item in sublist]
+    assert all_strings_exist(combined_substrings, error_msg), \
+        f"Expected {expected_error_substrings} in {error_msg}, but not found."
+    
+# =====================================
+# === Tests for check_branching_sequences ===
+# Tests for validating the sequences of branching sites and handling of invalid or missing sequences.   
+# =====================================
 
 @pytest.mark.parametrize("ubiquitin_structure, expected_errors", [
 
@@ -607,10 +680,47 @@ def test_check_branching_sequences(ubiquitin_structure, expected_errors):
     else:
         assert len(sequence_errors) == 0
 
+@pytest.mark.parametrize("chain_number, injected_branching_sites, expected_error_substrings", [
+    # Missing sequences
+    (
+        3,
+        [
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""}
+        ],
+        [["Missing required sequences", "Ubiquitin 3"], ["Allowed sequences"]]
+    ),
+    # Invalid sequence
+    (
+        4,
+        [
+            {"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11","sequence_id": "BAD(SEQ)","children": ""},
+            {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
+            {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+            {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+            {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
+            {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}
+         ],
+        [["Invalid sequences found", "BAD(SEQ)", "Ubiquitin 4"], ["Allowed sequences"]]
+    ),
+])
+def test_check_branching_sequences_recursive(chain_number, injected_branching_sites, expected_error_substrings):
+    nested = copy.deepcopy(five_level_nested_ubiquitin_)
+    inject_branching_sites(nested["branching_sites"], chain_number, injected_branching_sites)
 
-# ----------------------------
-# Tests for check_children_format
-# ----------------------------
+    with pytest.raises(AssertionError) as exc_info:
+            iterate_through_ubiquitin(nested)
+    
+    error_msg = str(exc_info.value)
+    combined_substrings = [item for sublist in expected_error_substrings for item in sublist]
+    assert all_strings_exist(combined_substrings, error_msg), \
+        f"Expected {expected_error_substrings} in {error_msg}, but not found."
+
+# ========================================
+# ==== Tests for check_children_format ===
+# Tests for validating the format of children in branching sites.
+# ========================================
 
 @pytest.mark.parametrize("ubiquitin_dict, site, expected_error", [
     # ✅ Empty string
@@ -638,9 +748,50 @@ def test_check_children_format(ubiquitin_dict, site, expected_error):
     check_children_format(ubiquitin_dict, site, errors)
     assert errors == expected_error
 
-# ----------------------------
+@pytest.mark.parametrize("chain_number, site_with_invalid_children, expected_error", [
+    (
+        3,
+        [{"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+         {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ["invalid_structure"]},
+         {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
+         {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
+         {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+         {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+         {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
+         {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}],
+        # Expected Error
+        "Invalid children format: ['invalid_structure'] in Ubiquitin 3"
+    ),
+    (
+        4,
+        [{"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+         {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+         {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": 123},
+         {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
+         {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+         {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+         {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
+         {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}],
+        
+        # Expected Error
+        "Invalid children format: 123 in Ubiquitin 4"
+    )
+])
+def test_check_children_format_recursive(chain_number, site_with_invalid_children, expected_error):
+    nested = copy.deepcopy(five_level_nested_ubiquitin_)
+    inject_branching_sites(nested["branching_sites"], chain_number, site_with_invalid_children)
+
+    with pytest.raises(AssertionError) as exc_info:
+            iterate_through_ubiquitin(nested)
+    
+    error_msg = str(exc_info.value)
+    assert expected_error in error_msg, \
+        f"Expected {expected_error} in {error_msg}, but not found."
+
+# =====================================
 # Tests for check_branching_site_sequence_match
-# ----------------------------
+# Tests to validate that site_name and sequence_id mappings are correct and handle invalid or missing mappings.
+# =====================================
 
 @pytest.mark.parametrize("site, expected_error", [
     # ✅ Correct match
@@ -664,10 +815,82 @@ def test_check_branching_site_sequence_match(site, expected_error):
     assert errors == expected_error
 
 
+@pytest.mark.parametrize("chain_number, site_name, faulty_sequence, expected_error_substrings", [
+    (
+        2, "K6", "LTG(K)TIT",
+        [["site_name: K6", "does not correspond with the sequence_id", "LTG(K)TIT"]]
+    ),
+    (
+        3, "K48", "LTG(K)TIT",
+        [["site_name: K48", "does not correspond with the sequence_id", "LTG(K)TIT"]]
+    ),
+    (
+        4, "K27", "LTG(K)TIT",  # missing sequence
+        [["site_name: K27", "does not correspond with the sequence_id", "LTG(K)TIT"]]
+    ),
+])
 
+def test_iterate_check_branching_site_sequence_match_errors(chain_number, site_name, faulty_sequence, expected_error_substrings):
+    """
+    Injects incorrect sequence IDs into nested ubiquitin structure and verifies that
+    iterate_through_ubiquitin surfaces `check_branching_site_sequence_match` errors.
+    """
+    modified = copy.deepcopy(five_level_nested_ubiquitin_)
 
+    # Create faulty branching_sites at a specific chain level
+    if chain_number == 2:
+        faulty_branching_sites = [
+            {"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+            {"site_name": site_name, "sequence_id": faulty_sequence, "children":""}, 
+            {"site_name": "K11","sequence_id": "IFV(K)TLT","children": ""},
+            {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
+            {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+            {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+            {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
+            {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""},
+        ]  # no sequence_id
+    elif chain_number == 3:
+        faulty_branching_sites = [
+            {"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+            {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
+            {"site_name": "K11","sequence_id": "FAG(K)QLE","children": ""},
+            {"site_name": "K27","sequence_id": "ENV(K)AKI","children": ""},
+            {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+            {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+            {"site_name": site_name, "sequence_id": faulty_sequence, "children":""}, 
+            {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}       
+            ]
+    elif chain_number == 4:
+        faulty_branching_sites = [
+            {"site_name": "M1","sequence_id": "(M)QIF","children": ""},
+            {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
+            {"site_name": "K11","sequence_id": "ENV(K)AKI","children": ""},
+            {"site_name": site_name,"sequence_id": faulty_sequence,"children": ""},
+            {"site_name": "K29","sequence_id": "VKA(K)IQD","children": ""},
+            {"site_name": "K33","sequence_id": "IQD(K)EGI","children": ""},
+            {"site_name": "K48","sequence_id": "FAG(K)QLE","children":""}, 
+            {"site_name": "K63","sequence_id": "NIQ(K)EST","children": ""}       
+            ]
+    
+    inject_branching_sites(
+        modified["branching_sites"],
+        target_chain_number=chain_number,
+        new_branching_sites=faulty_branching_sites
+    )
 
+    # Run recursive validation
+    with pytest.raises(AssertionError) as exc_info:
+        iterate_through_ubiquitin(modified)
 
+    error_msg = str(exc_info.value)
+    combined_substrings = [item for sublist in expected_error_substrings for item in sublist]
+    assert all_strings_exist(combined_substrings, error_msg), \
+        f"Expected {combined_substrings} in {error_msg}, but not found."
+    
+# =====================================
+# === Tests for validate_branching_sites ===
+# Tests for validating the presence of required branching sites and handling of invalid or extra sites.
+# =====================================
 
 @pytest.mark.parametrize("ubiquitin_dict, should_raise, expected_parts", [
 
@@ -885,6 +1108,7 @@ def test_check_branching_site_sequence_match(site, expected_error):
               "Allowed sequences"]
 )
 ])
+
 def test_validate_branching_sites(ubiquitin_dict, should_raise, expected_parts):
 
     if should_raise:
@@ -898,22 +1122,93 @@ def test_validate_branching_sites(ubiquitin_dict, should_raise, expected_parts):
     else:
         validate_branching_sites(ubiquitin_dict)  # Should not raise
 
+@pytest.mark.parametrize("chain_number, faulty_branching_sites, expected_error_substrings", [
+    # ❌ K48 has wrong sequence_id
+    (
+        2,
+        [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "WRONG(K)SEQ", "children": ""},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+        ],
+        ["Invalid sequences found", "WRONG(K)SEQ", "Ubiquitin 2"]
+    ),
 
+    # ❌ K6 has integer as children (invalid format)
+    (
+        3,
+        [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": 42},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+        ],
+        ["Invalid children format", "42"]
+    ),
 
+    # ❌ K99 as invalid site_name
+    (
+        4,
+        [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""},
+            {"site_name": "K99", "sequence_id": "IFV(K)TLT", "children": ""}
+        ],
+        ["Invalid sites found", "K99", "Ubiquitin 4", "Allowed sites"]
+    ),
 
+    # ❌ Missing multiple required sites
+    (
+        5,
+        [
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""}
+        ],
+        ["Missing required sites", "K27", "K29", "K33", "K48", "K63"]
+    )
+])
+def test_validate_branching_sites_nested(chain_number, faulty_branching_sites, expected_error_substrings):
+    """
+    Inject faulty branching_sites at various depths and verify `validate_branching_sites`
+    is triggered correctly by `iterate_through_ubiquitin`.
+    """
+    nested = copy.deepcopy(five_level_nested_ubiquitin_)
 
+    # Inject faults at the target chain level
+    inject_branching_sites(
+        nested["branching_sites"],
+        target_chain_number=chain_number,
+        new_branching_sites=faulty_branching_sites
+    )
 
+    # Run and expect assertion
+    with pytest.raises(AssertionError) as exc_info:
+        iterate_through_ubiquitin(nested)
 
+    error_msg = str(exc_info.value)
+    combined_substrings = [item for sublist in expected_error_substrings for item in sublist]
+    assert all_strings_exist(expected_error_substrings, error_msg), \
+        f"Expected {expected_error_substrings} in {error_msg}, but not found."
 
-
-
-
-
-
-
-
-
-
+# =====================================
+# === Tests for iterate_through_ubiquitin ===
+# Tests for validating the processing of ubiquitin structures, including renumbering, chain length adjustments, and error handling.
+# =====================================
 
 def test_iterate_through_ubiquitin():
     """
@@ -1115,6 +1410,11 @@ def test_branching_sites_format(site_name, sequence_id, children, expected_error
             validate_branching_sites(test_ubiquitin)
     else:
         validate_branching_sites(test_ubiquitin)
+
+# =====================================
+# === Tests for generate_multimer_string ===
+# Tests for generating multimer strings from ubiquitin structures.
+# =====================================
 
 @pytest.mark.parametrize("ubiquitin_structure, expected_multimer_string", [
     # Test Case 1: Basic Ubiquitin Monomer (All Branching Sites Present but Empty)
@@ -1325,182 +1625,10 @@ def test_iterate_through_ubiquitin(ubiquitin_structure, expected_multimer_string
     multimer_string = context["multimer_string_name"]
     assert multimer_string == expected_multimer_string, f"Expected: {expected_multimer_string}, Got: {result}"
 
-
-
-
-
-## IMPORT ##
-@pytest.mark.parametrize("ubiquitin_structure, expected_aboc, expected_smac", [
-    # ✅ Test Case 1: Basic Monomer (No ABOC or SMAC)
-    ({
-        "protein": "1ubq",
-        "chain_number": 1,
-        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
-        "chain_length": 76,
-        "branching_sites": [
-            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
-            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
-            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
-            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
-            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
-            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
-            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
-            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
-        ]
-    }, 0, 0),
-
-    # ✅ Test Case 2: Dimer with One ABOC
-    ({
-        "protein": "1ubq",
-        "chain_number": 1,
-        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
-        "chain_length": 76,
-        "branching_sites": [
-            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
-            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
-            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
-            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
-            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
-            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
-            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": "ABOC"},
-            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
-        ]
-    }, 1, 0),
-
-    # ✅ Test Case 3: Trimer with One ABOC and One SMAC
-    ({
-        "protein": "1ubq",
-        "chain_number": 1,
-        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
-        "chain_length": 76,
-        "branching_sites": [
-            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
-            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
-            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
-            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": "ABOC"},
-            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
-            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
-            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": {
-                "protein": "1ubq",
-                "chain_number": 2,
-                "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
-                "chain_length": 76,
-                "branching_sites": [
-                    {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
-                    {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
-                    {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
-                    {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
-                    {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
-                    {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
-                    {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
-                    {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": "SMAC"}
-                ]
-            }},
-            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
-        ]
-    }, 1, 1),
-
-    # ✅ Test Case 4: Deeply Nested Structure with Multiple ABOC & SMAC
-    ({
-        "protein": "1ubq",
-        "chain_number": 1,
-        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
-        "chain_length": 76,
-        "branching_sites": [
-            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
-            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
-            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
-            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
-            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": "SMAC"},
-            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
-            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": {
-                "protein": "1ubq",
-                "chain_number": 2,
-                "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
-                "chain_length": 76,
-                "branching_sites": [
-                    {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
-                    {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": "ABOC"},
-                    {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
-                    {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
-                    {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
-                    {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
-                    {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": "ABOC"},
-                    {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": {
-                        "protein": "1ubq",
-                        "chain_number": 3,
-                        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
-                        "chain_length": 76,
-                        "branching_sites": [
-                            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
-                            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
-                            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": "SMAC"},
-                            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
-                            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": "ABOC"},
-                            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
-                            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
-                            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
-                        ]
-                    }}
-                ]
-            }},
-            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
-
-        ]
-    }, 3, 2),
-
-    # ✅ Test Case 5: His-Tagged Ubiquitin with ABOC
-    ({
-        "protein": "1ubq-his",
-        "chain_number": 1,
-        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGHHHHHH",
-        "chain_length": 82,
-        "branching_sites": [
-            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
-            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
-            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
-            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": "ABOC"},
-            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
-            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
-            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
-            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
-        ]
-    }, 1, 0),
-
-    # ✅ Test Case 6: Multi-Protected Ubiquitin with Equal Number of ABOC & SMAC
-    ({
-        "protein": "1ubq",
-        "chain_number": 1,
-        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
-        "chain_length": 76,
-        "branching_sites": [
-            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
-            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": "ABOC"},
-            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": "SMAC"},
-            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
-            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
-            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": "ABOC"},
-            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": "SMAC"},
-            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
-        ]
-    }, 2, 2)
-])
-def test_find_protecting_groups(ubiquitin_structure, expected_aboc, expected_smac):
-    """
-    Test `find_protecting_groups()` to ensure it correctly counts 
-    the number of ABOC and SMAC protecting groups.
-    """
-    updated_ubiquitin, context = iterate_through_ubiquitin(copy.deepcopy(ubiquitin_structure))    
-    ABOC_lysines = context["ABOC_lysines"]
-    SMAC_lysines = context["SMAC_lysines"]
-    
-    assert len(ABOC_lysines) == expected_aboc, f"Expected {expected_aboc} ABOC, got {len(ABOC_lysines)}"
-    assert len(SMAC_lysines) == expected_smac, f"Expected {expected_smac} SMAC, got {len(SMAC_lysines)}"
-
-
-import pytest
-import copy
-from src.main import find_max_chain_number
+# =====================================
+# === Tests for find_max_chain_number ===
+# Tests for finding the maximum chain number in ubiquitin structures.
+# =====================================
 
 @pytest.mark.parametrize("ubiquitin_structure, expected_max_chain", [
     # ✅ Test Case 1: Single Ubiquitin Monomer (Max Chain = 1)
@@ -1768,6 +1896,11 @@ def test_find_max_chain_number(ubiquitin_structure, expected_max_chain):
     
     assert find_max_chain_number(context) == expected_max_chain
 
+# =====================================
+# === Tests for find_free_lysines ===
+# Tests for extracting all free lysines from ubiquitin structures.
+# =====================================
+
 @pytest.mark.parametrize("ubiquitin_structure, expected_free_lysines", [
     # ✅ Test Case 1: Basic Monomer (No Free Lysines)
     ({
@@ -1979,6 +2112,11 @@ def test_find_free_lysines(ubiquitin_structure, expected_free_lysines):
         f"Expected {expected_free_lysines}, got {free_lysines}"
     
 
+# =====================================
+# === Tests for find_conjugated_lysines ===
+# Tests for extracting all conjugated lysines from ubiquitin structures.
+# =====================================
+
 @pytest.mark.parametrize("ubiquitin_structure, expected_conjugated_lysines", [
     # ✅ Test Case 1: Basic Monomer (No conjugated lysines)
     ({
@@ -2189,6 +2327,11 @@ def test_find_conjugated_lysines(ubiquitin_structure, expected_conjugated_lysine
         f"Expected {expected_conjugated_lysines}, got {conjugated_lysines}"
 
 
+# =====================================
+# === Tests for find_SMAC and ABOC lysines within iterate_through_ubiquitin ===
+# Tests for identifying lysines with SMAC and ABOC protecting groups in ubiquitin structures.
+# =====================================
+
 @pytest.mark.parametrize("ubiquitin_structure, expected_SMAC_lysines, expected_ABOC_lysines", [
     # ✅ Test Case 1: Basic Monomer (No conjugated lysines)
     ({
@@ -2388,6 +2531,11 @@ def test_find_conjugated_lysines(ubiquitin_structure, expected_conjugated_lysine
     }, [[1, "K29"], [1, "K33"], [2, "K33"], [3, "K33"], [4, "K29"], [4, "K33"], [5, "K29"], [5, "K33"]], [[1, "K11"], [2, "K11"], [2, "K29"], [3, "K11"], [3, "K29"], [4, "K11"],  [5, "K11"]]),
 ])
 
+# =====================================
+# === Redundant Tests for find_SMAC&ABOC lysines ===
+# These tests are redundant and are not needed.
+# =====================================
+
 def test_find_SMAC_ABOC_lysines(ubiquitin_structure, expected_SMAC_lysines, expected_ABOC_lysines):
     """
     Test `find_SMAC_ABOC_lysines()` to ensure it correctly extracts 
@@ -2402,7 +2550,180 @@ def test_find_SMAC_ABOC_lysines(ubiquitin_structure, expected_SMAC_lysines, expe
     
     assert sorted(ABOC_lysines) == sorted(expected_ABOC_lysines), \
         f"Expected ABOC {expected_ABOC_lysines}, got {ABOC_lysines}"
+
+@pytest.mark.parametrize("ubiquitin_structure, expected_aboc, expected_smac", [
+    # ✅ Test Case 1: Basic Monomer (No ABOC or SMAC)
+    ({
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
+        "branching_sites": [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+        ]
+    }, 0, 0),
+
+    # ✅ Test Case 2: Dimer with One ABOC
+    ({
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
+        "branching_sites": [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": "ABOC"},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+        ]
+    }, 1, 0),
+
+    # ✅ Test Case 3: Trimer with One ABOC and One SMAC
+    ({
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
+        "branching_sites": [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": "ABOC"},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": {
+                "protein": "1ubq",
+                "chain_number": 2,
+                "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+                "chain_length": 76,
+                "branching_sites": [
+                    {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+                    {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+                    {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+                    {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+                    {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+                    {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+                    {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+                    {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": "SMAC"}
+                ]
+            }},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+        ]
+    }, 1, 1),
+
+    # ✅ Test Case 4: Deeply Nested Structure with Multiple ABOC & SMAC
+    ({
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
+        "branching_sites": [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": "SMAC"},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": {
+                "protein": "1ubq",
+                "chain_number": 2,
+                "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+                "chain_length": 76,
+                "branching_sites": [
+                    {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+                    {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": "ABOC"},
+                    {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+                    {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+                    {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+                    {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+                    {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": "ABOC"},
+                    {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": {
+                        "protein": "1ubq",
+                        "chain_number": 3,
+                        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+                        "chain_length": 76,
+                        "branching_sites": [
+                            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+                            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+                            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": "SMAC"},
+                            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+                            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": "ABOC"},
+                            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+                            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+                            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+                        ]
+                    }}
+                ]
+            }},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+
+        ]
+    }, 3, 2),
+
+    # ✅ Test Case 5: His-Tagged Ubiquitin with ABOC
+    ({
+        "protein": "1ubq-his",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGHHHHHH",
+        "chain_length": 82,
+        "branching_sites": [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": "ABOC"},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+        ]
+    }, 1, 0),
+
+    # ✅ Test Case 6: Multi-Protected Ubiquitin with Equal Number of ABOC & SMAC
+    ({
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
+        "branching_sites": [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": "ABOC"},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": "SMAC"},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": "ABOC"},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": "SMAC"},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+        ]
+    }, 2, 2)
+])
     
+def test_find_protecting_groups(ubiquitin_structure, expected_aboc, expected_smac):
+    """
+    Test `find_protecting_groups()` to ensure it correctly counts 
+    the number of ABOC and SMAC protecting groups.
+    """
+    updated_ubiquitin, context = iterate_through_ubiquitin(copy.deepcopy(ubiquitin_structure))
+    ABOC_lysines = context["ABOC_lysines"]
+    SMAC_lysines = context["SMAC_lysines"]
+    
+    assert len(ABOC_lysines) == expected_aboc, f"Expected {expected_aboc} ABOC, got {len(ABOC_lysines)}"
+    assert len(SMAC_lysines) == expected_smac, f"Expected {expected_smac} SMAC, got {len(SMAC_lysines)}"
+
+    
+# =====================================
+# === Tests for process_current_protein === 
+# Tests for processing the current protein's FASTA sequence and updating context.
+# =====================================
 
 @pytest.mark.parametrize(
     "working_dictionary, context, expected_working_dict, expected_context",
@@ -2454,6 +2775,10 @@ def test_process_current_protein(working_dictionary, context, expected_working_d
     assert updated_working_dict == expected_working_dict, f"Expected working dictionary: {expected_working_dict}, but got: {updated_working_dict}"
     assert updated_context == expected_context, f"Expected context: {expected_context}, but got: {updated_context}"
 
+# =====================================
+# === Tests for test_process_branch ===
+# These tests validate the behavior of the `process_branch` function, ensuring that it correctly updates the context based on the provided branch information.
+# =====================================
 
 @pytest.mark.parametrize("branch, working_dict, starting_context, expected_context", [
     # ✅ Test 1: SMAC protecting group
@@ -2587,37 +2912,6 @@ def test_process_branch(branch, working_dict, starting_context, expected_context
     # Check updates in context
     for key, expected_value in expected_context.items():
         assert updated_context[key] == expected_value, f"Context key '{key}' mismatch: expected {expected_context}, got {updated_context[key]}"
-
-
-# Mock helper: minimal working_dictionary
-BASE_WORKING_DICT = {
-    "protein": "dummy_protein",
-    "chain_number": 1,
-    "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
-    "chain_length": 76,
-    "branching_sites": [
-        {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
-        {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
-        {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
-        {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
-        {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
-        {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
-        {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
-        {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
-    ]
-}
-
-# Mock helper: minimal context
-BASE_CONTEXT = {
-    "chain_length_list": [],
-    "chain_number_list": [1],
-    "free_lysines": [],
-    "conjugated_lysines": [],
-    "SMAC_lysines": [],
-    "ABOC_lysines": [],
-    "multimer_string_name": ""
-}
-
 
 @pytest.mark.parametrize("branch, expected_in_context", [
 

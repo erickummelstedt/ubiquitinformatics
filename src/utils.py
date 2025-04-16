@@ -27,6 +27,9 @@ def all_strings_exist_in_list(expected_substrings, error_strings):
     Returns:
         List[bool]: A list of booleans indicating match success for each error_string/expected_substring pair.
     """
+    
+    print(f"Checking {len(error_strings)} error strings against {len(expected_substrings)} expected substrings.")
+    
     if len(error_strings) != len(expected_substrings):
         raise ValueError("Length of error_string and expected_substrings must be equal.")
 
@@ -108,5 +111,24 @@ def inject_protein_key(branches, target_chain_number, key, value=None, remove=Fa
                     child[key] = value
                 return  # stop after injection
             inject_protein_key(child.get("branching_sites", []), target_chain_number, key, value, remove)
+
+
+def inject_branching_sites(branches, target_chain_number, new_branching_sites, current_chain_number=1):
+    """
+    Recursively injects or replaces the branching_sites list of a specific ubiquitin node.
+
+    Args:
+        branches (list): Top-level list of branching_sites.
+        target_chain_number (int): The target chain number for injection.
+        new_branching_sites (list): The new branching_sites to set.
+        current_chain_number (int): Current depth of recursion.
+    """
+    for site in branches:
+        child = site.get("children")
+        if isinstance(child, dict):
+            if child.get("chain_number") == target_chain_number:
+                child["branching_sites"] = new_branching_sites
+                return
+            inject_branching_sites(child.get("branching_sites", []), target_chain_number, new_branching_sites, current_chain_number + 1)
 
 

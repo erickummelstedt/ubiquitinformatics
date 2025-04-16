@@ -16,7 +16,8 @@ from src.utils import \
     all_strings_exist_in_list, \
     convert_json_to_dict, \
     inject_fasta_sequence_at_chain,\
-    inject_protein_key
+    inject_protein_key,\
+    inject_branching_sites
 
 from tests.test_data import \
     five_level_nested_ubiquitin_
@@ -488,3 +489,61 @@ def test_inject_protein_key_no_crash_on_missing_children():
 
     # Should not raise even though there are no valid children
     inject_protein_key(structure["branching_sites"], 2, "key", "value")
+
+# ===================================
+# TESTS: inject_branching_sites
+# This is a simplified version of the five_level_nested_ubiquitin_ structure
+# ===================================
+
+# Branching sites we'll inject for testing
+custom_sites = [
+    {"site_name": "K99", "sequence_id": "ZZZ(K)ZZZ", "children": ""},
+    {"site_name": "K100", "sequence_id": "YYY(K)YYY", "children": ""}
+]
+
+def test_inject_chain_2_branching_sites():
+    nested = copy.deepcopy(five_level_nested_ubiquitin_)
+    inject_branching_sites(nested["branching_sites"], 2, custom_sites)
+
+    # Navigate manually to chain 2
+    chain2 = nested["branching_sites"][6]["children"]
+    assert chain2["chain_number"] == 2
+    assert chain2["branching_sites"] == custom_sites
+
+def test_inject_chain_3_branching_sites():
+    nested = copy.deepcopy(five_level_nested_ubiquitin_)
+    chain2 = nested["branching_sites"][6]["children"]
+    chain3 = chain2["branching_sites"][7]["children"]
+    inject_branching_sites(nested["branching_sites"], 3, custom_sites)
+
+    assert chain3["chain_number"] == 3
+    assert chain3["branching_sites"] == custom_sites
+
+def test_inject_chain_4_branching_sites():
+    nested = copy.deepcopy(five_level_nested_ubiquitin_)
+    chain2 = nested["branching_sites"][6]["children"]
+    chain3 = chain2["branching_sites"][7]["children"]
+    chain4 = chain3["branching_sites"][1]["children"]
+    inject_branching_sites(nested["branching_sites"], 4, custom_sites)
+
+    assert chain4["chain_number"] == 4
+    assert chain4["branching_sites"] == custom_sites
+
+def test_inject_chain_5_branching_sites():
+    nested = copy.deepcopy(five_level_nested_ubiquitin_)
+    chain2 = nested["branching_sites"][6]["children"]
+    chain3 = chain2["branching_sites"][7]["children"]
+    chain5 = chain3["branching_sites"][2]["children"]
+    inject_branching_sites(nested["branching_sites"], 5, custom_sites)
+
+    assert chain5["chain_number"] == 5
+    assert chain5["branching_sites"] == custom_sites
+
+def test_no_injection_when_chain_does_not_exist():
+    nested = copy.deepcopy(five_level_nested_ubiquitin_)
+    original = copy.deepcopy(nested)
+
+    inject_branching_sites(nested["branching_sites"], 99, custom_sites)
+
+    # Expect structure unchanged since chain 99 doesn't exist
+    assert nested == original
