@@ -1,8 +1,13 @@
 Features; 
 1. Build, test and connect the following aspects
-    a. iterating through ubiquitin
+    DONE a. iterating through ubiquitin
         i. really robustly fix the errors in affirm_branching sites/sequences -- make the string adaptable (str contains)
+
+    - connect user interface to ubiquitin ecosystem, build out fastAPI system
+    - user interface for opening up ubiquitin - use fastAPI template
+
     b. simulation of ubiquitin synthesis 
+    
     c. building reaction maps and inventory checks -- by end of april
     d. build 2D representation of ubiquitin
     e. build 3D representation of ubiquitin

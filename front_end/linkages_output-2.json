@@ -1,0 +1,22 @@
+[
+  {
+    "from": 0,
+    "to": 1,
+    "linkage": "K48"
+  },
+  {
+    "from": 1,
+    "to": 4,
+    "linkage": "K63"
+  },
+  {
+    "from": 4,
+    "to": 7,
+    "linkage": "K48"
+  },
+  {
+    "from": 1,
+    "to": 3,
+    "linkage": "K48"
+  }
+]
