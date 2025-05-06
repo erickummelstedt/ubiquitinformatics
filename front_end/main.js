@@ -2,6 +2,12 @@ let arrows = [];
 const canvas = document.getElementById('graphCanvas');
 const ctx = canvas.getContext('2d');
 
+canvas.width = 900;
+canvas.height = 600;
+canvas.style.position = "absolute";
+canvas.style.top = "0";
+canvas.style.left = "0";
+
 const RADIUS = 20;
 const LIGHT_GRAY = "#dddddd";
 const GRAY = "#aaaaaa";
@@ -39,6 +45,73 @@ lastNodeIndex = 0;
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Determine scaffold bounds
+    const padding = 30;
+    const xs = nodes.map(n => n.x);
+    const ys = nodes.map(n => n.y);
+    const minX = Math.min(...xs) - RADIUS - padding;
+    const maxX = Math.max(...xs) + RADIUS + padding;
+    const minY = Math.min(...ys) - RADIUS - padding;
+    const maxY = Math.max(...ys) + RADIUS + padding;
+
+    // Calculate offset to anchor scaffold to top-left, with padding
+    const offsetX = -minX + 100;  // Adds 100px padding for a sidebar
+    const offsetY = -minY + 20;  // Adds 20px padding on the top
+
+    // Draw filled background with curved edges
+    const boxX = minX + offsetX;
+    const boxY = minY + offsetY;
+    const boxW = maxX - minX;
+    const boxH = maxY - minY;
+    const radius = 20;
+
+    ctx.fillStyle = "#101010";  // Darker than background
+    ctx.beginPath();
+    ctx.moveTo(boxX + radius, boxY);
+    ctx.arcTo(boxX + boxW, boxY, boxX + boxW, boxY + boxH, radius);
+    ctx.arcTo(boxX + boxW, boxY + boxH, boxX, boxY + boxH, radius);
+    ctx.arcTo(boxX, boxY + boxH, boxX, boxY, radius);
+    ctx.arcTo(boxX, boxY, boxX + boxW, boxY, radius);
+    ctx.closePath();
+    ctx.fill();
+
+    // Draw refresh button inside box (bottom-right, Apple-style rounded corners, Helvetica Neue)
+    const refreshBtn = {
+        x: boxX + boxW - 100,
+        y: boxY + boxH - 50,
+        w: 80,
+        h: 30,
+        r: 10  // corner radius
+    };
+    ctx.fillStyle = "#222";
+    ctx.beginPath();
+    ctx.moveTo(refreshBtn.x + refreshBtn.r, refreshBtn.y);
+    ctx.arcTo(refreshBtn.x + refreshBtn.w, refreshBtn.y, refreshBtn.x + refreshBtn.w, refreshBtn.y + refreshBtn.h, refreshBtn.r);
+    ctx.arcTo(refreshBtn.x + refreshBtn.w, refreshBtn.y + refreshBtn.h, refreshBtn.x, refreshBtn.y + refreshBtn.h, refreshBtn.r);
+    ctx.arcTo(refreshBtn.x, refreshBtn.y + refreshBtn.h, refreshBtn.x, refreshBtn.y, refreshBtn.r);
+    ctx.arcTo(refreshBtn.x, refreshBtn.y, refreshBtn.x + refreshBtn.w, refreshBtn.y, refreshBtn.r);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#555";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = "#fff";
+    ctx.font = "16px 'Helvetica Neue', sans-serif";
+    ctx.fillText("Refresh", refreshBtn.x + 10, refreshBtn.y + 20);
+
+    // Save button rect for click detection
+    canvas.refreshBtn = refreshBtn;
+
+    // Outer border
+    ctx.strokeStyle = "#444";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Inner border
+    ctx.strokeStyle = "#666";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
     // Draw edges
     ctx.strokeStyle = GRAY;
     ctx.lineWidth = 2;
@@ -46,8 +119,8 @@ function draw() {
         const { x: x1, y: y1 } = nodes[i1];
         const { x: x2, y: y2 } = nodes[i2];
         ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
+        ctx.moveTo(x1 + offsetX, y1 + offsetY);
+        ctx.lineTo(x2 + offsetX, y2 + offsetY);
         ctx.stroke();
     });
 
@@ -63,14 +136,14 @@ function draw() {
         const dy = y2 - y1;
         const length = Math.sqrt(dx * dx + dy * dy);
         const offset = 5;
-        const offsetX = -dy / length * offset;
-        const offsetY = dx / length * offset;
+        const offsetXperp = -dy / length * offset;
+        const offsetYperp = dx / length * offset;
         const direction = (color === "blue") ? 1 : -1;
 
-        const sx1 = x1 + direction * offsetX;
-        const sy1 = y1 + direction * offsetY;
-        const sx2 = x2 + direction * offsetX;
-        const sy2 = y2 + direction * offsetY;
+        const sx1 = x1 + direction * offsetXperp + offsetX;
+        const sy1 = y1 + direction * offsetYperp + offsetY;
+        const sx2 = x2 + direction * offsetXperp + offsetX;
+        const sy2 = y2 + direction * offsetYperp + offsetY;
 
         // Draw the line
         ctx.strokeStyle = color;
@@ -103,17 +176,19 @@ function draw() {
 
     // Draw nodes
     nodes.forEach(({ x, y, clicks }) => {
+        const drawX = x + offsetX;
+        const drawY = y + offsetY;
         if (clicks === 0) ctx.fillStyle = LIGHT_GRAY;
         else if (clicks === 1) ctx.fillStyle = "#ff9999";
         else ctx.fillStyle = "#cc6666";
         ctx.beginPath();
-        ctx.arc(x, y, RADIUS, 0, Math.PI * 2);
+        ctx.arc(drawX, drawY, RADIUS, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.strokeStyle = BLACK;
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(x, y, RADIUS, 0, Math.PI * 2);
+        ctx.arc(drawX, drawY, RADIUS, 0, Math.PI * 2);
         ctx.stroke();
     });
 
@@ -126,10 +201,32 @@ canvas.addEventListener('mousedown', (e) => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
+    // Check if refresh button was clicked
+    if (canvas.refreshBtn) {
+        const { x: bx, y: by, w: bw, h: bh } = canvas.refreshBtn;
+        if (x >= bx && x <= bx + bw && y >= by && y <= by + bh) {
+            location.reload();  // Refresh the page
+            return;
+        }
+    }
+
+    // Determine scaffold bounds
+    const padding = 30;
+    const xs = nodes.map(n => n.x);
+    const ys = nodes.map(n => n.y);
+    const minX = Math.min(...xs) - RADIUS - padding;
+    const maxX = Math.max(...xs) + RADIUS + padding;
+    const minY = Math.min(...ys) - RADIUS - padding;
+    const maxY = Math.max(...ys) + RADIUS + padding;
+
+    // Calculate offset to anchor scaffold to top-left, with padding for a sidebar
+    const offsetX = -minX + 100;  // Adds 100px padding for a sidebar
+    const offsetY = -minY + 20;  // Adds 20px padding on the top
+
     for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
-        const dx = node.x - x;
-        const dy = node.y - y;
+        const dx = node.x + offsetX - x;
+        const dy = node.y + offsetY - y;
 
         if (Math.sqrt(dx * dx + dy * dy) <= RADIUS) {
             let isAllowed = false;
@@ -201,4 +298,3 @@ exportButton.style.top = "10px";
 exportButton.style.left = "10px";
 exportButton.addEventListener("click", exportLinkages);
 document.body.appendChild(exportButton);
-
