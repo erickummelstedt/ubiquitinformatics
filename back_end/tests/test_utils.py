@@ -7,7 +7,7 @@ import logging
 
 # home_dir = os.path.expanduser('~')
 # local_path = '/home/erickummelstedt/lecodebase/ubiquitinformatics/src/main.py'
-local_path = '/Users/ekummelstedt/le_code_base/ubiquitinformatics'
+local_path = '/Users/ekummelstedt/le_code_base/ubiquitinformatics/back_end'
 sys.path.insert(0, local_path)
 
 from src.utils import \
