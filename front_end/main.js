@@ -1,9 +1,8 @@
 let arrows = [];
 const canvas = document.getElementById('graphCanvas');
 const ctx = canvas.getContext('2d');
-
-canvas.width = 900;
-canvas.height = 600;
+// canvas.width = 900;
+// canvas.height = 600;
 canvas.style.position = "absolute";
 canvas.style.top = "0";
 canvas.style.left = "0";
@@ -43,6 +42,11 @@ clickedNodes.add(0);
 lastNodeIndex = 0;
 
 function draw() {
+    // Maintain locked aspect ratio for scaffold and box
+    const BASE_WIDTH = 900;
+    const BASE_HEIGHT = 600;
+    canvas.width = BASE_WIDTH;
+    canvas.height = BASE_HEIGHT;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Determine scaffold bounds
@@ -54,6 +58,7 @@ function draw() {
     const minY = Math.min(...ys) - RADIUS - padding;
     const maxY = Math.max(...ys) + RADIUS + padding;
 
+    // Offset ensures scaffold remains centered with consistent padding despite browser resizing
     // Calculate offset to anchor scaffold to top-left, with padding
     const offsetX = -minX + 100;  // Adds 100px padding for a sidebar
     const offsetY = -minY + 20;  // Adds 20px padding on the top
