@@ -1,0 +1,2 @@
+1. use html + react at first
+2. use vite + react later
