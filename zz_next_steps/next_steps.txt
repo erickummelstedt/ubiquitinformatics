@@ -3,6 +3,9 @@ Features;
     DONE a. iterating through ubiquitin
         i. really robustly fix the errors in affirm_branching sites/sequences -- make the string adaptable (str contains)
 
+    - Build simulation and datatables of simulation with tests - finalize everything
+    - Build in 3D simulation
+
     - connect user interface to ubiquitin ecosystem, build out fastAPI system
     - user interface for opening up ubiquitin - use fastAPI template
 

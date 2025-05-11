@@ -1,5 +1,0 @@
-write unit tests based on this message below..
-
-Okay, I understand the request. You want to add tests to test_main.py that specifically verify that the validation logic (checking keys, branching sites, sequences, children format, etc.) is correctly applied recursively when iterate_through_ubiquitin processes nested ubiquitin structures (dictionaries found within the children field of a branching site).
-
-The existing tests for functions like validate_protein_keys, check_branching_sites, validate_branching_sites, etc., primarily test these functions in isolation or at the top level of the input dictionary. The goal now is to ensure these validations are triggered correctly for the nested dictionaries during the recursive traversal performed by iterate_through_ubiquitin and its helper inner_wrapper_iterate_through_ubiquitin.

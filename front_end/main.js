@@ -235,7 +235,7 @@ const GraphPanel = () => {
     ref: canvasRef,
     width: 300,
     height: 200,
-    style: { display: 'block', margin: 'auto', backgroundColor: '#1c1c1c', border: '1px solid #888', width : canvas_width.toString() + 'px', height: canvas_height.toString() + 'px',},
+    style: { display: 'block', margin: 'auto', backgroundColor: '#1c1c1c', border: '1px solid #888', width : canvas_width.toString() + 'px', height: canvas_height.toString() + 'px'},
   });
 };
 

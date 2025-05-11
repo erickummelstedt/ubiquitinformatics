@@ -103,8 +103,6 @@ def ubiquitin_simulation(
         ubi_molecule_to_add (dict or str): Ubiquitin molecule to be added, in dictionary or JSON string form.
         type_of_reaction (str): Reaction type (e.g., 'SMAC_deprot', 'ABOC_deprot', 'K48' or 'K63').
             (type of reaction (str): is either K48 or K63, enzyme is not defined here
-        chain_number_list (List[int], optional): Tracks chain numbers. Defaults to [1].
-        chain_length_list (List[int], optional): Tracks chain lengths. Defaults to [].
 
     Returns:
         dict: Updated dictionary representing the protein structure after the reaction.

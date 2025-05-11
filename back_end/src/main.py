@@ -478,18 +478,233 @@ def find_max_chain_number(context):
 
 
 
+## notes on code changes; 
+## Write Python code that is clean, readable, and fully compliant with PEP 8, the official Python style guide.
+
+## instead of json.loads(x) code use convert_json_to_dict 
+
+## use log_protein_details(working_dictionary, context) instead of 
+# logging.info(f"Protein: {working_dictionary['protein']}")
+# logging.info(f"Sequence: {working_dictionary['FASTA_sequence']}")
+# logging.info(f"Chain Number List: {context['chain_number_list']}")
+# logging.info(f"Chain Length: {working_dictionary['chain_length']}")
+# logging.info(f"Chain Number: {working_dictionary['chain_number']}")
+# logging.info(f"Branching Sites: {working_dictionary['branching_sites']}")
 
 
+## use log_branching_details(branch, working_dictionary, context): instead of 
+#  logging.info(' ===== START OF LYSINE SITE =====  ')
+#  logging.info(f"Chain Number: {working_dictionary['chain_number']}")
+#  logging.info(f"Lysine Site: {bra['site_name']}")
+
+# use log_end_of_branching(): instead of logging.info(' ===== END OF LYSINE SITE =====  ')
+
+# use log_end_of_protein(working_dictionary) instead of logging.info f' ===== END OF PROTEIN - CHAIN NUMBER: {working_dictionary["chain_number"]} =====  ')
+
+# type of reaction can be either K48 or K63, enzyme is not defined here
+# Ube2K = K48
+# Ube13/Mms2 = K63
+
+## instead of find_max_chain_number, find_ABOC_lysines, find_SMAC_lysines, find_free_lysines, find_conjugated_lysines, this information is pulled out of iterate through ubiquitin and the context dictionary it produces
 
 
+def K_residue_ubi_addition(working_dictionary, specific_ubi_num, ubiquitination_sequence, ubi_molecule_to_add):
+    """
+    Adds a ubiquitin monomer to a specified lysine residue in the working dictionary.
+    This function no longer adds SMAC or ABOC
 
+    Args:
+        working_dictionary (dict or str): Dictionary or JSON string representing the protein structure.
+        specific_ubi_num (int): Identifier for the specific ubiquitin.
+        ubiquitination_sequence (str): Sequence identifier for the lysine to be conjugated.
+        ubi_molecule_to_add (dict): Ubiquitin molecule to be added.
 
+    Returns:
+        dict: Updated working dictionary with the ubiquitin molecule added.
+    """
+    # Ensure working_dictionary is a dict
+    working_dictionary = convert_json_to_dict(working_dictionary)
 
+    # Access immediate branching_sites
+    direct_branching_sites = working_dictionary['branching_sites']
 
+    # Loop through the lysine sites (e.g., K48, K63)
+    for bra in direct_branching_sites:
+        # Identify the index of the lysine within direct_branching_sites
+        loop_index = list(direct_branching_sites).index(bra)
 
+        # If lysine residue matches the ubiquitination site, proceed
+        if bra['sequence_id'] == ubiquitination_sequence:
+            # If the site is not conjugated (children is "", "SMAC", or "ABOC")
+            if bra["children"] in ("ABOC", "SMAC", ""):
+                ubi_statement = (
+                    f"========== ALERT: CONJUGATION ========== this lysine {bra['site_name']} "
+                    f"on ubiquitin {specific_ubi_num} is not conjugated, the ubiquitin will be added here."
+                )
+                logging.info(ubi_statement)
+                # Ensure the C-terminus of the ubiquitin has the correct GG sequence
+                if ubi_molecule_to_add['FASTA_sequence'][-5:] == 'RLRGG':
+                    bra["children"] = ubi_molecule_to_add
+                else:
+                    logging.info('Ubiquitin C-terminus does not end with RLRGG.')
+                # Update the direct_branching_sites with the modified branch
+                direct_branching_sites[loop_index] = bra
+            # Raise error if the site is already conjugated (children is a dict)
+            elif isinstance(bra["children"], dict):
+                raise TypeError(
+                    f"The lysine specified for conjugation {bra['site_name']} on "
+                    f"ubiquitin {specific_ubi_num} is already conjugated"
+                )
+    # Update working_dictionary with modified branching_sites
+    working_dictionary['branching_sites'] = direct_branching_sites
+    return working_dictionary
 
+def ubiquitin_simulation(
+        parent_dictionary: dict | str, 
+        ubi_molecule_to_add: dict | str, 
+        type_of_reaction: str
+        ):
+    """
+    Simulates ubiquitin addition, deprotection, or branching reactions by recursively traversing the protein structure.
 
+    Args:
+        parent_dictionary (dict or str): The protein or ubiquitin structure in dictionary or JSON string form.
+        ubi_molecule_to_add (dict or str): Ubiquitin molecule to be added, in dictionary or JSON string form.
+        type_of_reaction (str): Reaction type (e.g., 'SMAC_deprot', 'GLOBAL_deprot', 'ABOC_deprot', 'K48' or 'K63').
+            (type of reaction (str): is either K48 or K63, enzyme is not defined here
 
+    Returns:
+        dict: Updated dictionary representing the protein structure after the reaction.
+    """
 
+    # Validate reaction type
+    valid_reactions = {'SMAC_deprot', 'GLOBAL_deprot', 'ABOC_deprot', 'K48', 'K63'}
+    if type_of_reaction not in valid_reactions:
+        raise ValueError(f"Invalid type_of_reaction: {type_of_reaction}. Must be one of {valid_reactions}")
 
+    # Normalize input to dicts
+    parent_dictionary = convert_json_to_dict(parent_dictionary)
+    ubi_molecule_to_add = convert_json_to_dict(ubi_molecule_to_add)
 
+    # Initialize context for chain numbering and length tracking
+    context = {
+        "chain_number_list": [1],
+        "chain_length_list": [],
+    }
+
+    adapted_dictionary, context = inner_wrapper_ubiquitin_simulation(
+        parent_dictionary, ubi_molecule_to_add, type_of_reaction, context
+    )
+
+    return iterate_through_ubiquitin(adapted_dictionary)
+
+def inner_wrapper_ubiquitin_simulation(
+        input_dictionary: dict, 
+        ubi_molecule_to_add: dict, 
+        type_of_reaction: str,
+        context
+        ) -> dict:
+    """
+    Inner function to recursively handle ubiquitin simulation on a protein chain or structure.
+
+    Args:
+        input_dictionary (dict): Protein or ubiquitin structure for the current level of recursion.
+        ubi_molecule_to_add (dict): Ubiquitin molecule to add.
+        type_of_reaction (str): Type of reaction being simulated.
+
+    Returns:
+        dict: Updated protein or ubiquitin structure.
+    """
+    # Validate reaction type
+    valid_reactions = {'SMAC_deprot', 'GLOBAL_deprot', 'ABOC_deprot', 'K48', 'K63'}
+    if type_of_reaction not in valid_reactions:
+        raise ValueError(f"Invalid type_of_reaction: {type_of_reaction}. Must be one of {valid_reactions}")
+
+    # Deep copy to avoid mutating input
+    working_dictionary = copy.deepcopy(input_dictionary)
+    working_dictionary = convert_json_to_dict(working_dictionary)
+
+    # Set the current chain number from context
+    working_dictionary['chain_number'] = context['chain_number_list'][-1]
+    # Set and record chain length
+    working_dictionary['chain_length'] = len(working_dictionary['FASTA_sequence'])
+    context['chain_length_list'].append(working_dictionary['chain_length'])
+
+    # Logging for debugging and traceability
+    log_protein_details(working_dictionary, context)
+
+    # Increment chain_number for future recursive calls
+    context['chain_number_list'].append(context['chain_number_list'][-1] + 1)
+
+    for bra in working_dictionary['branching_sites']:
+        log_branching_details(bra, working_dictionary, context)
+
+        # Log the type of attachment at the lysine site
+        if bra['children'] in ('SMAC', 'ABOC'):
+            logging.info(f"Protecting Group: {bra['children']}")
+        elif bra['children'] == "":
+            logging.info(f"There is no Protecting Group on: {bra['site_name']}")
+        elif isinstance(bra['children'], dict):
+            logging.info(f'NEXT CHAIN: {bra["children"]}')
+            # Recursively process the next ubiquitin chain, updating context
+            bra['children'], context = inner_wrapper_ubiquitin_simulation(
+                bra['children'], ubi_molecule_to_add, type_of_reaction, context
+            )
+
+        # Actions for deprotection and conjugation logic
+        bra, working_dictionary = process_ubiquitin_reaction(
+            bra, working_dictionary, type_of_reaction, ubi_molecule_to_add
+        )
+        # TODO: Implement other reaction types as needed
+        log_end_of_branching()
+
+    log_end_of_protein(working_dictionary)
+    return working_dictionary, context
+
+def process_ubiquitin_reaction(
+        bra: dict,
+        working_dictionary: dict,
+        type_of_reaction: str,
+        ubi_molecule_to_add: dict
+    ) -> tuple[dict, dict]:
+    """
+    Handle the logic for deprotection and ubiquitin conjugation at a specific lysine.
+
+    Args:
+        bra (dict): The branching site information.
+        working_dictionary (dict): Current working protein or ubiquitin structure.
+        type_of_reaction (str): The type of reaction being applied.
+        ubi_molecule_to_add (dict): The ubiquitin molecule to add, if conjugation is triggered.
+
+    Returns:
+        tuple: Updated (bra, working_dictionary).
+    """
+    if type_of_reaction == 'SMAC_deprot' and bra['children'] == 'SMAC':
+        bra['children'] = ''
+    elif type_of_reaction == 'ABOC_deprot' and bra['children'] == 'ABOC':
+        bra['children'] = ''
+    elif type_of_reaction == 'GLOBAL_deprot' and bra['children'] in ('ABOC', 'SMAC'):
+        bra['children'] = ''
+    elif (
+        type_of_reaction == 'K48'
+        and bra['children'] == ''
+        and bra['sequence_id'] == 'FAG(K)QLE'
+    ):
+        working_dictionary = K_residue_ubi_addition(
+            working_dictionary,
+            working_dictionary['chain_number'],
+            'FAG(K)QLE',
+            ubi_molecule_to_add
+        )
+    elif (
+        type_of_reaction == 'K63'
+        and bra['children'] == ''
+        and bra['sequence_id'] == 'NIQ(K)EST'
+    ):
+        working_dictionary = K_residue_ubi_addition(
+            working_dictionary,
+            working_dictionary['chain_number'],
+            'NIQ(K)EST',
+            ubi_molecule_to_add
+        )
+    return bra, working_dictionary
