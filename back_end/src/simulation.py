@@ -129,11 +129,11 @@ def simulate_deprot_step(history_dict: dict) -> list[dict]:
 
 
 
-def find_Ube2K_or_Uce2g2(reactant_dictionary, product_dictionary):
-    global chain_number_list
-    global chain_length_list
-    global free_lysine_list
-    global bound_lysine_list
+
+def find_Ube2K_or_Uce2g2(
+        reactant_dictionary, 
+        product_dictionary
+        ):
     
     ## do everything with reactant and product...
     chain_number_list = [1]
