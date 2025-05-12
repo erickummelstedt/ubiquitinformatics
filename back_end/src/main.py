@@ -546,7 +546,7 @@ def K_residue_ubi_addition(working_dictionary, specific_ubi_num, ubiquitination_
                 if ubi_molecule_to_add['FASTA_sequence'][-5:] == 'RLRGG':
                     bra["children"] = ubi_molecule_to_add
                 else:
-                    logging.info('Ubiquitin C-terminus does not end with RLRGG.')
+                    raise TypeError("Ubiquitin C-terminus does not end with RLRGG.")
                 # Update the direct_branching_sites with the modified branch
                 direct_branching_sites[loop_index] = bra
             # Raise error if the site is already conjugated (children is a dict)
