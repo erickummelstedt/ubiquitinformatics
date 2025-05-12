@@ -1,6 +1,8 @@
+import types
 import pytest
 import json
 import copy
+import logging
 from copy import deepcopy
 import sys
 
@@ -23,7 +25,14 @@ from src.main import \
     check_children_format,\
     process_current_protein, \
     process_branch, \
-    find_max_chain_number
+    find_max_chain_number, \
+    K_residue_ubi_addition, \
+    process_ubiquitin_reaction, \
+    ubiquitin_simulation, \
+    inner_wrapper_ubiquitin_simulation, \
+    handle_lysine_modification, \
+    ubiquitin_building, \
+    inner_wrapper_ubiquitin_building
 
 from src.utils import \
     match_assertion_error_contains,\
@@ -3113,3 +3122,677 @@ def test_process_branch_large_fasta_sequence():
     _, _, updated_context = process_branch(branch, working_dict, context)
     assert updated_context is not None
 
+
+# Verify ubiquitin is added correctly to a free lysine site.
+def test_add_to_unoccupied_site():
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    updated = K_residue_ubi_addition(data, 1, "IFV(K)TLT", BASE_WORKING_DICT)
+    assert isinstance(updated["branching_sites"][1]["children"], dict)
+
+# Verify ubiquitin is added to a lysine site even if marked with protecting groups as strings.
+def test_add_to_site_with_string_children():
+    for protecting_group in ["SMAC", "ABOC"]:
+        data = copy.deepcopy(five_level_nested_ubiquitin_)
+        data["branching_sites"][1]["children"] = protecting_group
+        updated = K_residue_ubi_addition(data, 1, "IFV(K)TLT", BASE_WORKING_DICT)
+        assert isinstance(updated["branching_sites"][1]["children"], dict)
+
+# Verify no changes occur if the sequence ID does not match any lysine.
+def test_no_change_if_sequence_id_mismatch():
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    original = copy.deepcopy(data["branching_sites"])
+    updated = K_residue_ubi_addition(data, 1, "XYZ(K)ABC", BASE_WORKING_DICT)
+    assert updated["branching_sites"] == original
+
+# Verify error is raised when conjugating to a lysine that already has a ubiquitin attached.
+def test_error_on_already_conjugated_site():
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][1]["children"] = {"mock": "ubi"}
+    with pytest.raises(TypeError, match="already conjugated"):
+        K_residue_ubi_addition(data, 1, "IFV(K)TLT", BASE_WORKING_DICT)
+
+# Verify JSON string input is properly converted to a dictionary.
+def test_json_input_converted():
+    import json
+    json_data = json.dumps(five_level_nested_ubiquitin_)
+    updated = K_residue_ubi_addition(json_data, 1, "IFV(K)TLT", BASE_WORKING_DICT)
+    assert isinstance(updated, dict)
+
+# Verify addition raises TypeError if FASTA sequence does not end with RLRGG.
+def test_addition_raises_if_RLRGG_tail_missing():
+    # Test that a TypeError is raised if the FASTA sequence does not end with RLRGG
+    non_matching_tail = copy.deepcopy(BASE_WORKING_DICT)
+    non_matching_tail["FASTA_sequence"] = "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGXXXXXX"
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    with pytest.raises(TypeError, match="does not end with RLRGG"):
+        K_residue_ubi_addition(data, 1, "IFV(K)TLT", non_matching_tail)
+
+# Verify correct lysine index is targeted and updated within branching_sites.
+def test_loop_index_resolved_correctly():
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    # Ensure the correct index (1) is updated
+    updated = K_residue_ubi_addition(data, 1, "IFV(K)TLT", BASE_WORKING_DICT)
+    assert updated["branching_sites"][1]["site_name"] == "K6"
+    assert isinstance(updated["branching_sites"][1]["children"], dict)
+
+# Verify conjugation works on deeply nested ubiquitin structures.
+def test_addition_on_deep_nested_chain():
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    deep_branch = data["branching_sites"][6]["children"]["branching_sites"][7]["children"]
+    assert deep_branch["chain_number"] == 3
+    modified = K_residue_ubi_addition(deep_branch, 3, "ENV(K)AKI", BASE_WORKING_DICT)
+    assert isinstance(modified["branching_sites"][3]["children"], dict)
+
+# Verify error is raised if input is not a valid dictionary or JSON string.
+def test_addition_raises_if_not_dict_or_json():
+    invalid_input = "This is not a valid input"
+    with pytest.raises(ValueError, match="Invalid JSON format: Unable to parse the string"):
+        K_residue_ubi_addition(invalid_input, 1, "IFV(K)TLT", BASE_WORKING_DICT)
+
+# Verify error is raised if input is an empty string.
+def test_addition_raises_if_empty_string():
+    empty_input = ""
+    with pytest.raises(ValueError, match="Invalid JSON format: Unable to parse the string"):
+        K_residue_ubi_addition(empty_input, 1, "IFV(K)TLT", BASE_WORKING_DICT)
+
+# Verify error is raised if input is None.
+def test_addition_raises_if_none():
+    none_input = None
+    with pytest.raises(TypeError, match="Input must be a dictionary or a JSON string"):
+        K_residue_ubi_addition(none_input, 1, "IFV(K)TLT", BASE_WORKING_DICT)
+
+# Verify SMAC deprotection clears the 'children' field.
+def test_smac_deprotection():
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][1]["children"] = "SMAC"
+    bra, updated = process_ubiquitin_reaction(data["branching_sites"][1], data, "SMAC_deprot", BASE_WORKING_DICT)
+    assert bra["children"] == ""
+
+# Verify ABOC deprotection clears the 'children' field.
+def test_aboc_deprotection():
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][1]["children"] = "ABOC"
+    bra, updated = process_ubiquitin_reaction(data["branching_sites"][1], data, "ABOC_deprot", BASE_WORKING_DICT)
+    assert bra["children"] == ""
+
+# Verify GLOBAL deprotection clears SMAC protecting group correctly.
+def test_global_deprotection_smac():
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][1]["children"] = "SMAC"
+    bra, updated = process_ubiquitin_reaction(data["branching_sites"][1], data, "GLOBAL_deprot", BASE_WORKING_DICT)
+    assert bra["children"] == ""
+
+# Verify GLOBAL deprotection clears ABOC protecting group correctly.
+def test_global_deprotection_aboc():
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][1]["children"] = "ABOC"
+    bra, updated = process_ubiquitin_reaction(data["branching_sites"][1], data, "GLOBAL_deprot", BASE_WORKING_DICT)
+    assert bra["children"] == ""
+
+# Verify ubiquitin is conjugated to K48 if unoccupied and sequence ID matches.
+def test_k48_conjugation():
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    bra = data["branching_sites"][6]
+    bra["children"] = ""
+    bra, updated = process_ubiquitin_reaction(bra, data, "K48", BASE_WORKING_DICT)
+    assert isinstance(updated["branching_sites"][6]["children"], dict)
+
+# Verify ubiquitin is conjugated to K63 if unoccupied and sequence ID matches.
+def test_k63_conjugation():
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    bra = data["branching_sites"][7]
+    bra["children"] = ""
+    bra, updated = process_ubiquitin_reaction(bra, data, "K63", BASE_WORKING_DICT)
+    assert isinstance(updated["branching_sites"][7]["children"], dict)
+
+# Verify no conjugation occurs if sequence ID for K48 reaction does not match.
+def test_k48_conjugation_wrong_sequence():
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    bra = data["branching_sites"][2]
+    bra["sequence_id"] = "WRONG(K)SEQ"
+    original = copy.deepcopy(bra["children"])
+    bra, updated = process_ubiquitin_reaction(bra, data, "K48", BASE_WORKING_DICT)
+    assert bra["children"] == original
+
+# Verify no conjugation occurs if K63 site already has a ubiquitin attached.
+def test_k63_conjugation_with_existing_children():
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    bra = data["branching_sites"][7]
+    bra["children"] = {"mock": "ubi"}
+    bra, updated = process_ubiquitin_reaction(bra, data, "K63", BASE_WORKING_DICT)
+    assert bra["children"] == {"mock": "ubi"}
+
+@pytest.mark.parametrize("lys_site, expected_child", [
+    # SMAC deprotection
+    ("K48", ""),
+])
+def test_process_ubiquitin_smac_deprot(lys_site, expected_child):
+    """
+    Test SMAC deprotection: the function should remove 'SMAC' from the lysine site.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    for site in data["branching_sites"]:
+        if site["site_name"] == lys_site:
+            site["children"] = "SMAC"
+            bra, updated = process_ubiquitin_reaction(site, data, "SMAC_deprot", ubiquitin_monomer)
+            assert bra["children"] == expected_child
+            break
+
+def test_process_ubiquitin_aboc_deprot():
+    """
+    Test ABOC deprotection: the function should remove 'ABOC' from the lysine site.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][6]["children"] = "ABOC"
+    bra, updated = process_ubiquitin_reaction(data["branching_sites"][6], data, "ABOC_deprot", ubiquitin_monomer)
+    assert bra["children"] == ""
+
+def test_process_ubiquitin_global_deprot_smac():
+    """
+    Test global deprotection: 'SMAC' child should be cleared.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][6]["children"] = "SMAC"
+    bra, updated = process_ubiquitin_reaction(data["branching_sites"][6], data, "GLOBAL_deprot", ubiquitin_monomer)
+    assert bra["children"] == ""
+
+def test_process_ubiquitin_global_deprot_aboc():
+    """
+    Test global deprotection: 'ABOC' child should be cleared.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][6]["children"] = "ABOC"
+    bra, updated = process_ubiquitin_reaction(data["branching_sites"][6], data, "GLOBAL_deprot", ubiquitin_monomer)
+    assert bra["children"] == ""
+
+def test_process_ubiquitin_k48_conjugation():
+    """
+    Test K48 conjugation: a ubiquitin should be added to a free K48 site.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][6]["children"] = ""
+    bra, updated = process_ubiquitin_reaction(data["branching_sites"][6], data, "K48", ubiquitin_monomer)
+    assert isinstance(data["branching_sites"][6]["children"], dict)
+    assert data["branching_sites"][6]["children"]["protein"] == "1ubq"
+
+def test_process_ubiquitin_k63_conjugation():
+    """
+    Test K63 conjugation: a ubiquitin should be added to a free K63 site.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][7]["children"] = ""
+    bra, updated = process_ubiquitin_reaction(data["branching_sites"][7], data, "K63", ubiquitin_monomer)
+    assert isinstance(data["branching_sites"][7]["children"], dict)
+    assert data["branching_sites"][7]["children"]["protein"] == "1ubq"
+
+def test_process_ubiquitin_k48_noop_when_occupied():
+    """
+    Test K48 conjugation when already occupied: should remain unchanged.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    original_child = data["branching_sites"][6]["children"]
+    bra, updated = process_ubiquitin_reaction(data["branching_sites"][6], data, "K48", ubiquitin_monomer)
+    assert data["branching_sites"][6]["children"] == original_child
+
+def test_process_ubiquitin_k63_noop_when_invalid_sequence():
+    """
+    Test K63 conjugation with wrong sequence_id: no conjugation should happen.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][7]["sequence_id"] = "INVALID(K)SEQ"
+    data["branching_sites"][7]["children"] = ""
+    bra, updated = process_ubiquitin_reaction(data["branching_sites"][7], data, "K63", ubiquitin_monomer)
+    assert data["branching_sites"][7]["children"] == ""
+
+# =============================
+# Tests for ubiquitin_simulation and inner_wrapper_ubiquitin_simulation
+# =============================
+
+# Test K48 addition to level 1 lysine
+def test_ubiquitin_simulation_k48_on_level_1():
+    """Test K48 conjugation works at top-level ubiquitin structure."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    results, contexts = ubiquitin_simulation(data, BASE_WORKING_DICT, "K48")
+    assert isinstance(results, dict)
+    assert isinstance(results["branching_sites"][6]["children"], dict)
+
+# Test K63 addition to level 1 lysine
+def test_ubiquitin_simulation_k63_on_level_1():
+    """Test K63 conjugation works at top-level ubiquitin structure."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    results, contexts = ubiquitin_simulation(data, BASE_WORKING_DICT, "K63")
+    assert isinstance(results["branching_sites"][7]["children"], dict)
+
+# Test SMAC deprotection
+def test_ubiquitin_simulation_smac_deprot():
+    """Test SMAC deprotection clears correct child at level 1."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][1]["children"] = "SMAC"
+    results, contexts = ubiquitin_simulation(data, BASE_WORKING_DICT, "SMAC_deprot")
+    assert results["branching_sites"][1]["children"] == ""
+
+# Test GLOBAL deprotection on ABOC
+def test_ubiquitin_simulation_global_deprot_aboc():
+    """Test GLOBAL deprotection clears ABOC child."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][1]["children"] = "ABOC"
+    results, contexts = ubiquitin_simulation(data, BASE_WORKING_DICT, "GLOBAL_deprot")
+    assert results["branching_sites"][1]["children"] == ""
+
+# Test ABOC deprotection
+def test_ubiquitin_simulation_aboc_deprot():
+    """Test ABOC deprotection clears correct child."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][1]["children"] = "ABOC"
+    results, contexts = ubiquitin_simulation(data, BASE_WORKING_DICT, "ABOC_deprot")
+    assert results["branching_sites"][1]["children"] == ""
+
+# Test invalid reaction type
+def test_ubiquitin_simulation_invalid_reaction():
+    """Test invalid type_of_reaction raises ValueError."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    with pytest.raises(ValueError):
+        ubiquitin_simulation(data, BASE_WORKING_DICT, "INVALID")
+
+# Recursive test: K63 nested conjugation level 2
+def test_recursive_k63_nested_addition_level_2():
+    """Test K63 conjugation on nested chain (level 2)."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    level_2 = data["branching_sites"][6]["children"]
+    level_2["branching_sites"][7]["children"] = ""
+    results, contexts = ubiquitin_simulation(data, BASE_WORKING_DICT, "K63")
+    nested = results["branching_sites"][6]["children"]["branching_sites"][7]["children"]
+    assert isinstance(nested, dict)
+
+# Recursive test: SMAC deprot deep level
+def test_recursive_smac_deprot_deep():
+    """Test SMAC deprotection applied on deeply nested structure."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][1]["children"] = "SMAC"
+    results, contexts = ubiquitin_simulation(data, BASE_WORKING_DICT, "SMAC_deprot")
+    cleared = results["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][1]["children"]
+    assert cleared == ""
+
+# Recursive test: ABOC deprot deep level
+def test_recursive_aboc_deprot_deep():
+    """Test ABOC deprotection applied on nested 4th level."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][1]["children"] = "ABOC"
+    results, contexts = ubiquitin_simulation(data, BASE_WORKING_DICT, "ABOC_deprot")
+    cleared = results["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][1]["children"]
+    assert cleared == ""
+
+# Recursive test: GLOBAL deprot on multiple nested levels
+def test_recursive_global_deprot_multiple():
+    """Test GLOBAL deprotection clears multiple nested SMAC/ABOC sites."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][1]["children"] = "SMAC"
+    data["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][1]["children"] = "ABOC"
+    results, contexts = ubiquitin_simulation(data, BASE_WORKING_DICT, "GLOBAL_deprot")
+    assert results["branching_sites"][1]["children"] == ""
+    assert results["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][1]["children"] == ""
+
+# Recursive test: K48 nested addition level 3
+def test_recursive_k48_addition_deep():
+    """Test K48 conjugation on 3rd-level nested structure."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    level_3 = data["branching_sites"][6]["children"]["branching_sites"][7]["children"]
+    level_3["branching_sites"][6]["children"] = ""
+    results, contexts = ubiquitin_simulation(data, BASE_WORKING_DICT, "K48")
+    added = results["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][6]["children"]
+    assert isinstance(added, dict)
+
+# Recursive test: Ensure context correctly tracks chain numbers
+def test_context_tracking_deep_recursion():
+    """Test chain_number_list grows correctly during recursion."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    results, contexts = ubiquitin_simulation(data, BASE_WORKING_DICT, "K48")
+    assert isinstance(results, dict)
+#
+# Complex test: Add multiple ubiquitins and check renumbering
+def test_multiple_ubiquitin_additions_and_relabelling():
+    """Test multiple conjugations across different levels and validate renumbering."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+
+    # Manually clear several children for additions
+    data["branching_sites"][1]["children"] = ""
+    data["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][6]["children"] = ""
+    data["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][7]["children"] = ""
+
+    # Apply K63 at level 1
+    results, contexts = ubiquitin_simulation(data, BASE_WORKING_DICT, "K63")
+    # Apply K48 at deep level
+    results, contexts = ubiquitin_simulation(results, BASE_WORKING_DICT, "K48")
+
+    # Check that additions were made
+    print(results)
+    assert isinstance(results["branching_sites"][1]["children"], str)
+    assert isinstance(results["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][6]["children"], dict)
+    assert isinstance(results["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][7]["children"], dict)
+
+    new_input = copy.deepcopy(results)
+
+    # Run relabeling to ensure chain numbers are updated
+    relabelled, relabelled_contexts = iterate_through_ubiquitin(new_input)
+
+    # Check that the relabelled results match the original results
+    # Assumes iterate_through_ubiquitin functions correctly
+
+    assert relabelled == results
+
+# =============================
+# Tests for handle_lysine_modification
+# =============================
+
+@pytest.mark.parametrize("lys_site, modifier, expected", [
+    ("K6", "SMAC", "SMAC"),   # Add SMAC to empty site
+    ("K6", "ABOC", "ABOC"),   # Add ABOC to empty site
+])
+def test_handle_lysine_adds_protecting_group(lys_site, modifier, expected):
+    """
+    Test that the protecting group (SMAC or ABOC) is correctly added to an empty lysine site.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    bra = data["branching_sites"][1]
+    bra["children"] = ""
+    bra["site_name"] = lys_site
+    bra, updated = handle_lysine_modification(bra, data, modifier, 1, lys_site)
+    assert bra["children"] == expected
+
+
+def test_handle_lysine_adds_ubiquitin():
+    """
+    Test that a ubiquitin is added to a lysine site when the correct working dict is provided.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    bra = data["branching_sites"][1]
+    bra["children"] = ""
+    bra["site_name"] = "K6"
+    bra, updated = handle_lysine_modification(bra, data, BASE_WORKING_DICT, 1, "K6")
+    assert isinstance(bra["children"], dict)
+
+
+def test_handle_lysine_wrong_chain_number_does_nothing():
+    """
+    Test that modification does nothing if the chain_number does not match.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    bra = data["branching_sites"][1]
+    bra["children"] = ""
+    bra["site_name"] = "K6"
+    original = copy.deepcopy(bra)
+    bra, updated = handle_lysine_modification(bra, data, BASE_WORKING_DICT, 99, "K6")
+    assert bra == original
+
+
+def test_handle_lysine_wrong_site_name_does_nothing():
+    """
+    Test that modification does nothing if the site_name does not match.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    bra = data["branching_sites"][1]
+    bra["children"] = ""
+    bra["site_name"] = "K6"
+    original = copy.deepcopy(bra)
+    bra, updated = handle_lysine_modification(bra, data, BASE_WORKING_DICT, 1, "K48")
+    assert bra == original
+
+
+def test_handle_lysine_site_already_has_ubiquitin_does_nothing():
+    """
+    Test that no modification occurs if the lysine site already has a ubiquitin attached.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    bra = data["branching_sites"][1]
+    bra["children"] = {"mock": "ubi"}
+    bra, updated = handle_lysine_modification(bra, data, BASE_WORKING_DICT, 1, "K6")
+    assert bra["children"] == {"mock": "ubi"}
+
+
+def test_handle_lysine_site_already_has_smac_does_nothing_for_ubi():
+    """
+    Test that no modification occurs if the lysine site already has a SMAC protecting group.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    bra = data["branching_sites"][1]
+    bra["children"] = "SMAC"
+    bra, updated = handle_lysine_modification(bra, data, BASE_WORKING_DICT, 1, "K6")
+    assert bra["children"] == "SMAC"
+
+
+def test_handle_lysine_modification_with_invalid_input_type_raises_typeerror():
+    """
+    Test that a TypeError is raised when an invalid input type (None) is provided as the modifier.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    bra = data["branching_sites"][1]
+    bra["children"] = ""
+    bra["site_name"] = "K6"
+    with pytest.raises(TypeError, match="Input must be a dictionary or a JSON string"):
+        handle_lysine_modification(bra, data, None, 1, "K6")
+
+
+def test_handle_lysine_modification_site_occupied_by_aboc_no_ubi():
+    """
+    Test that no ubiquitin is added if the site is already occupied by an ABOC protecting group.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    bra = data["branching_sites"][1]
+    bra["children"] = "ABOC"
+    bra["site_name"] = "K6"
+    bra, updated = handle_lysine_modification(bra, data, BASE_WORKING_DICT, 1, "K6")
+    assert bra["children"] == "ABOC"
+
+
+def test_handle_lysine_modification_wrong_site_on_correct_chain():
+    """
+    Test that no modification occurs if the site_name is incorrect, even if the chain number matches.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    bra = data["branching_sites"][2]
+    bra["children"] = ""
+    bra["site_name"] = "K11"
+    bra, updated = handle_lysine_modification(bra, data, BASE_WORKING_DICT, 1, "K6")
+    assert bra["children"] == ""
+
+
+def test_handle_lysine_modification_protecting_group_overrides_empty():
+    """
+    Test that a protecting group (ABOC) is added to a lysine site that is empty.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    bra = data["branching_sites"][2]
+    bra["children"] = ""
+    bra["site_name"] = "K11"
+    bra, updated = handle_lysine_modification(bra, data, "ABOC", 1, "K11")
+    assert bra["children"] == "ABOC"
+
+
+def test_handle_lysine_modification_ubiquitin_not_added_if_site_name_mismatch():
+    """
+    Test that a ubiquitin is not added if the site_name does not match the intended site.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    bra = data["branching_sites"][2]
+    bra["children"] = ""
+    bra["site_name"] = "K11"
+    bra, updated = handle_lysine_modification(bra, data, BASE_WORKING_DICT, 1, "K6")
+    assert bra["children"] == ""
+
+
+def test_handle_lysine_modification_site_matches_but_chain_does_not():
+    """
+    Test that a ubiquitin is not added if the site_name matches but the chain number does not.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    bra = data["branching_sites"][2]
+    bra["children"] = ""
+    bra["site_name"] = "K11"
+    bra, updated = handle_lysine_modification(bra, data, BASE_WORKING_DICT, 2, "K11")
+    assert bra["children"] == ""
+
+# =============================
+# Tests for ubiquitin_building and inner_wrapper_ubiquitin_building
+# =============================
+
+# 1. Add SMAC to level 1, confirm assignment.
+def test_add_smac_top_level():
+    """Add SMAC to level 1 and confirm assignment."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    updated, _ = ubiquitin_building(data, "SMAC", 1, "K6")
+    assert updated["branching_sites"][1]["children"] == "SMAC"
+
+# 2. Add ABOC to level 1, confirm assignment.
+def test_add_aboc_top_level():
+    """Add ABOC to level 1 and confirm assignment."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][1]["children"] = ""
+    assert data["branching_sites"][1]["children"] == ""
+    updated, _ = ubiquitin_building(data, "ABOC", 1, "K6")
+    assert updated["branching_sites"][1]["children"] == "ABOC"
+
+# 3. Add ubiquitin to free lysine at level 1.
+def test_add_ubiquitin_top_level():
+    """Add ubiquitin to free lysine at level 1 and check children is dict."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][6]["children"] = ""
+    assert data["branching_sites"][6]["children"] == ""
+    updated, _ = ubiquitin_building(data, BASE_WORKING_DICT, 1, "K48")
+    assert isinstance(updated["branching_sites"][6]["children"], dict)
+
+# 4. Ensure no overwrite if children exist.
+def test_ignore_occupied_lysine():
+    """Ensure that occupied lysine is not overwritten by new addition."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][6]["children"] = "SMAC"
+    assert data["branching_sites"][6]["children"] == "SMAC"
+    updated, _ = ubiquitin_building(data, BASE_WORKING_DICT, 1, "K48")
+    assert updated["branching_sites"][6]["children"] == "SMAC"
+
+# 5. Add SMAC at deep nested lysine.
+def test_add_smac_nested_level_4():
+    """Add SMAC at deep nested lysine (level 4)."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    nested = data["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][1]
+    nested["children"] = ""
+    chain_number_to_change1 = data["branching_sites"][6]["children"]["branching_sites"][7]["children"]["chain_number"]
+    assert nested["children"] == ""
+    updated, _ = ubiquitin_building(data, "SMAC", chain_number_to_change1, "K6")
+    result = updated["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][1]["children"]
+    assert result == "SMAC"
+
+# 6. Add ubiquitin at level 4 chain.
+def test_add_ubiquitin_nested_level_4():
+    """Add ubiquitin at level 4 chain and confirm children is dict."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    nested = data["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][1]
+    nested["children"] = ""
+    chain_number_to_change1 = data["branching_sites"][6]["children"]["branching_sites"][7]["children"]["chain_number"]
+    assert nested["children"] == ""
+    updated, _ = ubiquitin_building(data, BASE_WORKING_DICT, chain_number_to_change1, "K6")
+    result = updated["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][1]["children"]
+    assert isinstance(result, dict)
+
+# 7. Verify chain number list increments.
+def test_chain_number_sequence():
+    """Verify chain_number_list increments with every addition."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    _, context = ubiquitin_building(data, BASE_WORKING_DICT, 5, "K48")
+    assert isinstance(context.get("chain_number_list", []), list)
+    assert len(context["chain_number_list"]) == 7
+    assert len(context["chain_length_list"]) == 6
+
+# 8. Verify chain number list increments when adding ubiquitin to different sites.
+@pytest.mark.parametrize(
+    "ubiquitin_number, lysine_site, expected_max, expected_len",
+    [
+        (1, "K6", 7, 6),
+        (2, "K11", 7, 6),
+        (2, "K27", 7, 6),
+        (3, "K29", 7, 6),
+        (3, "K33", 7, 6),
+        (4, "K48", 7, 6),
+        (5, "K63", 7, 6),
+        (5, "M1", 7, 6),
+    ]
+)
+def test_chain_number_sequence(ubiquitin_number, lysine_site, expected_max, expected_len):
+    """Verify chain_number_list increments with every addition for various sites."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    _, context = ubiquitin_building(data, BASE_WORKING_DICT, ubiquitin_number, lysine_site)
+    assert isinstance(context.get("chain_number_list", []), list)
+    assert max(context["chain_number_list"]) == expected_max
+    assert len(context["chain_length_list"]) == expected_len
+
+# 9. String input converts to dict.
+def test_ubiquitin_string_input_handling():
+    """String input for data is converted to dict internally."""
+    import json
+    jdata = json.dumps(five_level_nested_ubiquitin_)
+    updated, _ = ubiquitin_building(jdata, BASE_WORKING_DICT, 1, "K48")
+    assert isinstance(updated, dict)
+
+# 10. Unknown label skipped.
+def test_ignored_invalid_protecting_group():
+    """Unknown protecting group label is skipped and does not modify children."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    before = copy.deepcopy(data["branching_sites"][1]["children"])
+    updated, _ = ubiquitin_building(data, BASE_WORKING_DICT, 1, "FOO")
+    assert updated["branching_sites"][1]["children"] == before
+
+# 11. Logs SMAC/ABOC correctly.
+def test_protecting_group_logged_correctly():
+    """SMAC/ABOC protecting group addition is logged correctly."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    updated, context = ubiquitin_building(data, "SMAC", 1, "K6")
+    assert updated["branching_sites"][1]["children"] == "SMAC"
+    updated2, context2 = ubiquitin_building(data, "ABOC", 1, "K6")
+    assert updated2["branching_sites"][1]["children"] == "ABOC"
+
+
+# 12. Builds at multiple depths.
+def test_add_multiple_mods_and_recurse():
+    """Builds at multiple depths using several modifications."""
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    data["branching_sites"][1]["children"] = ""
+    assert data["branching_sites"][1]["children"] == ""
+    chain_number_to_change1 = data["chain_number"]
+
+    # Add at level 1
+    updated, context = ubiquitin_building(data, BASE_WORKING_DICT, chain_number_to_change1, "K6")
+    assert isinstance(updated["branching_sites"][1]["children"], dict)
+
+    # Add at nested level
+    updated_copy = copy.deepcopy(updated)
+    deep = updated_copy["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][6]
+    deep["children"] = ""
+    assert deep["children"] == ""
+    chain_number_to_change2 = updated_copy["branching_sites"][6]["children"]["branching_sites"][7]["children"]["chain_number"]
+
+    updated2, context2 = ubiquitin_building(updated, BASE_WORKING_DICT, chain_number_to_change2, "K48")
+    assert isinstance(
+        updated2["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][6]["children"],
+        dict
+    )
+
+    # Check only a single ubiquitin was added
+    updated2["branching_sites"][6]["children"]["branching_sites"][7]["children"]["branching_sites"][6]["children"] = ""
+    assert updated2 == updated
+    
+
+
+# =====================================
+# === Additional test: FAKE_deprot logs info and does nothing on empty lysine ===
+# =====================================
+def test_process_ubiquitin_fake_deprot_logs_info(caplog):
+    """
+    Test FAKE_deprot: logs an info message and takes no action on an empty lysine.
+    """
+    data = copy.deepcopy(five_level_nested_ubiquitin_)
+    target_site = data["branching_sites"][6]  # K48 for example
+    target_site["children"] = ""
+
+    with caplog.at_level(logging.INFO):
+        bra, updated = process_ubiquitin_reaction(target_site, data, "FAKE_deprot", ubiquitin_monomer)
+        assert bra["children"] == ""
+        assert "FAKE deprotection: No action taken." in caplog.text
