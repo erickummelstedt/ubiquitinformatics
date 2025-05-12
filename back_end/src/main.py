@@ -476,38 +476,6 @@ def find_max_chain_number(context):
     max_chain_number = chain_number_list[-1]-1
     return max_chain_number
 
-
-
-## notes on code changes; 
-## Write Python code that is clean, readable, and fully compliant with PEP 8, the official Python style guide.
-
-## instead of json.loads(x) code use convert_json_to_dict 
-
-## use log_protein_details(working_dictionary, context) instead of 
-# logging.info(f"Protein: {working_dictionary['protein']}")
-# logging.info(f"Sequence: {working_dictionary['FASTA_sequence']}")
-# logging.info(f"Chain Number List: {context['chain_number_list']}")
-# logging.info(f"Chain Length: {working_dictionary['chain_length']}")
-# logging.info(f"Chain Number: {working_dictionary['chain_number']}")
-# logging.info(f"Branching Sites: {working_dictionary['branching_sites']}")
-
-
-## use log_branching_details(branch, working_dictionary, context): instead of 
-#  logging.info(' ===== START OF LYSINE SITE =====  ')
-#  logging.info(f"Chain Number: {working_dictionary['chain_number']}")
-#  logging.info(f"Lysine Site: {bra['site_name']}")
-
-# use log_end_of_branching(): instead of logging.info(' ===== END OF LYSINE SITE =====  ')
-
-# use log_end_of_protein(working_dictionary) instead of logging.info f' ===== END OF PROTEIN - CHAIN NUMBER: {working_dictionary["chain_number"]} =====  ')
-
-# type of reaction can be either K48 or K63, enzyme is not defined here
-# Ube2K = K48
-# Ube13/Mms2 = K63
-
-## instead of find_max_chain_number, find_ABOC_lysines, find_SMAC_lysines, find_free_lysines, find_conjugated_lysines, this information is pulled out of iterate through ubiquitin and the context dictionary it produces
-
-
 def K_residue_ubi_addition(working_dictionary, specific_ubi_num, ubiquitination_sequence, ubi_molecule_to_add):
     """
     Adds a ubiquitin monomer to a specified lysine residue in the working dictionary.
@@ -596,7 +564,9 @@ def ubiquitin_simulation(
         parent_dictionary, ubi_molecule_to_add, type_of_reaction, context
     )
 
-    return iterate_through_ubiquitin(adapted_dictionary)
+    output_dictionary, output_context = iterate_through_ubiquitin(adapted_dictionary)
+
+    return output_dictionary, output_context
 
 def inner_wrapper_ubiquitin_simulation(
         input_dictionary: dict, 
@@ -685,6 +655,7 @@ def process_ubiquitin_reaction(
         bra['children'] = ''
     elif type_of_reaction == 'GLOBAL_deprot' and bra['children'] in ('ABOC', 'SMAC'):
         bra['children'] = ''
+    # can add reactions for M1, K6, K11, K27, K29, K33 later
     elif (
         type_of_reaction == 'K48'
         and bra['children'] == ''
@@ -708,3 +679,4 @@ def process_ubiquitin_reaction(
             ubi_molecule_to_add
         )
     return bra, working_dictionary
+
