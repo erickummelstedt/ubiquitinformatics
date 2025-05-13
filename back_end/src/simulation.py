@@ -41,7 +41,8 @@ from src.utils import \
     all_strings_exist_in_list, \
     inject_fasta_sequence_at_chain,\
     inject_protein_key,\
-    inject_branching_sites
+    inject_branching_sites, \
+    convert_json_to_dict
 
 from tests.test_data import \
     five_level_nested_ubiquitin_,\
@@ -131,49 +132,33 @@ def simulate_deprot_step(history_dict: dict) -> list[dict]:
 
 
 def find_Ube2K_or_Uce2g2(
-        reactant_dictionary, 
-        product_dictionary
+        reactant_context: str|dict,
+        product_context: str|dict
         ):
-    
-    ## do everything with reactant and product...
-    chain_number_list = [1]
-    chain_length_list = []
-    free_lysine_list = []
-    bound_lysine_list = []
-    
-    if isinstance(reactant_dictionary, str):
-        x = reactant_dictionary.replace("'", "\"")
-        reactant_dictionary = json.loads(x)
-    
-    if isinstance(product_dictionary, str):
-        x = product_dictionary.replace("'", "\"")
-        product_dictionary = json.loads(x)
+    """
+    Find the enzyme type based on the reactant and product dictionaries.
+    Args:
+        reactant_dictionary (str|dict): Reactant dictionary or JSON string.
+        product_dictionary (str|dict): Product dictionary or JSON string.
+    Returns:
+        str: Enzyme type ('Ube2K' or 'Ube2g2').
+    """
 
-    logging.info(chain_number_list)
-    adapted_dictionary = inner_wrapper_find_Ube2K_or_Uce2g2(reactant_dictionary)
+    # Convert JSON strings to dictionaries if necessary
+    reactant_context = convert_json_to_dict(reactant_context)    
+    product_context = convert_json_to_dict(product_context)
 
-    reactant_chain_number_list  = chain_number_list.copy()
-    reactant_chain_length_list = chain_length_list.copy()
-    reactant_free_lysine_list = free_lysine_list.copy()
-    reactant_bound_lysine_list = bound_lysine_list.copy()
-    reactant_max_chain_number = chain_number_list[-1]-1
+    reactant_chain_number_list  = reactant_context["chain_number_list"].copy()
+    reactant_chain_length_list = reactant_context["chain_length_list"].copy()
+    reactant_free_lysine_list = reactant_context["free_lysines"].copy()
+    reactant_bound_lysine_list = reactant_context["conjugated_lysines"].copy()
+    reactant_max_chain_number = reactant_context["max_chain_number"]
 
-    chain_number_list = [1]
-    chain_length_list = []
-    free_lysine_list = []
-    bound_lysine_list = []
-
-
-    logging.info(chain_number_list)
-    adapted_dictionary = inner_wrapper_find_Ube2K_or_Uce2g2(product_dictionary)
-
-    product_chain_number_list = chain_number_list.copy()
-    product_chain_length_list = chain_length_list.copy()
-    product_free_lysine_list = free_lysine_list.copy()
-    product_bound_lysine_list = bound_lysine_list.copy()
-    product_max_chain_number = chain_number_list[-1]-1
-
-
+    product_chain_number_list = product_context["chain_number_list"].copy()
+    product_chain_length_list = product_context["chain_length_list"].copy()
+    product_free_lysine_list = product_context["free_lysines"].copy()
+    product_bound_lysine_list = product_context["conjugated_lysines"].copy()
+    product_max_chain_number = product_context["max_chain_number"]
 
     final_dictionary = {'reactant_chain_numbers' : reactant_chain_number_list, 
                         'reactant_chain_lengths' : reactant_chain_length_list, 
@@ -217,83 +202,11 @@ def find_Ube2K_or_Uce2g2(
         enzyme = 'Ube2K'
     return enzyme
 
-    #if not(specific_ubi_num in chain_number_list[:-1]): $
-    #    raise TypeError('the ubiquitin specific is outside the range of the ubiquitin multimer')
 
-### go into the protein, then the branching_sites... then loop the problem... 
-### this function loops through the ubiquitin labeling the proteins...
-def inner_wrapper_find_Ube2K_or_Uce2g2(input_dictionary):
-    ### super important because the dictionary is a mutable object
-    working_dictionary = copy.deepcopy(input_dictionary)
 
-    ## set the chain_number from the chain_number_list
-    working_dictionary['chain_number'] = int(chain_number_list[-1])
-    
-    ### add the current chain length to the chain length list this is useful for later for numbering of amino acids
-    working_dictionary['chain_length'] = len(working_dictionary['FASTA_sequence'])
-    chain_length_list.append(working_dictionary['chain_length'])
 
-    ## printing information 
-    logging.info("Protein: " + str(working_dictionary['protein']))
-    logging.info("Sequence: " + str(working_dictionary['FASTA_sequence']))
-    logging.info("Chain Length List: " + str(chain_number_list))
-    logging.info("Chain Length: " + str(working_dictionary['chain_length']))
-    logging.info("Chain Number List: " + str(chain_number_list))
-    logging.info("Chain Number: " + str(working_dictionary['chain_number']))
-    logging.info("Branching Sites: " + str(working_dictionary['branching_sites']))
 
-    ### provide the branching_sites of the protein to the working_branching_sites variable 
-    working_branching_sites = working_dictionary['branching_sites']
-        
-    ### now that we have associated a value to the current chain, we can add to the chain list
-    chain_number_list.append((chain_number_list[-1]+1))
-        
-    ### working_branching_sites = loop_through_immediate_branching_sites(working_branching_sites, x_ubi_num)
-    ### working_dictionary['branching_sites'] = working_branching_sites
-    for bra in working_branching_sites:
-        
-        logging.info(' ===== START OF LYSINE SITE =====  ')
-        logging.info("Chain Number: " + str(working_dictionary['chain_number']))
-        ### which lysine site.... 
-        logging.info("Branching Site: " + str(bra['site_name'])) 
 
-        ## some print work
-        if (bra['children'] =='SMAC' or bra['children'] =='ABOC'):
-            logging.info("Protecting Group: " + str(bra['children']))
-        
-        ### if the site is a protein.... 
-        elif (bra['children'] == "") & (bra['site_name'] in ['K11','K6','K27','K29','K33','M1']): 
-            logging.info("There is no Protecting Group on: " + str(bra['site_name']))
-
-        elif (bra['children'] == "") & (bra['site_name'] in ['K48', 'K63']): 
-            free_lysine_list.append([working_dictionary['chain_number'], str(bra['site_name'])])
-            logging.info("There is no Protecting Group on: " + str(bra['site_name']))    
-        
-        elif isinstance(bra['children'], dict): 
-            ### recursive function that calls itself... 
-            logging.info('NEXT CHAIN: ' + str(bra['children']))
-            bound_lysine_list.append([working_dictionary['chain_number'], str(bra['site_name'])])
-            ### the difference.... 
-            bra['children'] = inner_wrapper_find_Ube2K_or_Uce2g2(bra['children']) 
-
-        ### adding branching_sites... here can use the chain_number and lysine site...
-        ### ADD ERROR for ubiquitin not found... 
-        #if ubiquitin_number == working_dictionary['chain_number'] and lysine_number == None and protecting_group == None:
-        #    working_dictionary['branching_sites'] = [{"site": "K48", "children": ""},
-        #                                        {"site": "K11", "children": ""},
-        #                                        {"site": "K63", "children": ""},
-        #                                        {"site": "K6", "children": ""},
-        #                                        {"site": "K27", "children": ""},
-        #                                        {"site": "K29", "children": ""},
-        #                                        {"site": "K33", "children": ""},
-        #                                        {"site": "M1", "children": ""}]
-
-        
-       ### ADD ERROR an elif or else... which should be an error... for protecting group nor ubiquitin found... 
-        logging.info(' ===== END OF LYSINE SITE =====  ')
-    logging.info(' ===== END OF PROTEIN - CHAIN NUMBER: ' + str(working_dictionary['chain_number']) + ' =====  ')
-    ## finish with diving into ubiquitin to relabel or the ubiquitins...
-    return working_dictionary
 
 
 
@@ -387,81 +300,3 @@ def find_K63_branching(reactant_dictionary, product_dictionary):
 
     #if not(specific_ubi_num in chain_number_list[:-1]): $
     #    raise TypeError('the ubiquitin specific is outside the range of the ubiquitin multimer')
-
-### go into the protein, then the branching_sites... then loop the problem... 
-### this function loops through the ubiquitin labeling the proteins...
-def inner_wrapper_find_K63_branching(input_dictionary):
-    ### super important because the dictionary is a mutable object
-    working_dictionary = copy.deepcopy(input_dictionary)
-
-    ## set the chain_number from the chain_number_list
-    working_dictionary['chain_number'] = int(chain_number_list[-1])
-    
-    ### add the current chain length to the chain length list this is useful for later for numbering of amino acids
-    working_dictionary['chain_length'] = len(working_dictionary['FASTA_sequence'])
-    chain_length_list.append(working_dictionary['chain_length'])
-
-    ## printing information 
-    logging.info("Protein: " + str(working_dictionary['protein']))
-    logging.info("Sequence: " + str(working_dictionary['FASTA_sequence']))
-    logging.info("Chain Length List: " + str(chain_number_list))
-    logging.info("Chain Length: " + str(working_dictionary['chain_length']))
-    logging.info("Chain Number List: " + str(chain_number_list))
-    logging.info("Chain Number: " + str(working_dictionary['chain_number']))
-    logging.info("Branching Sites: " + str(working_dictionary['branching_sites']))
-
-    ### provide the branching_sites of the protein to the working_branching_sites variable 
-    working_branching_sites = working_dictionary['branching_sites']
-        
-    ### now that we have associated a value to the current chain, we can add to the chain list
-    chain_number_list.append((chain_number_list[-1]+1))
-        
-    ### working_branching_sites = loop_through_immediate_branching_sites(working_branching_sites, x_ubi_num)
-    ### working_dictionary['branching_sites'] = working_branching_sites
-    for bra in working_branching_sites:
-        
-        logging.info(' ===== START OF LYSINE SITE =====  ')
-        logging.info("Chain Number: " + str(working_dictionary['chain_number']))
-        ### which lysine site.... 
-        logging.info("Branching Site: " + str(bra['site_name'])) 
-
-        ## some print work
-        if (bra['children'] =='SMAC' or bra['children'] =='ABOC'):
-            logging.info("Protecting Group: " + str(bra['children']))
-        
-        ### if the site is a protein.... 
-        elif (bra['children'] == "") & (bra['site_name'] in ['K11','K6','K27','K29','K33','M1']): 
-            logging.info("There is no Protecting Group on: " + str(bra['site_name']))
-
-        elif (bra['children'] == "") & (bra['site_name'] in ['K48', 'K63']): 
-            free_lysine_list.append([working_dictionary['chain_number'], str(bra['site_name'])])
-            logging.info("There is no Protecting Group on: " + str(bra['site_name']))    
-        
-        elif isinstance(bra['children'], dict): 
-            ### recursive function that calls itself... 
-            logging.info('NEXT CHAIN: ' + str(bra['children']))
-            bound_lysine_list.append([working_dictionary['chain_number'], str(bra['site_name'])])
-            ### the difference.... 
-            bra['children'] = inner_wrapper_find_K63_branching(bra['children']) 
-
-        ### adding branching_sites... here can use the chain_number and lysine site...
-        ### ADD ERROR for ubiquitin not found... 
-        #if ubiquitin_number == working_dictionary['chain_number'] and lysine_number == None and protecting_group == None:
-        #    working_dictionary['branching_sites'] = [{"site": "K48", "children": ""},
-        #                                        {"site": "K11", "children": ""},
-        #                                        {"site": "K63", "children": ""},
-        #                                        {"site": "K6", "children": ""},
-        #                                        {"site": "K27", "children": ""},
-        #                                        {"site": "K29", "children": ""},
-        #                                        {"site": "K33", "children": ""},
-        #                                        {"site": "M1", "children": ""}]
-
-        
-       ### ADD ERROR an elif or else... which should be an error... for protecting group nor ubiquitin found... 
-        logging.info(' ===== END OF LYSINE SITE =====  ')
-    logging.info(' ===== END OF PROTEIN - CHAIN NUMBER: ' + str(working_dictionary['chain_number']) + ' =====  ')
-    ## finish with diving into ubiquitin to relabel or the ubiquitins...
-    return working_dictionary
-
-
-

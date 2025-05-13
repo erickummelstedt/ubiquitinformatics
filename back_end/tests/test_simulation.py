@@ -60,14 +60,6 @@ from tests.test_data import \
     histag_ubi_ubq_1_K48_aboc,\
     histag_ubi_ubq_1_K63_aboc
 
-
-# --- Additional test imports and fixtures for simulate_E2_step tests ---
-import pytest
-
-# Placeholder imports for tested functions and data
-# Replace with actual imports as appropriate for your codebase
-
-
 # ------------------- Simulate Reactions Step Tests -------------------
 def test_simulate_E2_step_outputs_structure():
     """Test that simulate_E2_step returns correctly structured output."""
