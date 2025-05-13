@@ -25,7 +25,7 @@ from src.main import \
     check_children_format,\
     process_current_protein, \
     process_branch, \
-    find_max_chain_number, \
+    add_max_chain_number, \
     K_residue_ubi_addition, \
     process_ubiquitin_reaction, \
     ubiquitin_simulation, \
@@ -89,7 +89,7 @@ Everything works; now build tests and clean up code for each of the following fu
 Redo cover all: 
 - iterate_through_ubiquitin
 - inner_wrapper_iterate_through_ubiquitin
-- find_max_chain_number
+- add_max_chain_number
 
 '''
 
@@ -1635,7 +1635,7 @@ def test_iterate_through_ubiquitin(ubiquitin_structure, expected_multimer_string
     assert multimer_string == expected_multimer_string, f"Expected: {expected_multimer_string}, Got: {result}"
 
 # =====================================
-# === Tests for find_max_chain_number ===
+# === Tests for add_max_chain_number ===
 # Tests for finding the maximum chain number in ubiquitin structures.
 # =====================================
 
@@ -1899,12 +1899,18 @@ def test_iterate_through_ubiquitin(ubiquitin_structure, expected_multimer_string
         ]
     }, 4)
 ])
-def test_find_max_chain_number(ubiquitin_structure, expected_max_chain):
+def test_add_max_chain_number(ubiquitin_structure, expected_max_chain):
 
     updated_ubiquitin, context = iterate_through_ubiquitin(copy.deepcopy(ubiquitin_structure))
-    
-    assert find_max_chain_number(context) == expected_max_chain
 
+    assert context["max_chain_number"] == expected_max_chain
+
+
+def test_add_max_chain_number_simple():
+    context = {"chain_number_list": [1, 2, 3, 4]}
+    updated_context = add_max_chain_number(context)
+    assert updated_context["max_chain_number"] == 3
+    
 # =====================================
 # === Tests for find_free_lysines ===
 # Tests for extracting all free lysines from ubiquitin structures.
@@ -2327,12 +2333,12 @@ def test_find_free_lysines(ubiquitin_structure, expected_free_lysines):
 def test_find_conjugated_lysines(ubiquitin_structure, expected_conjugated_lysines):
     """
     Test `find_conjugated_lysines()` to ensure it correctly extracts 
-    all conjugated lysines from ubiquitin structures.
+    all conjugated lysines from ubiquitin structures in the correct order. 
     """
     _, context = iterate_through_ubiquitin(copy.deepcopy(ubiquitin_structure))
     conjugated_lysines = context['conjugated_lysines']
 
-    assert sorted(conjugated_lysines) == sorted(expected_conjugated_lysines), \
+    assert conjugated_lysines == expected_conjugated_lysines, \
         f"Expected {expected_conjugated_lysines}, got {conjugated_lysines}"
 
 

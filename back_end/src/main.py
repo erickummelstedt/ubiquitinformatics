@@ -360,10 +360,10 @@ def process_branch(branch, working_dictionary, context):
     # Handle branches that have proteins bound  
     elif isinstance(branch["children"], dict):
         context["multimer_string_name"] += f"<{branch['site_name']}_"
+        context["conjugated_lysines"] += [[working_dictionary['chain_number'], str(branch['site_name'])]]
         branch["children"], context = inner_wrapper_iterate_through_ubiquitin(
             branch["children"], context
         )
-        context["conjugated_lysines"] += [[working_dictionary['chain_number'], str(branch['site_name'])]]
         context["multimer_string_name"] += ">"
 
     return branch, working_dictionary, context
@@ -467,13 +467,17 @@ def inner_wrapper_iterate_through_ubiquitin(input_dictionary, context):
 
     # End of multimer string editing 
     context["multimer_string_name"] += ")"
+
+    # Find the maximum chain number
+    context = add_max_chain_number(context)
     
     return working_dictionary, context
 
-def find_max_chain_number(context):
+def add_max_chain_number(context):
     chain_number_list = context['chain_number_list']
     max_chain_number = chain_number_list[-1]-1
-    return max_chain_number
+    context['max_chain_number'] = max_chain_number
+    return context
 
 def K_residue_ubi_addition(working_dictionary, specific_ubi_num, ubiquitination_sequence, ubi_molecule_to_add):
     """

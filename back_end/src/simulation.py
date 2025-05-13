@@ -27,7 +27,7 @@ from src.main import \
     check_children_format,\
     process_current_protein, \
     process_branch, \
-    find_max_chain_number, \
+    add_max_chain_number, \
     process_ubiquitin_reaction, \
     ubiquitin_simulation, \
     inner_wrapper_ubiquitin_simulation, \
@@ -129,174 +129,151 @@ def simulate_deprot_step(history_dict: dict) -> list[dict]:
     return results
 
 
+def assign_enzyme(reaction, elongation_or_branching):
+    """
+    Assigns the correct E2 enzyme based on reaction type and linkage pattern.
 
+    Args:
+        reaction (str): Type of reaction ('K48_reaction' or 'K63_reaction').
+        elongation_or_branching (str): 'elongation' or 'branching'.
 
-def find_Ube2K_or_Uce2g2(
-        reactant_context: str|dict,
-        product_context: str|dict
+    Returns:
+        str: Name of the correct E2 enzyme.
+
+    Raises:
+        TypeError: If combination is invalid.
+    """
+    if reaction == "K48_reaction" and elongation_or_branching == "elongation":
+        return "gp78/Ube2g2"
+    elif reaction == "K48_reaction" and elongation_or_branching == "branching":
+        return "Ube2K"
+    elif reaction == "K63_reaction":
+        return "Ubc13/Mms2"
+    else:
+        raise TypeError(
+            f"Invalid combination of reaction: {reaction} and "
+            f"elongation_or_branching: {elongation_or_branching}"
+        )
+
+def determine_elongation_or_branching(product_conjugated_lysines, new_bound_lysine):
+    """
+    Determines whether the addition of a ubiquitin results in elongation or branching
+    based on how many times the same chain number appears.
+
+    Args:
+        product_conjugated_lysines (list): List of all conjugated lysines in the product context.
+        new_bound_lysine (list): The site where the most recent ubiquitin was added (e.g. [chain_number, lysine_site]).
+
+    Returns:
+        str: 'elongation' if the chain appears once, 'branching' if it appears twice.
+
+    Raises:
+        TypeError: If the count of the chain number is not 1 or 2.
+    """
+    target_chain = new_bound_lysine[0]
+
+    count = sum(1 for entry in product_conjugated_lysines if entry[0] == target_chain)
+
+    if count == 1:
+        return "elongation"
+    elif count == 2:
+        return "branching"
+    else:
+        raise TypeError(
+            f"Count of chain number '{target_chain}' is {count}, expected 1 or 2"
+        )
+
+def determine_reaction_type(new_bound_lysine):
+    """
+    Determines the type of reaction (K48 or K63) from the lysine site of the newly bound ubiquitin.
+
+    Args:
+        new_bound_lysine (list): A list with [chain_number, lysine_site], e.g., [3, "K48"]
+
+    Returns:
+        str: 'K48_reaction' or 'K63_reaction'
+
+    Raises:
+        TypeError: If the lysine site is not K48 or K63.
+    """
+    lysine_site = new_bound_lysine[1]
+
+    if lysine_site == "K48":
+        return "K48_reaction"
+    elif lysine_site == "K63":
+        return "K63_reaction"
+    else:
+        raise TypeError(
+            f"new_bound_lysine: {new_bound_lysine} "
+            f"does not contain K48 or K63"
+        )
+
+def validate_conjugated_lysines(context):
+    """
+    Validates that the conjugated lysines in the context are only K48 or K63.
+
+    Args:
+        context (dict): A context dictionary containing a 'conjugated_lysines' list.
+
+    Raises:
+        TypeError: If unsupported lysines are found.
+    """
+    lysine_types = {
+        lys[1] for lys in context["conjugated_lysines"]
+        if isinstance(lys, list) and len(lys) == 2
+    }
+    unsupported_lysines = lysine_types - {"K48", "K63"}
+    if unsupported_lysines:
+        raise TypeError(
+            f"Context contains unsupported conjugated lysines: {unsupported_lysines}. "
+            "This function only supports K48 and K63 conjugated lysines."
+        )
+    
+def assign_correct_E2_enzyme(
+        reactant_context: str | dict,
+        product_context: str | dict
         ):
     """
-    Find the enzyme type based on the reactant and product dictionaries.
-    Args:
-        reactant_dictionary (str|dict): Reactant dictionary or JSON string.
-        product_dictionary (str|dict): Product dictionary or JSON string.
-    Returns:
-        str: Enzyme type ('Ube2K' or 'Ube2g2').
-    """
+    Determine the enzyme used in a reaction based on structural context changes
+    between a reactant and product ubiquitin chain.
 
-    # Convert JSON strings to dictionaries if necessary
-    reactant_context = convert_json_to_dict(reactant_context)    
+    Args:
+        reactant_context (str | dict): Reactant context dictionary or JSON string.
+        product_context (str | dict): Product context dictionary or JSON string.
+
+    Returns:
+        str: Enzyme type ('Ube2K', 'Ube2g2', or 'Ubc13/Mms2').
+    """
+    reactant_context = convert_json_to_dict(reactant_context)
     product_context = convert_json_to_dict(product_context)
 
-    reactant_chain_number_list  = reactant_context["chain_number_list"].copy()
-    reactant_chain_length_list = reactant_context["chain_length_list"].copy()
-    reactant_free_lysine_list = reactant_context["free_lysines"].copy()
-    reactant_bound_lysine_list = reactant_context["conjugated_lysines"].copy()
-    reactant_max_chain_number = reactant_context["max_chain_number"]
+    if int(product_context["max_chain_number"]) != int(reactant_context["max_chain_number"]) + 1:
+        raise TypeError(
+            f"product_max_chain_number: {product_context['max_chain_number']} != "
+            f"reactant_max_chain_number + 1: {int(reactant_context['max_chain_number']) + 1}"
+        )
 
-    product_chain_number_list = product_context["chain_number_list"].copy()
-    product_chain_length_list = product_context["chain_length_list"].copy()
-    product_free_lysine_list = product_context["free_lysines"].copy()
-    product_bound_lysine_list = product_context["conjugated_lysines"].copy()
-    product_max_chain_number = product_context["max_chain_number"]
+    validate_conjugated_lysines(reactant_context)
+    validate_conjugated_lysines(product_context)
 
-    final_dictionary = {'reactant_chain_numbers' : reactant_chain_number_list, 
-                        'reactant_chain_lengths' : reactant_chain_length_list, 
-                        'reactant_free_lysines' : reactant_free_lysine_list, 
-                        'reactant_bound_lysines' : reactant_bound_lysine_list, 
-                        'reactant_max_chain_number' : reactant_max_chain_number, 
-                        'product_chain_numbers' : product_chain_number_list,
-                        'product_chain_lengths' : product_chain_length_list,
-                        'product_free_lysines' : product_free_lysine_list,
-                        'product_bound_lysines' : product_bound_lysine_list,
-                        'product_max_chain_number' : product_max_chain_number
-    }
+    reactant_conjugated_lysines = reactant_context["conjugated_lysines"].copy() + [[]]
+    product_conjugated_lysines = product_context["conjugated_lysines"].copy()
 
-    reactant_bound_lysines = final_dictionary['reactant_bound_lysines'].copy()
-    reactant_bound_lysines = reactant_bound_lysines + [[]]
-
-    reactant_max_chain_number = int(final_dictionary['reactant_max_chain_number'])
-
-    product_bound_lysines = final_dictionary['product_bound_lysines'].copy()
-
-    ## maybe try and break...
-    for index, (x,y) in enumerate(zip(reactant_bound_lysines,product_bound_lysines)):
-        ## if it is ie a monomer and we are acceptorising on K48 it is not branching
-        ## add in max chain number is == 1 then it is a acceptorisation and hence gp78/Ube2g2
-        if  (x!=y) & (index == 0) & (reactant_max_chain_number == 1):
-            last_bound_site__before_new_ubi = [1,'K48']
+    for _, (reactant_lysine, product_lysine) in enumerate(
+        zip(reactant_conjugated_lysines, product_conjugated_lysines)
+    ):
+        if reactant_lysine != product_lysine:
+            new_bound_lysine = product_lysine
             break
-        ## add in max chain number is != 1 then it is not a acceptorsation and hence Ube2K
-        elif (x!=y) & (index == 0) & (reactant_max_chain_number != 1):
-            last_bound_site__before_new_ubi = [1,'K63']
-            break
-        elif x==y:
-            #print(index, (x,y))
-            last_bound_site__before_new_ubi = y
-        else:
-            break
-    
-    if last_bound_site__before_new_ubi[1] == 'K48':
-        enzyme = 'gp78/Ube2g2'
-    else: 
-        enzyme = 'Ube2K'
+    else:
+        raise TypeError("No new conjugation site detected between reactant and product contexts.")
+
+    reaction = determine_reaction_type(new_bound_lysine)
+
+    elongation_or_branching = determine_elongation_or_branching(
+        product_conjugated_lysines, new_bound_lysine
+    )
+
+    enzyme = assign_enzyme(reaction, elongation_or_branching)
+
     return enzyme
-
-
-
-
-
-
-
-
-
-def find_K63_branching(reactant_dictionary, product_dictionary):
-    global chain_number_list
-    global chain_length_list
-    global free_lysine_list
-    global bound_lysine_list
-    
-    ## do everything with reactant and product...
-    chain_number_list = [1]
-    chain_length_list = []
-    free_lysine_list = []
-    bound_lysine_list = []
-    
-    if isinstance(reactant_dictionary, str):
-        x = reactant_dictionary.replace("'", "\"")
-        reactant_dictionary = json.loads(x)
-    
-    if isinstance(product_dictionary, str):
-        x = product_dictionary.replace("'", "\"")
-        product_dictionary = json.loads(x)
-
-    logging.info(chain_number_list)
-    adapted_dictionary = inner_wrapper_find_K63_branching(reactant_dictionary)
-
-    reactant_chain_number_list  = chain_number_list.copy()
-    reactant_chain_length_list = chain_length_list.copy()
-    reactant_free_lysine_list = free_lysine_list.copy()
-    reactant_bound_lysine_list = bound_lysine_list.copy()
-    reactant_max_chain_number = chain_number_list[-1]-1
-
-    chain_number_list = [1]
-    chain_length_list = []
-    free_lysine_list = []
-    bound_lysine_list = []
-
-
-    logging.info(chain_number_list)
-    adapted_dictionary = inner_wrapper_find_K63_branching(product_dictionary)
-
-    product_chain_number_list = chain_number_list.copy()
-    product_chain_length_list = chain_length_list.copy()
-    product_free_lysine_list = free_lysine_list.copy()
-    product_bound_lysine_list = bound_lysine_list.copy()
-    product_max_chain_number = chain_number_list[-1]-1
-
-
-
-    final_dictionary = {'reactant_chain_numbers' : reactant_chain_number_list, 
-                        'reactant_chain_lengths' : reactant_chain_length_list, 
-                        'reactant_free_lysines' : reactant_free_lysine_list, 
-                        'reactant_bound_lysines' : reactant_bound_lysine_list, 
-                        'reactant_max_chain_number' : reactant_max_chain_number, 
-                        'product_chain_numbers' : product_chain_number_list,
-                        'product_chain_lengths' : product_chain_length_list,
-                        'product_free_lysines' : product_free_lysine_list,
-                        'product_bound_lysines' : product_bound_lysine_list,
-                        'product_max_chain_number' : product_max_chain_number
-    }
-
-    reactant_bound_lysines = final_dictionary['reactant_bound_lysines'].copy()
-    reactant_bound_lysines = reactant_bound_lysines + [[]]
-
-    reactant_max_chain_number = int(final_dictionary['reactant_max_chain_number'])
-
-    product_bound_lysines = final_dictionary['product_bound_lysines'].copy()
-
-    ## maybe try and break...
-    for index, (x,y) in enumerate(zip(reactant_bound_lysines,product_bound_lysines)):
-        ## if it is ie a monomer and we are acceptorising on K48 it is not branching
-        ## add in max chain number is == 1 then it is a acceptorisation and hence gp78/Ube2g2
-        if  (x!=y) & (index == 0) & (reactant_max_chain_number == 1):
-            last_bound_site__before_new_ubi = [1,'K63']
-            break
-        ## add in max chain number is != 1 then it is not a acceptorsation and hence Ube2K
-        elif (x!=y) & (index == 0) & (reactant_max_chain_number != 1):
-            last_bound_site__before_new_ubi = [1,'K48']
-            break
-        elif x==y:
-            #print(index, (x,y))
-            last_bound_site__before_new_ubi = y
-        else:
-            break
-    
-    if last_bound_site__before_new_ubi[1] == 'K63':
-        enzyme = 'Ube13/Mms2'
-    else: 
-        enzyme = 'Ube13/Mms2_branching'
-    return enzyme
-
-    #if not(specific_ubi_num in chain_number_list[:-1]): $
-    #    raise TypeError('the ubiquitin specific is outside the range of the ubiquitin multimer')
