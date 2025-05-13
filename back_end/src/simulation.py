@@ -85,6 +85,15 @@ def simulate_E2_step(
 
     for reaction in reaction_types:
         for monomer in donor_list:
+            # Skip incompatible donor-reaction pairs
+            # This is not allowed because the donor has a protecting group at the same site it would conjugate through.
+            # Allowing this would result in a self-reaction (monomer reacting with itself), which is invalid.
+            # if the K48 has not protecting group it will react itself in a K48 reaction.
+            if (
+                ((monomer == ubi_ubq_1_K48_SMAC) and (reaction == "K63")) or
+                ((monomer == ubi_ubq_1_K63_SMAC) and (reaction == "K48"))
+            ):
+                continue
             last_acceptor = history_dict['ubiquitin_history'][-1]
             new_multimer, new_context = ubiquitin_simulation(last_acceptor, monomer, reaction)
 

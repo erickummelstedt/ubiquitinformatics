@@ -86,7 +86,7 @@ def test_simulate_E2_step_outputs_structure():
 
     result = simulate_E2_step(history_dict, donor_list)
 
-    assert len(result) == 4
+    assert len(result) == 2
     assert all(len(r['ubiquitin_history']) == 2 for r in result)
     assert all(len(r['reaction_history']) == 2 for r in result)
     assert all(len(r['donor_history']) == 2 for r in result)
@@ -110,11 +110,82 @@ def test_simulate_E2_step_outputs_structure_5_d():
 
     result = simulate_E2_step(history_dict, donor_list)
 
-    assert len(result) == 10
+    assert len(result) == 8
     assert all(len(r['ubiquitin_history']) == 2 for r in result)
     assert all(len(r['reaction_history']) == 2 for r in result)
     assert all(len(r['donor_history']) == 2 for r in result)
     assert all(len(r['context_history']) == 2 for r in result)
+
+
+# ------------------- Additional tests for simulate_E2_step SMAC/ABOC logic -------------------
+def test_simulate_E2_step_skips_K63_reaction_for_K48_SMAC():
+    """Test that simulate_E2_step skips K63 reaction for K48_SMAC monomer."""
+    history_dict = {
+        'ubiquitin_history': [histag_ubi_ubq_1_K48_aboc],
+        'reaction_history': [''],
+        'donor_history': [''],
+        'context_history': ['']
+    }
+    donor_list = [ubi_ubq_1_K48_SMAC]
+
+    result = simulate_E2_step(history_dict, donor_list)
+
+    assert len(result) == 1
+    assert all(len(r['ubiquitin_history']) == 2 for r in result)
+    assert all(len(r['reaction_history']) == 2 for r in result)
+    assert all(len(r['donor_history']) == 2 for r in result)
+    assert all(len(r['context_history']) == 2 for r in result)
+
+def test_simulate_E2_step_skips_K48_reaction_for_K63_SMAC():
+    """Test that simulate_E2_step skips K48 reaction for K63_SMAC monomer."""
+    history_dict = {
+        'ubiquitin_history': [histag_ubi_ubq_1_K48_aboc],
+        'reaction_history': [''],
+        'donor_history': [''],
+        'context_history': ['']
+    }
+    donor_list = [ubi_ubq_1_K63_SMAC]
+    result = simulate_E2_step(history_dict, donor_list)
+
+    # Only one valid reaction (K63), so only 1 result expected
+    assert len(result) == 1
+    assert result[0]['reaction_history'][-1] == 'K63'
+
+def test_simulate_E2_step_both_smac_monomers_valid_reactions():
+    """Test that both K48_SMAC and K63_SMAC each trigger one valid reaction."""
+    history_dict = {
+        'ubiquitin_history': [histag_ubi_ubq_1_K48_aboc],
+        'reaction_history': [''],
+        'donor_history': [''],
+        'context_history': ['']
+    }
+    donor_list = [ubi_ubq_1_K48_SMAC, ubi_ubq_1_K63_SMAC]
+    result = simulate_E2_step(history_dict, donor_list)
+
+    # Expect 2 total reactions: K48 for K48_SMAC, K63 for K63_SMAC
+    assert len(result) == 2
+    assert sorted([r['reaction_history'][-1] for r in result]) == ['K48', 'K63']
+
+def test_simulate_E2_step_mixed_valid_and_invalid_combinations():
+    """Test that simulate_E2_step handles a mix of valid and invalid reaction-monomer pairs."""
+    history_dict = {
+        'ubiquitin_history': [histag_ubi_ubq_1_K48_aboc],
+        'reaction_history': [''],
+        'donor_history': [''],
+        'context_history': ['']
+    }
+    donor_list = [
+        ubi_ubq_1_K48_SMAC,  # K48 valid only
+        ubi_ubq_1_K63_SMAC,  # K63 valid only
+        ubi_ubq_1_K48_ABOC_K63_SMAC  # both valid
+    ]
+    result = simulate_E2_step(history_dict, donor_list)
+
+    # Expect 4 total: 1 from first, 1 from second, 2 from third
+    assert len(result) == 4
+    reactions = [r['reaction_history'][-1] for r in result]
+    assert 'K48' in reactions
+    assert 'K63' in reactions
 
 
 def test_simulate_E2_step_with_no_monomers():
@@ -145,8 +216,7 @@ def test_simulate_E2_step_appends_correct_reactions():
 
     result = simulate_E2_step(history_dict, donor_list)
 
-    expected = [['', 'K48'], 
-                ['', 'K63']]
+    expected = [['', 'K48']]
     assert [r['reaction_history'] for r in result] == expected
 
 
@@ -192,7 +262,7 @@ def test_simulate_E2_step_missing_keys_raises_keyerror():
 
 
 def test_simulate_E2_step_with_unreactive_donor():
-    """Ensure function still adds unreactive donors to history."""
+    """Ensure function still adds doesn't add unreactive donors to history."""
     history_dict = {
         'ubiquitin_history': [histag_ubi_ubq_1_K48_aboc],  # already protected, so no K48 reaction expected
         'reaction_history': [''],
@@ -201,7 +271,7 @@ def test_simulate_E2_step_with_unreactive_donor():
     }
     donor_list = [ubi_ubq_1_K48_SMAC]
     result = simulate_E2_step(history_dict, donor_list)
-    assert len(result) == 2  # Still attempts both K48 and K63
+    assert len(result) == 1  # Still attempts both K48 and K63
     for r in result:
         assert len(r['ubiquitin_history']) == 2
 
@@ -229,7 +299,7 @@ def test_simulate_E2_step_duplicate_multimers_allowed():
     }
     donor_list = [ubi_ubq_1_K48_SMAC, ubi_ubq_1_K48_SMAC]
     result = simulate_E2_step(history_dict, donor_list)
-    assert len(result) == 4  # 2 donors * 2 reactions
+    assert len(result) == 2  # 2 donors * 1 reactions (one reaction allowed)
 
 # =====================================
 # ======= simulate_deprot_step ========
@@ -316,8 +386,8 @@ def test_simulate_e2_then_deprot_combination():
         deprot_results = simulate_deprot_step(intermediate)
         all_deprot_results.extend(deprot_results)
 
-    # Expect 4 E2 results x 2 deprot each = 8 total
-    assert len(all_deprot_results) == 8
+    # Expect 2 E2 results (only 2 reactions allowed) x 2 deprot each = 4 total
+    assert len(all_deprot_results) == 4
     for r in all_deprot_results:
         assert len(r['ubiquitin_history']) == 3
         assert len(r['reaction_history']) == 3
