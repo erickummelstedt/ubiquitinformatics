@@ -97,6 +97,14 @@ def simulate_E2_steps(
             last_acceptor = history_dict['ubiquitin_history'][-1]
             new_multimer, new_context = ubiquitin_simulation(last_acceptor, monomer, reaction)
 
+            # If one the chain number does not increase by 1, then no ubiquitin was added or more than 1 ubiquitin was added 
+            last_context = history_dict['context_history'][-1]
+            if int(new_context['max_chain_number']) != (int(last_context['max_chain_number']) + 1):
+                continue
+
+            # LAST TODO 
+            # Apply the enzyme choice using new context and old context
+
             results.append({
                 'ubiquitin_history': history_dict['ubiquitin_history'] + [new_multimer],
                 'reaction_history': history_dict['reaction_history'] + [reaction],
@@ -335,11 +343,6 @@ def create_synthesis_database(
     for i in list_of_history_dicts:
         list_of_history_dicts = simulate_deprot_steps(i, donors)
         
-    
-    # add inside simulate_E2_steps
-    # add none or mulitple lysines sites - max chain number is greater than the index of the loop
-
-    # save file
 
 
 
