@@ -5,11 +5,15 @@ import copy
 from copy import deepcopy
 import sys
 import pytest
+from pathlib import Path
 
-# home_dir = os.path.expanduser('~')
-# local_path = '/home/erickummelstedt/lecodebase/ubiquitinformatics/src/main.py'
-local_path = '/Users/ekummelstedt/le_code_base/ubiquitinformatics/back_end'
-sys.path.insert(0, local_path)
+# Dynamically get the backend path relative to this file
+current_file = Path(__file__).resolve()
+project_root = current_file.parents[2]  # Go up to project root
+sys.path.insert(0, str(project_root))
+local_path = project_root / 'back_end'
+
+sys.path.insert(0, str(local_path))
 
 # Import the functions from the original code
 # from src.main_testing import relabelling_ubiquitin_numbers, inner_wrapper_relabelling_ubiquitin_numbers
@@ -314,7 +318,7 @@ def test_simulate_E2_steps_skips_K48_reaction_for_K63_SMAC():
 
     # Only one valid reaction (K63), so only 1 result expected
     assert len(result) == 1
-    assert result[0]['reaction_history'][-1] == 'K63'
+    assert result[0]['reaction_history'][-1] == 'Ubc13/Mms2'
 
 def test_simulate_E2_steps_both_smac_monomers_valid_reactions():
     """Test that both K48_SMAC and K63_SMAC each trigger one valid reaction."""
@@ -330,7 +334,7 @@ def test_simulate_E2_steps_both_smac_monomers_valid_reactions():
 
     # Expect 2 total reactions: K48 for K48_SMAC, K63 for K63_SMAC
     assert len(result) == 2
-    assert sorted([r['reaction_history'][-1] for r in result]) == ['K48', 'K63']
+    assert sorted([r['reaction_history'][-1] for r in result]) == ['Ubc13/Mms2', 'gp78/Ube2g2']
 
 def test_simulate_E2_steps_mixed_valid_and_invalid_combinations():
     """Test that simulate_E2_steps handles a mix of valid and invalid reaction-monomer pairs."""
@@ -351,8 +355,9 @@ def test_simulate_E2_steps_mixed_valid_and_invalid_combinations():
     # Expect 4 total: 1 from first, 1 from second, 2 from third
     assert len(result) == 4
     reactions = [r['reaction_history'][-1] for r in result]
-    assert 'K48' in reactions
-    assert 'K63' in reactions
+    assert 'gp78/Ube2g2' in reactions
+    assert 'Ubc13/Mms2' in reactions
+    assert 'Ube2K' not in reactions
 
 
 def test_simulate_E2_steps_with_no_monomers():
@@ -385,7 +390,7 @@ def test_simulate_E2_steps_appends_correct_reactions():
 
     result = simulate_E2_steps(history_dict, donor_list)
 
-    expected = [['', 'K48']]
+    expected = [['', 'gp78/Ube2g2']]
     assert [r['reaction_history'] for r in result] == expected
 
 
@@ -639,7 +644,7 @@ def test_assign_enzyme_k63_elongation():
 def test_assign_enzyme_k63_branching():
     """Test that K63 branching also assigns Ubc13/Mms2 enzyme."""
     result = assign_enzyme("K63_reaction", "branching")
-    assert result == "Ubc13/Mms2"
+    assert result == "Ubc13/Mms2 (branching)"
 
 
 def test_assign_enzyme_invalid_combination_raises():
@@ -784,83 +789,170 @@ def test_validate_conjugated_lysines_with_malformed_entries():
 # ============================================================
 # Build reaction sequence for testing assign_correct_E2_enzyme
 # ============================================================
+# ===== Histories are there in-case you want to test later ===
 # === First Reaction Path ===
 
-# Dimer formation (K48 elongation)
 acceptor_1_0, context_1_0 = iterate_through_ubiquitin(histag_ubi_ubq_1_K63_aboc)
+history_dict_1_0 = {}
+history_dict_1_0['ubiquitin_history'] = [acceptor_1_0]
+history_dict_1_0['reaction_history'] = ['']
+history_dict_1_0['donor_history'] = ['']
+history_dict_1_0['context_history'] = [context_1_0]
+
+# Dimer formation (K48 elongation)
 acceptor = acceptor_1_0.copy()
 context = context_1_0.copy()
 donor = ubi_ubq_1_K48_SMAC
 reaction = "K48"
 acceptor_1_1a, context_1_1a = ubiquitin_simulation(acceptor, donor, reaction)
+history_dict_1_1a = {}
+history_dict_1_1a['ubiquitin_history'] = history_dict_1_0['ubiquitin_history'] + [acceptor_1_1a]
+history_dict_1_1a['reaction_history'] = history_dict_1_0['reaction_history'] + [reaction]
+history_dict_1_1a['donor_history'] = history_dict_1_0['donor_history'] + [donor]
+history_dict_1_1a['context_history'] = history_dict_1_0['context_history'] + [context_1_1a]
 
 # Dimer deprotection
 acceptor, context = acceptor_1_1a.copy(), context_1_1a.copy()
 acceptor_1_1b, context_1_1b = ubiquitin_simulation(acceptor, '', "FAKE_deprot")
+history_dict_1_1b = {}
+history_dict_1_1b['ubiquitin_history'] = history_dict_1_1a['ubiquitin_history'] + [acceptor_1_1b]
+history_dict_1_1b['reaction_history'] = history_dict_1_1a['reaction_history'] + [reaction]
+history_dict_1_1b['donor_history'] = history_dict_1_1a['donor_history'] + [donor]
+history_dict_1_1b['context_history'] = history_dict_1_1a['context_history'] + [context_1_1b]
+
 
 # Trimer formation (K63 elongation)
 acceptor, context = acceptor_1_1b.copy(), context_1_1b.copy()
 donor = ubi_ubq_1_K48_ABOC_K63_ABOC
 reaction = "K63"
 acceptor_1_2a, context_1_2a = ubiquitin_simulation(acceptor, donor, reaction)
+history_dict_1_2a = {}
+history_dict_1_2a['ubiquitin_history'] = history_dict_1_1b['ubiquitin_history'] + [acceptor_1_2a]
+history_dict_1_2a['reaction_history'] = history_dict_1_1b['reaction_history'] + [reaction]
+history_dict_1_2a['donor_history'] = history_dict_1_1b['donor_history'] + [donor]
+history_dict_1_2a['context_history'] = history_dict_1_1b['context_history'] + [context_1_2a]
+
 
 # Trimer deprotection
 acceptor, context = acceptor_1_2a.copy(), context_1_2a.copy()
 acceptor_1_2b, context_1_2b = ubiquitin_simulation(acceptor, '', "SMAC_deprot")
+history_dict_1_2b = {}
+history_dict_1_2b['ubiquitin_history'] = history_dict_1_2a['ubiquitin_history'] + [acceptor_1_2b]
+history_dict_1_2b['reaction_history'] = history_dict_1_2a['reaction_history'] + [reaction]
+history_dict_1_2b['donor_history'] = history_dict_1_2a['donor_history'] + [donor]
+history_dict_1_2b['context_history'] = history_dict_1_2a['context_history'] + [context_1_2b]
 
 # Tetramer formation (K48 branching)
 acceptor, context = acceptor_1_2b.copy(), context_1_2b.copy()
 donor = ubi_ubq_1_K48_ABOC_K63_ABOC
 reaction = "K48"
 acceptor_1_3a, context_1_3a = ubiquitin_simulation(acceptor, donor, reaction)
+history_dict_1_3a = {}
+history_dict_1_3a['ubiquitin_history'] = history_dict_1_2b['ubiquitin_history'] + [acceptor_1_3a]
+history_dict_1_3a['reaction_history'] = history_dict_1_2b['reaction_history'] + [reaction]
+history_dict_1_3a['donor_history'] = history_dict_1_2b['donor_history'] + [donor]
+history_dict_1_3a['context_history'] = history_dict_1_2b['context_history'] + [context_1_3a]
 
 # Tetramer deprotection
 acceptor, context = acceptor_1_3a.copy(), context_1_3a.copy()
 acceptor_1_3b, context_1_3b = ubiquitin_simulation(acceptor, '', "FAKE_deprot")
+history_dict_1_3b = {}
+history_dict_1_3b['ubiquitin_history'] = history_dict_1_3a['ubiquitin_history'] + [acceptor_1_3b]
+history_dict_1_3b['reaction_history'] = history_dict_1_3a['reaction_history'] + [reaction]
+history_dict_1_3b['donor_history'] = history_dict_1_3a['donor_history'] + [donor]
+history_dict_1_3b['context_history'] = history_dict_1_3a['context_history'] + [context_1_3b]
+
 
 
 # === Second Reaction Path ===
 
-# Dimer formation (K48 elongation)
 acceptor_2_0, context_2_0 = iterate_through_ubiquitin(histag_ubi_ubq_1_K63_aboc)
+history_dict_2_0 = {}
+history_dict_2_0['ubiquitin_history'] =  [acceptor_2_0]
+history_dict_2_0['reaction_history'] =  ['']
+history_dict_2_0['donor_history'] =  ['']
+history_dict_2_0['context_history'] =  [context_2_0]
+
+# Dimer formation (K48 elongation)
 acceptor, context = acceptor_2_0.copy(), context_2_0.copy()
 donor = ubi_ubq_1_K48_ABOC_K63_SMAC
 reaction = "K48"
 acceptor_2_1a, context_2_1a = ubiquitin_simulation(acceptor, donor, reaction)
+history_dict_2_1a = {}
+history_dict_2_1a['ubiquitin_history'] = history_dict_2_0['ubiquitin_history'] + [acceptor_2_1a]
+history_dict_2_1a['reaction_history'] = history_dict_2_0['reaction_history'] + [reaction]
+history_dict_2_1a['donor_history'] = history_dict_2_0['donor_history'] + [donor]
+history_dict_2_1a['context_history'] = history_dict_2_0['context_history'] + [context_2_1a]
 
 # Dimer deprotection
 acceptor, context = acceptor_2_1a.copy(), context_2_1a.copy()
 acceptor_2_1b, context_2_1b = ubiquitin_simulation(acceptor, '', "SMAC_deprot")
+history_dict_2_1b = {}
+history_dict_2_1b['ubiquitin_history'] = history_dict_2_1a['ubiquitin_history'] + [acceptor_2_1b]
+history_dict_2_1b['reaction_history'] = history_dict_2_1a['reaction_history'] + [reaction]
+history_dict_2_1b['donor_history'] = history_dict_2_1a['donor_history'] + [donor]
+history_dict_2_1b['context_history'] = history_dict_2_1a['context_history'] + [context_2_1b]
+
 
 # Trimer formation (K63 elongation)
 acceptor, context = acceptor_2_1b.copy(), context_2_1b.copy()
 donor = ubi_ubq_1_K63_SMAC
 reaction = "K63"
 acceptor_2_2a, context_2_2a = ubiquitin_simulation(acceptor, donor, reaction)
+history_dict_2_2a = {}
+history_dict_2_2a['ubiquitin_history'] = history_dict_2_1b['ubiquitin_history'] + [acceptor_2_2a]
+history_dict_2_2a['reaction_history'] = history_dict_2_1b['reaction_history'] + [reaction]
+history_dict_2_2a['donor_history'] = history_dict_2_1b['donor_history'] + [donor]
+history_dict_2_2a['context_history'] = history_dict_2_1b['context_history'] + [context_2_2a]
 
 # Trimer deprotection
 acceptor, context = acceptor_2_2a.copy(), context_2_2a.copy()
 acceptor_2_2b, context_2_2b = ubiquitin_simulation(acceptor, '', "FAKE_deprot")
+history_dict_2_2b = {}
+history_dict_2_2b['ubiquitin_history'] = history_dict_2_2a['ubiquitin_history'] + [acceptor_2_2b]
+history_dict_2_2b['reaction_history'] = history_dict_2_2a['reaction_history'] + [reaction]
+history_dict_2_2b['donor_history'] = history_dict_2_2a['donor_history'] + [donor]
+history_dict_2_2b['context_history'] = history_dict_2_2a['context_history'] + [context_2_2b]
 
 # Tetramer formation (K48 branching)
 acceptor, context = acceptor_2_2b.copy(), context_2_2b.copy()
 donor = ubi_ubq_1_K48_ABOC_K63_ABOC
 reaction = "K48"
 acceptor_2_3a, context_2_3a = ubiquitin_simulation(acceptor, donor, reaction)
+history_dict_2_3a = {}
+history_dict_2_3a['ubiquitin_history'] = history_dict_2_2b['ubiquitin_history'] + [acceptor_2_3a]
+history_dict_2_3a['reaction_history'] = history_dict_2_2b['reaction_history'] + [reaction]
+history_dict_2_3a['donor_history'] = history_dict_2_2b['donor_history'] + [donor]
+history_dict_2_3a['context_history'] = history_dict_2_2b['context_history'] + [context_2_3a]
 
 # Tetramer deprotection
 acceptor, context = acceptor_2_3a.copy(), context_2_3a.copy()
 acceptor_2_3b, context_2_3b = ubiquitin_simulation(acceptor, '', "SMAC_deprot")
+history_dict_2_3b = {}
+history_dict_2_3b['ubiquitin_history'] = history_dict_2_3a['ubiquitin_history'] + [acceptor_2_3b]
+history_dict_2_3b['reaction_history'] = history_dict_2_3a['reaction_history'] + [reaction]
+history_dict_2_3b['donor_history'] = history_dict_2_3a['donor_history'] + [donor]
+history_dict_2_3b['context_history'] = history_dict_2_3a['context_history'] + [context_2_3b]
 
 # Pentamer formation (K63 branching)
 acceptor, context = acceptor_2_3b.copy(), context_2_3b.copy()
 donor = ubi_ubq_1_K48_ABOC_K63_ABOC
 reaction = "K63"
 acceptor_2_4a, context_2_4a = ubiquitin_simulation(acceptor, donor, reaction)
+history_dict_2_4a = {}
+history_dict_2_4a['ubiquitin_history'] = history_dict_2_3b['ubiquitin_history'] + [acceptor_2_4a]
+history_dict_2_4a['reaction_history'] = history_dict_2_3b['reaction_history'] + [reaction]
+history_dict_2_4a['donor_history'] = history_dict_2_3b['donor_history'] + [donor]
+history_dict_2_4a['context_history'] = history_dict_2_3b['context_history'] + [context_2_4a]
 
 # Pentamer deprotection
 acceptor, context = acceptor_2_4a.copy(), context_2_4a.copy()
 acceptor_2_4b, context_2_4b = ubiquitin_simulation(acceptor, '', "FAKE_deprot")
+history_dict_2_4b = {}
+history_dict_2_4b['ubiquitin_history'] = history_dict_2_4a['ubiquitin_history'] + [acceptor_2_4b]
+history_dict_2_4b['reaction_history'] = history_dict_2_4a['reaction_history'] + [reaction]
+history_dict_2_4b['donor_history'] = history_dict_2_4a['donor_history'] + [donor]
+history_dict_2_4b['context_history'] = history_dict_2_4a['context_history'] + [context_2_4b]
 
 # Parameterized test for assign_correct_E2_enzyme
 @pytest.mark.parametrize(
@@ -872,7 +964,7 @@ acceptor_2_4b, context_2_4b = ubiquitin_simulation(acceptor, '', "FAKE_deprot")
         (context_2_0, context_2_1a, "gp78/Ube2g2", "Dimer formation via K48 results in elongation (2nd path)"),
         (context_2_1b, context_2_2a, "Ubc13/Mms2", "Trimer formation via K63 results in elongation (2nd path)"),
         (context_2_2b, context_2_3a, "gp78/Ube2g2", "Tetramer formation via K48 results in branching (2nd path)"),
-        (context_2_3b, context_2_4a, "Ubc13/Mms2", "Pentamer formation via K63 results in branching"),
+        (context_2_3b, context_2_4a, "Ubc13/Mms2 (branching)", "Pentamer formation via K63 results in branching"),
     ]
 )
 def test_assign_correct_E2_enzyme_matches_expected(reactant, product, expected_enzyme, note):

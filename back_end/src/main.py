@@ -2,12 +2,14 @@ import json
 import logging
 import copy
 import sys
+from pathlib import Path
 
-# figure out the path issues
-# home_dir = os.path.expanduser('~')
-# local_path = '/home/erickummelstedt/lecodebase/ubiquitinformatics/src/main.py'
-local_path = '/Users/ekummelstedt/le_code_base/ubiquitinformatics/back_end'
-sys.path.insert(0, local_path)
+# Dynamically get the backend path relative to this file
+current_file = Path(__file__).resolve()
+project_root = current_file.parents[2]  # Go up to project root
+sys.path.insert(0, str(project_root))
+local_path = project_root / 'back_end'
+sys.path.insert(0, str(local_path))
 
 from src.utils import convert_json_to_dict
 from src.logging_utils import log_protein_details, log_branching_details, log_end_of_branching, log_end_of_protein

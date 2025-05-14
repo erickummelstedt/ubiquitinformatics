@@ -5,11 +5,14 @@ import copy
 import logging
 from copy import deepcopy
 import sys
+from pathlib import Path
 
-# home_dir = os.path.expanduser('~')
-# local_path = '/home/erickummelstedt/lecodebase/ubiquitinformatics/src/main.py'
-local_path = '/Users/ekummelstedt/le_code_base/ubiquitinformatics/back_end'
-sys.path.insert(0, local_path)
+# Dynamically get the backend path relative to this file
+current_file = Path(__file__).resolve()
+project_root = current_file.parents[2]  # Go up to project root
+sys.path.insert(0, str(project_root))
+local_path = project_root / 'back_end'
+sys.path.insert(0, str(local_path))
 
 # Import the functions from the original code
 # from src.main_testing import relabelling_ubiquitin_numbers, inner_wrapper_relabelling_ubiquitin_numbers
