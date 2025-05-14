@@ -34,8 +34,8 @@ from src.main import \
     inner_wrapper_ubiquitin_building
 
 from src.simulation import \
-    simulate_E2_step, \
-    simulate_deprot_step, \
+    simulate_E2_steps, \
+    simulate_deprot_steps, \
     assign_enzyme, \
     determine_elongation_or_branching, \
     determine_reaction_type, \
@@ -69,22 +69,23 @@ from tests.test_data import \
     histag_ubi_ubq_1_K63_aboc
 
 # =====================================
-# ======= simulate_E2_step ========
+# ======= simulate_E2_steps ========
 # =====================================
-def test_simulate_E2_step_outputs_structure():
-    """Test that simulate_E2_step returns correctly structured output."""
+def test_simulate_E2_steps_outputs_structure():
+    """Test that simulate_E2_steps returns correctly structured output."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
     donor_list = [
         ubi_ubq_1_K48_SMAC,
         ubi_ubq_1_K63_SMAC
     ]
 
-    result = simulate_E2_step(history_dict, donor_list)
+    result = simulate_E2_steps(history_dict, donor_list)
 
     assert len(result) == 2
     assert all(len(r['ubiquitin_history']) == 2 for r in result)
@@ -92,13 +93,14 @@ def test_simulate_E2_step_outputs_structure():
     assert all(len(r['donor_history']) == 2 for r in result)
     assert all(len(r['context_history']) == 2 for r in result)
 
-def test_simulate_E2_step_outputs_structure_5_d():
-    """Test that simulate_E2_step returns correctly structured output."""
+def test_simulate_E2_steps_outputs_structure_5_d():
+    """Test that simulate_E2_steps returns correctly structured output."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1_K48_aboc)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1_K48_aboc],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
     donor_list = [
         ubi_ubq_1_K48_SMAC,
@@ -108,7 +110,7 @@ def test_simulate_E2_step_outputs_structure_5_d():
         ubi_ubq_1_K48_ABOC_K63_ABOC
     ]
 
-    result = simulate_E2_step(history_dict, donor_list)
+    result = simulate_E2_steps(history_dict, donor_list)
 
     assert len(result) == 8
     assert all(len(r['ubiquitin_history']) == 2 for r in result)
@@ -117,18 +119,19 @@ def test_simulate_E2_step_outputs_structure_5_d():
     assert all(len(r['context_history']) == 2 for r in result)
 
 
-# ------------------- Additional tests for simulate_E2_step SMAC/ABOC logic -------------------
-def test_simulate_E2_step_skips_K63_reaction_for_K48_SMAC():
-    """Test that simulate_E2_step skips K63 reaction for K48_SMAC monomer."""
+# ------------------- Additional tests for simulate_E2_steps SMAC/ABOC logic -------------------
+def test_simulate_E2_steps_skips_K63_reaction_for_K48_SMAC():
+    """Test that simulate_E2_steps skips K63 reaction for K48_SMAC monomer."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1_K48_aboc)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1_K48_aboc],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
     donor_list = [ubi_ubq_1_K48_SMAC]
 
-    result = simulate_E2_step(history_dict, donor_list)
+    result = simulate_E2_steps(history_dict, donor_list)
 
     assert len(result) == 1
     assert all(len(r['ubiquitin_history']) == 2 for r in result)
@@ -136,50 +139,53 @@ def test_simulate_E2_step_skips_K63_reaction_for_K48_SMAC():
     assert all(len(r['donor_history']) == 2 for r in result)
     assert all(len(r['context_history']) == 2 for r in result)
 
-def test_simulate_E2_step_skips_K48_reaction_for_K63_SMAC():
-    """Test that simulate_E2_step skips K48 reaction for K63_SMAC monomer."""
+def test_simulate_E2_steps_skips_K48_reaction_for_K63_SMAC():
+    """Test that simulate_E2_steps skips K48 reaction for K63_SMAC monomer."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1_K48_aboc)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1_K48_aboc],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
     donor_list = [ubi_ubq_1_K63_SMAC]
-    result = simulate_E2_step(history_dict, donor_list)
+    result = simulate_E2_steps(history_dict, donor_list)
 
     # Only one valid reaction (K63), so only 1 result expected
     assert len(result) == 1
     assert result[0]['reaction_history'][-1] == 'K63'
 
-def test_simulate_E2_step_both_smac_monomers_valid_reactions():
+def test_simulate_E2_steps_both_smac_monomers_valid_reactions():
     """Test that both K48_SMAC and K63_SMAC each trigger one valid reaction."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1_K48_aboc)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1_K48_aboc],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
     donor_list = [ubi_ubq_1_K48_SMAC, ubi_ubq_1_K63_SMAC]
-    result = simulate_E2_step(history_dict, donor_list)
+    result = simulate_E2_steps(history_dict, donor_list)
 
     # Expect 2 total reactions: K48 for K48_SMAC, K63 for K63_SMAC
     assert len(result) == 2
     assert sorted([r['reaction_history'][-1] for r in result]) == ['K48', 'K63']
 
-def test_simulate_E2_step_mixed_valid_and_invalid_combinations():
-    """Test that simulate_E2_step handles a mix of valid and invalid reaction-monomer pairs."""
+def test_simulate_E2_steps_mixed_valid_and_invalid_combinations():
+    """Test that simulate_E2_steps handles a mix of valid and invalid reaction-monomer pairs."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1_K48_aboc)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1_K48_aboc],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
     donor_list = [
         ubi_ubq_1_K48_SMAC,  # K48 valid only
         ubi_ubq_1_K63_SMAC,  # K63 valid only
         ubi_ubq_1_K48_ABOC_K63_SMAC  # both valid
     ]
-    result = simulate_E2_step(history_dict, donor_list)
+    result = simulate_E2_steps(history_dict, donor_list)
 
     # Expect 4 total: 1 from first, 1 from second, 2 from third
     assert len(result) == 4
@@ -188,68 +194,72 @@ def test_simulate_E2_step_mixed_valid_and_invalid_combinations():
     assert 'K63' in reactions
 
 
-def test_simulate_E2_step_with_no_monomers():
+def test_simulate_E2_steps_with_no_monomers():
     """Test behavior when monomer list is empty."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
     donor_list = []
 
-    result = simulate_E2_step(history_dict, donor_list)
+    result = simulate_E2_steps(history_dict, donor_list)
 
     # All output lists should be empty
     assert len(result) == 0
 
 
-def test_simulate_E2_step_appends_correct_reactions():
+def test_simulate_E2_steps_appends_correct_reactions():
     """Test that correct reactions are added to history."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
     donor_list = [ubi_ubq_1_K48_SMAC] 
 
-    result = simulate_E2_step(history_dict, donor_list)
+    result = simulate_E2_steps(history_dict, donor_list)
 
     expected = [['', 'K48']]
     assert [r['reaction_history'] for r in result] == expected
 
 
-def test_simulate_E2_step_multimer_structure():
+def test_simulate_E2_steps_multimer_structure():
     """Ensure new_multimer structure includes expected fields."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
     donor_list = [ubi_ubq_1_K48_SMAC]
-    result = simulate_E2_step(history_dict, donor_list)
+    result = simulate_E2_steps(history_dict, donor_list)
     assert 'protein' in result[0]['ubiquitin_history'][-1]
     assert 'branching_sites' in result[0]['ubiquitin_history'][-1]
 
 
-def test_simulate_E2_step_context_contains_chain_data():
+def test_simulate_E2_steps_context_contains_chain_data():
     """Ensure context contains chain_number_list and chain_length_list."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
     donor_list = [ubi_ubq_1_K48_SMAC]
-    result = simulate_E2_step(history_dict, donor_list)
+    result = simulate_E2_steps(history_dict, donor_list)
     context = result[0]['context_history'][-1]
     assert 'chain_number_list' in context
     assert 'chain_length_list' in context
 
 
-def test_simulate_E2_step_missing_keys_raises_keyerror():
+def test_simulate_E2_steps_missing_keys_raises_keyerror():
     """Expect KeyError if history_dict missing required keys."""
     history_dict = {
         'reaction_history': [''],
@@ -258,107 +268,229 @@ def test_simulate_E2_step_missing_keys_raises_keyerror():
     }
     donor_list = [ubi_ubq_1_K48_SMAC]
     with pytest.raises(KeyError):
-        simulate_E2_step(history_dict, donor_list)
+        simulate_E2_steps(history_dict, donor_list)
 
 
-def test_simulate_E2_step_with_unreactive_donor():
+def test_simulate_E2_steps_with_unreactive_donor():
     """Ensure function still adds doesn't add unreactive donors to history."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1_K48_aboc) # already protected, so no K48 reaction expected
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1_K48_aboc],  # already protected, so no K48 reaction expected
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
     donor_list = [ubi_ubq_1_K48_SMAC]
-    result = simulate_E2_step(history_dict, donor_list)
+    result = simulate_E2_steps(history_dict, donor_list)
     assert len(result) == 1  # Still attempts both K48 and K63
     for r in result:
         assert len(r['ubiquitin_history']) == 2
 
 
-def test_simulate_E2_step_with_invalid_donor_type():
+def test_simulate_E2_steps_with_invalid_donor_type():
     """Expect convert_json_to_dict to raise ValueError on invalid donor format."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
     donor_list = ['not a valid JSON']  # Improper donor format
     with pytest.raises(Exception):
-        simulate_E2_step(history_dict, donor_list)
+        simulate_E2_steps(history_dict, donor_list)
 
 
-def test_simulate_E2_step_duplicate_multimers_allowed():
+def test_simulate_E2_steps_duplicate_multimers_allowed():
     """Ensure duplicate multimers are added; no deduplication."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
     donor_list = [ubi_ubq_1_K48_SMAC, ubi_ubq_1_K48_SMAC]
-    result = simulate_E2_step(history_dict, donor_list)
+    result = simulate_E2_steps(history_dict, donor_list)
     assert len(result) == 2  # 2 donors * 1 reactions (one reaction allowed)
 
 # =====================================
-# ======= simulate_deprot_step ========
+# ======= simulate_deprot_steps ========
 # =====================================
 
-def test_simulate_deprot_step_output_structure():
-    """Test that simulate_deprot_step returns correct structure."""
+def test_simulate_deprot_steps_output_structure():
+    """
+    Test that simulate_deprot_steps returns correct structure. 
+    
+    If there is there is not SMAC to deprotect and the reaction is a SMAC_deprot,
+    this history_dict should be skipped. Hence there is only one reaction appended here (FAKE_deprot)
+
+    """
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1_K48_aboc)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1_K48_aboc],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
-    result = simulate_deprot_step(history_dict)
+    result = simulate_deprot_steps(history_dict)
 
-    assert len(result) == 2
+    assert len(result) == 1
     assert all(len(r['ubiquitin_history']) == 2 for r in result)
     assert all(len(r['reaction_history']) == 2 for r in result)
     assert all(len(r['donor_history']) == 2 for r in result)
     assert all(len(r['context_history']) == 2 for r in result)
 
-def test_simulate_deprot_step_appends_correct_reactions():
-    """Check that SMAC_deprot and FAKE_deprot are appended correctly."""
+
+
+# === Complex Reaction Path for testing with histories ===
+
+acceptor_3_0, context_3_0 = iterate_through_ubiquitin(histag_ubi_ubq_1_K63_aboc)
+history_dict_3_0 = {}
+history_dict_3_0['ubiquitin_history'] = [acceptor_3_0]
+history_dict_3_0['reaction_history'] = ['']
+history_dict_3_0['donor_history'] = ['']
+history_dict_3_0['context_history'] = [context_3_0]
+
+# Dimer formation (K48 elongation)
+acceptor, context = acceptor_3_0.copy(), context_3_0.copy()
+donor = ubi_ubq_1_K48_ABOC_K63_SMAC
+reaction = "K48"
+acceptor_3_1a, context_3_1a = ubiquitin_simulation(acceptor, donor, reaction)
+history_dict_3_1a = {}
+history_dict_3_1a['ubiquitin_history'] = history_dict_3_0['ubiquitin_history'] + [acceptor_3_0]
+history_dict_3_1a['reaction_history'] = history_dict_3_0['reaction_history'] + [reaction]
+history_dict_3_1a['donor_history'] = history_dict_3_0['donor_history'] + [donor]
+history_dict_3_1a['context_history'] = history_dict_3_0['context_history'] + [context_3_0]
+
+
+# Dimer deprotection
+acceptor, context = acceptor_3_1a.copy(), context_3_1a.copy()
+acceptor_3_1b, context_3_1b = ubiquitin_simulation(acceptor, '', "SMAC_deprot")
+history_dict_3_1b = {}
+history_dict_3_1b['ubiquitin_history'] = history_dict_3_1a['ubiquitin_history'] + [acceptor_3_1b]
+history_dict_3_1b['reaction_history'] = history_dict_3_1a['reaction_history'] + [reaction]
+history_dict_3_1b['donor_history'] = history_dict_3_1a['donor_history'] + [donor]
+history_dict_3_1b['context_history'] = history_dict_3_1a['context_history'] + [context_3_1b]
+
+
+# Trimer formation (K63 elongation)
+acceptor, context = acceptor_3_1b.copy(), context_3_1b.copy()
+donor = ubi_ubq_1_K63_SMAC
+reaction = "K63"
+acceptor_3_2a, context_3_2a = ubiquitin_simulation(acceptor, donor, reaction)
+history_dict_3_2a = {}
+history_dict_3_2a['ubiquitin_history'] = history_dict_3_1b['ubiquitin_history'] + [acceptor_3_2a]
+history_dict_3_2a['reaction_history'] = history_dict_3_1b['reaction_history'] + [reaction]
+history_dict_3_2a['donor_history'] = history_dict_3_1b['donor_history'] + [donor]
+history_dict_3_2a['context_history'] = history_dict_3_1b['context_history'] + [context_3_2a]
+
+
+# Trimer deprotection
+acceptor, context = acceptor_3_2a.copy(), context_3_2a.copy()
+acceptor_3_2b, context_3_2b = ubiquitin_simulation(acceptor, '', "FAKE_deprot")
+history_dict_3_2b = {}
+history_dict_3_2b['ubiquitin_history'] = history_dict_3_2a['ubiquitin_history'] + [acceptor_3_2b]
+history_dict_3_2b['reaction_history'] = history_dict_3_2a['reaction_history'] + [reaction]
+history_dict_3_2b['donor_history'] = history_dict_3_2a['donor_history'] + [donor]
+history_dict_3_2b['context_history'] = history_dict_3_2a['context_history'] + [context_3_2b]
+
+
+# Tetramer formation (K48 branching)
+acceptor, context = acceptor_3_2b.copy(), context_3_2b.copy()
+donor = ubi_ubq_1_K48_ABOC_K63_ABOC
+reaction = "K48"
+acceptor_3_3a, context_3_3a = ubiquitin_simulation(acceptor, donor, reaction)
+history_dict_3_3a = {}
+history_dict_3_3a['ubiquitin_history'] = history_dict_3_2b['ubiquitin_history'] + [acceptor_3_3a]
+history_dict_3_3a['reaction_history'] = history_dict_3_2b['reaction_history'] + [reaction]
+history_dict_3_3a['donor_history'] = history_dict_3_2b['donor_history'] + [donor]
+history_dict_3_3a['context_history'] = history_dict_3_2b['context_history'] + [context_3_3a]
+
+
+# Tetramer deprotection
+acceptor, context = acceptor_3_3a.copy(), context_3_3a.copy()
+acceptor_3_3b, context_3_3b = ubiquitin_simulation(acceptor, '', "SMAC_deprot")
+history_dict_3_3b = {}
+history_dict_3_3b['ubiquitin_history'] = history_dict_3_3a['ubiquitin_history'] + [acceptor_3_3b]
+history_dict_3_3b['reaction_history'] = history_dict_3_3a['reaction_history'] + [reaction]
+history_dict_3_3b['donor_history'] = history_dict_3_3a['donor_history'] + [donor]
+history_dict_3_3b['context_history'] = history_dict_3_3a['context_history'] + [context_3_3b]
+
+def test_simulate_deprot_steps_output_structure_nested_with_SMAC():
+    """
+    Test that simulate_deprot_steps returns correct structure on nested dictionary. 
+    
+    If there is a SMAC to deprotect so len(result) should be 2
+    """
+    result = simulate_deprot_steps(history_dict_3_3a)
+
+    assert len(result) == 2
+    assert all(len(r['ubiquitin_history']) == 7 for r in result)
+    assert all(len(r['reaction_history']) == 7 for r in result)
+    assert all(len(r['donor_history']) == 7 for r in result)
+    assert all(len(r['context_history']) == 7 for r in result)
+
+def test_simulate_deprot_steps_output_structure_nested_without_SMAC():
+    """
+    Test that simulate_deprot_steps returns correct structure on nested dictionary. 
+    
+    If there is no SMAC to deprotect so len(result) should be 1
+    """
+    result = simulate_deprot_steps(history_dict_3_3b)
+
+    assert len(result) == 1
+    assert all(len(r['ubiquitin_history']) == 8 for r in result)
+    assert all(len(r['reaction_history']) == 8 for r in result)
+    assert all(len(r['donor_history']) == 8 for r in result)
+    assert all(len(r['context_history']) == 8 for r in result)
+
+def test_simulate_deprot_steps_appends_correct_reactions():
+    """Check that FAKE_deprot is only appended correctly as there is no SMAC on the species."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1_K48_aboc)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1_K48_aboc],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
-    result = simulate_deprot_step(history_dict)
+    result = simulate_deprot_steps(history_dict)
     assert [r['reaction_history'][-1] for r in result] == ['SMAC_deprot', 'FAKE_deprot']
 
-def test_simulate_deprot_step_multimer_contains_expected_keys():
+def test_simulate_deprot_steps_appends_correct_reactions():
+    """Check that SMAC_deprot and FAKE_deprot are appended correctly."""
+    result = simulate_deprot_steps(history_dict_3_3a)
+    assert [r['reaction_history'][-1] for r in result] == ['SMAC_deprot', 'FAKE_deprot']
+
+def test_simulate_deprot_steps_multimer_contains_expected_keys():
     """Verify new multimers contain expected structure."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1_K63_aboc)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1_K63_aboc],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
-    result = simulate_deprot_step(history_dict)
+    result = simulate_deprot_steps(history_dict)
     for r in result:
         assert 'protein' in r['ubiquitin_history'][-1]
         assert 'branching_sites' in r['ubiquitin_history'][-1]
 
-def test_simulate_deprot_step_context_structure():
+def test_simulate_deprot_steps_context_structure():
     """Ensure context entries include necessary fields."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
-    result = simulate_deprot_step(history_dict)
+    result = simulate_deprot_steps(history_dict)
     for r in result:
         assert 'chain_number_list' in r['context_history'][-1]
         assert 'chain_length_list' in r['context_history'][-1]
 
-def test_simulate_deprot_step_missing_keys_raises_error():
+def test_simulate_deprot_steps_missing_keys_raises_error():
     """Check missing keys raise KeyError."""
     history_dict = {
         'reaction_history': [''],
@@ -366,24 +498,25 @@ def test_simulate_deprot_step_missing_keys_raises_error():
         'context_history': ['']
     }
     with pytest.raises(KeyError):
-        simulate_deprot_step(history_dict)
+        simulate_deprot_steps(history_dict)
 
 
 # ------------------- Combined E2 + Deprot Step Test -------------------
 def test_simulate_e2_then_deprot_combination():
     """Test combined simulation: E2 step followed by deprot step for each result."""
+    acceptor, context = iterate_through_ubiquitin(histag_ubi_ubq_1)
     history_dict = {
-        'ubiquitin_history': [histag_ubi_ubq_1],
+        'ubiquitin_history': [acceptor],
         'reaction_history': [''],
         'donor_history': [''],
-        'context_history': ['']
+        'context_history': [context]
     }
     donor_list = [ubi_ubq_1_K48_SMAC, ubi_ubq_1_K63_SMAC]
-    e2_results = simulate_E2_step(history_dict, donor_list)
+    e2_results = simulate_E2_steps(history_dict, donor_list)
 
     all_deprot_results = []
     for intermediate in e2_results:
-        deprot_results = simulate_deprot_step(intermediate)
+        deprot_results = simulate_deprot_steps(intermediate)
         all_deprot_results.extend(deprot_results)
 
     # Expect 2 E2 results (only 2 reactions allowed) x 2 deprot each = 4 total
