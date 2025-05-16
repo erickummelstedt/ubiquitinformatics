@@ -39,7 +39,7 @@ from src.main import \
     ubiquitin_building, \
     inner_wrapper_ubiquitin_building
 
-from src.utils import \
+from src.utils.utils import \
     match_assertion_error_contains,\
     all_strings_exist, \
     all_strings_exist_in_list, \

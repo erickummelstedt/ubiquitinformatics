@@ -70,4 +70,4 @@ coverage.xml
 # Wheel files
 *.whl
 
-/back_end/.data/
+/back_end/data/

@@ -37,7 +37,7 @@ from src.main import \
     ubiquitin_building, \
     inner_wrapper_ubiquitin_building
 
-from src.utils import \
+from src.utils.utils import \
     match_assertion_error_contains,\
     all_strings_exist, \
     all_strings_exist_in_list, \
@@ -54,7 +54,7 @@ from tests.test_data import \
     BASE_WORKING_DICT, \
     BASE_CONTEXT
 
-from src.logging_utils import \
+from src.utils.logging_utils import \
     log_branching_details,\
     log_end_of_branching,\
     log_protein_details,\

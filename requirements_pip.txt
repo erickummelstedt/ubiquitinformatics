@@ -3,3 +3,5 @@ ipywidgets
 matplotlib
 pandas
 pytest
+scipy
+py3Dmol

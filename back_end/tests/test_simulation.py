@@ -46,7 +46,7 @@ from src.simulation import \
     validate_conjugated_lysines, \
     assign_correct_E2_enzyme
 
-from src.utils import \
+from src.utils.utils import \
     match_assertion_error_contains,\
     all_strings_exist, \
     all_strings_exist_in_list, \

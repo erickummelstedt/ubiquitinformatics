@@ -13,7 +13,7 @@ sys.path.insert(0, str(project_root))
 local_path = project_root / 'back_end'
 sys.path.insert(0, str(local_path))
 
-from src.utils import \
+from src.utils.utils import \
     match_assertion_error_contains,\
     all_strings_exist, \
     all_strings_exist_in_list, \
@@ -25,7 +25,7 @@ from src.utils import \
 from tests.test_data import \
     five_level_nested_ubiquitin_
 
-from src.logging_utils import \
+from src.utils.logging_utils import \
     log_branching_details,\
     log_end_of_branching, \
     log_protein_details, \

@@ -11,8 +11,8 @@ sys.path.insert(0, str(project_root))
 local_path = project_root / 'back_end'
 sys.path.insert(0, str(local_path))
 
-from src.utils import convert_json_to_dict
-from src.logging_utils import log_protein_details, log_branching_details, log_end_of_branching, log_end_of_protein
+from src.utils.utils import convert_json_to_dict
+from src.utils.logging_utils import log_protein_details, log_branching_details, log_end_of_branching, log_end_of_protein
 
 '''
 	•	turn this into object-oriented code 
