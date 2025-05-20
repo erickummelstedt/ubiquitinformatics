@@ -53,13 +53,13 @@ const SequenceFilter = ({ value, onChange, onPanelSelect }) => {
     const PANEL_WIDTH = canvas_width;
     const PANEL_HEIGHT = canvas_height;
 
-    // Initial nodes and edges (static for now)
+    // Centered initial nodes for a 600x400 panel, shifted down by 50px
     const initialNodes = [
-      { x: 400, y: 300, clicks: 0 },
-      { x: 350, y: 250, clicks: 0 }, { x: 450, y: 250, clicks: 0 },
-      { x: 300, y: 200, clicks: 0 }, { x: 400, y: 200, clicks: 0 }, { x: 500, y: 200, clicks: 0 },
-      { x: 250, y: 150, clicks: 0 }, { x: 350, y: 150, clicks: 0 }, { x: 450, y: 150, clicks: 0 }, { x: 550, y: 150, clicks: 0 },
-      { x: 200, y: 100, clicks: 0 }, { x: 300, y: 100, clicks: 0 }, { x: 400, y: 100, clicks: 0 }, { x: 500, y: 100, clicks: 0 }, { x: 600, y: 100, clicks: 0 }
+      { x: 300, y: 300, clicks: 0 },
+      { x: 250, y: 250, clicks: 0 }, { x: 350, y: 250, clicks: 0 },
+      { x: 200, y: 200, clicks: 0 }, { x: 300, y: 200, clicks: 0 }, { x: 400, y: 200, clicks: 0 },
+      { x: 150, y: 150, clicks: 0 }, { x: 250, y: 150, clicks: 0 }, { x: 350, y: 150, clicks: 0 }, { x: 450, y: 150, clicks: 0 },
+      { x: 100, y: 100, clicks: 0 }, { x: 200, y: 100, clicks: 0 }, { x: 300, y: 100, clicks: 0 }, { x: 400, y: 100, clicks: 0 }, { x: 500, y: 100, clicks: 0 }
     ];
     const edges = [
       [0, 1], [0, 2],
@@ -105,7 +105,7 @@ const SequenceFilter = ({ value, onChange, onPanelSelect }) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       // Remove BASE_WIDTH/BASE_HEIGHT scaling logic
       // Scaffold bounds (for box)
-      const padding = 30;
+      const padding = 0;
       const xs = nodes.map(n => n.x);
       const ys = nodes.map(n => n.y);
       const minX = Math.min(...xs) - RADIUS - padding;
