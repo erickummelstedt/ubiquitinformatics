@@ -12,14 +12,21 @@ function App() {
 
   useEffect(() => {
     fetchInitialReactions().then(data => {
-      setSequences(data);
-      setSelected(data[0] || null);
+      // If the data is an array of objects, convert each object to an array of {key, value} pairs
+      const processed = data.map(obj =>
+        Object.entries(obj).map(([key, value]) => ({ key, value }))
+      );
+      setSequences(processed);
+      setSelected(processed[0] || null);
     });
   }, []);
 
   // Simple filter for demonstration (can be improved)
-  const filteredSequences = sequences.filter(seq =>
-    Object.values(seq).some(val => val.toLowerCase().includes(filter.toLowerCase()))
+  const filteredSequences = sequences.filter(seqArr =>
+    seqArr.some(({ key, value }) =>
+      key.toLowerCase().includes(filter.toLowerCase()) ||
+      String(value).toLowerCase().includes(filter.toLowerCase())
+    )
   );
 
   return (
