@@ -12,7 +12,7 @@ const basePanelStyle = {
   borderColor: '#444444',
   width: panel_width + 'px',
   height: panel_height + 'px',
-  overflow: 'auto',
+  overflow: 'hidden', // prevent scrolling
   boxSizing: 'border-box',
   color: '#E0E0E0',
   cursor: 'pointer',
@@ -52,9 +52,6 @@ const SequenceFilter = ({ value, onChange, onPanelSelect }) => {
     // Panel dimensions
     const PANEL_WIDTH = canvas_width;
     const PANEL_HEIGHT = canvas_height;
-    // Calculate scaling and centering
-    const BASE_WIDTH = 900;
-    const BASE_HEIGHT = 600;
 
     // Initial nodes and edges (static for now)
     const initialNodes = [
@@ -106,12 +103,7 @@ const SequenceFilter = ({ value, onChange, onPanelSelect }) => {
       canvas.width = PANEL_WIDTH;
       canvas.height = PANEL_HEIGHT;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      // Calculate scale to fit BASE_WIDTH x BASE_HEIGHT into panel
-      const scale = Math.min(PANEL_WIDTH / BASE_WIDTH, PANEL_HEIGHT / BASE_HEIGHT);
-      // Centering offsets
-      const offsetX = (PANEL_WIDTH - BASE_WIDTH * scale) / 2;
-      const offsetY = (PANEL_HEIGHT - BASE_HEIGHT * scale) / 2;
-
+      // Remove BASE_WIDTH/BASE_HEIGHT scaling logic
       // Scaffold bounds (for box)
       const padding = 30;
       const xs = nodes.map(n => n.x);
@@ -120,13 +112,12 @@ const SequenceFilter = ({ value, onChange, onPanelSelect }) => {
       const maxX = Math.max(...xs) + RADIUS + padding;
       const minY = Math.min(...ys) - RADIUS - padding;
       const maxY = Math.max(...ys) + RADIUS + padding;
-
-      // Draw background box (scaled and centered)
-      const boxX = (minX * scale) + offsetX;
-      const boxY = (minY * scale) + offsetY;
-      const boxW = (maxX - minX) * scale;
-      const boxH = (maxY - minY) * scale;
-      const radius = 20 * scale;
+      // Draw background box (now fills the panel)
+      const boxX = 0;
+      const boxY = 0;
+      const boxW = PANEL_WIDTH;
+      const boxH = PANEL_HEIGHT;
+      const radius = 20;
       ctx.fillStyle = '#101010';
       ctx.beginPath();
       ctx.moveTo(boxX + radius, boxY);
@@ -136,14 +127,13 @@ const SequenceFilter = ({ value, onChange, onPanelSelect }) => {
       ctx.arcTo(boxX, boxY, boxX + boxW, boxY, radius);
       ctx.closePath();
       ctx.fill();
-
-      // Draw refresh button (scaled and centered)
+      // Draw refresh button (bottom right)
       const refreshBtn = {
-        x: boxX + boxW - 100 * scale,
-        y: boxY + boxH - 50 * scale,
-        w: 80 * scale,
-        h: 30 * scale,
-        r: 10 * scale
+        x: boxX + boxW - 100,
+        y: boxY + boxH - 50,
+        w: 80,
+        h: 30,
+        r: 10
       };
       ctx.fillStyle = '#222';
       ctx.beginPath();
@@ -155,50 +145,47 @@ const SequenceFilter = ({ value, onChange, onPanelSelect }) => {
       ctx.closePath();
       ctx.fill();
       ctx.strokeStyle = '#555';
-      ctx.lineWidth = 1.5 * scale;
+      ctx.lineWidth = 1.5;
       ctx.stroke();
       ctx.fillStyle = '#fff';
-      ctx.font = `${16 * scale}px 'Helvetica Neue', sans-serif`;
-      ctx.fillText('Refresh', refreshBtn.x + 10 * scale, refreshBtn.y + 20 * scale);
+      ctx.font = `16px 'Helvetica Neue', sans-serif`;
+      ctx.fillText('Refresh', refreshBtn.x + 10, refreshBtn.y + 20);
       setRefreshBtnRect(refreshBtn);
-
       // Outer/inner border
       ctx.strokeStyle = '#444';
-      ctx.lineWidth = 4 * scale;
+      ctx.lineWidth = 4;
       ctx.stroke();
       ctx.strokeStyle = '#666';
-      ctx.lineWidth = 2 * scale;
+      ctx.lineWidth = 2;
       ctx.stroke();
-
-      // Draw edges
+      // Draw edges (no scaling/offset)
       ctx.strokeStyle = GRAY;
-      ctx.lineWidth = 2 * scale;
+      ctx.lineWidth = 2;
       edges.forEach(([i1, i2]) => {
         const { x: x1, y: y1 } = nodes[i1];
         const { x: x2, y: y2 } = nodes[i2];
         ctx.beginPath();
-        ctx.moveTo(x1 * scale + offsetX, y1 * scale + offsetY);
-        ctx.lineTo(x2 * scale + offsetX, y2 * scale + offsetY);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
         ctx.stroke();
       });
-
-      // Draw arrows
+      // Draw arrows (no scaling/offset)
       arrows.forEach(({ from, to, color }) => {
         const { x: x1, y: y1 } = nodes[from];
         const { x: x2, y: y2 } = nodes[to];
         const dx = x2 - x1;
         const dy = y2 - y1;
         const length = Math.sqrt(dx * dx + dy * dy);
-        const offset = 5 * scale;
+        const offset = 5;
         const offsetXperp = -dy / length * offset;
         const offsetYperp = dx / length * offset;
         const direction = color === 'blue' ? 1 : -1;
-        const sx1 = x1 * scale + direction * offsetXperp + offsetX;
-        const sy1 = y1 * scale + direction * offsetYperp + offsetY;
-        const sx2 = x2 * scale + direction * offsetXperp + offsetX;
-        const sy2 = y2 * scale + direction * offsetYperp + offsetY;
+        const sx1 = x1 + direction * offsetXperp;
+        const sy1 = y1 + direction * offsetYperp;
+        const sx2 = x2 + direction * offsetXperp;
+        const sy2 = y2 + direction * offsetYperp;
         ctx.strokeStyle = color;
-        ctx.lineWidth = 2 * scale;
+        ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(sx1, sy1);
         ctx.lineTo(sx2, sy2);
@@ -207,7 +194,7 @@ const SequenceFilter = ({ value, onChange, onPanelSelect }) => {
         const midX = (sx1 + sx2) / 2;
         const midY = (sy1 + sy2) / 2;
         const angle = Math.atan2(sy2 - sy1, sx2 - sx1);
-        const arrowLength = 10 * scale;
+        const arrowLength = 10;
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.moveTo(midX, midY);
@@ -222,21 +209,18 @@ const SequenceFilter = ({ value, onChange, onPanelSelect }) => {
         ctx.closePath();
         ctx.fill();
       });
-
-      // Draw nodes
+      // Draw nodes (no scaling/offset)
       nodes.forEach(({ x, y, clicks }, i) => {
-        const drawX = x * scale + offsetX;
-        const drawY = y * scale + offsetY;
         if (clicks === 0) ctx.fillStyle = LIGHT_GRAY;
         else if (clicks === 1) ctx.fillStyle = '#ff9999';
         else ctx.fillStyle = '#cc6666';
         ctx.beginPath();
-        ctx.arc(drawX, drawY, RADIUS * scale, 0, Math.PI * 2);
+        ctx.arc(x, y, RADIUS, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = BLACK;
-        ctx.lineWidth = 2 * scale;
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(drawX, drawY, RADIUS * scale, 0, Math.PI * 2);
+        ctx.arc(x, y, RADIUS, 0, Math.PI * 2);
         ctx.stroke();
       });
     }, [nodes, arrows, refreshKey]);
@@ -247,9 +231,6 @@ const SequenceFilter = ({ value, onChange, onPanelSelect }) => {
       if (!canvas) return;
       const handleMouseDown = (e) => {
         const rect = canvas.getBoundingClientRect();
-        const scale = Math.min(PANEL_WIDTH / BASE_WIDTH, PANEL_HEIGHT / BASE_HEIGHT);
-        const offsetX = (PANEL_WIDTH - BASE_WIDTH * scale) / 2;
-        const offsetY = (PANEL_HEIGHT - BASE_HEIGHT * scale) / 2;
         const x = (e.clientX - rect.left);
         const y = (e.clientY - rect.top);
         // Check refresh button
@@ -270,11 +251,11 @@ const SequenceFilter = ({ value, onChange, onPanelSelect }) => {
         }
         for (let i = 0; i < nodesRef.current.length; i++) {
           const node = nodesRef.current[i];
-          const drawX = node.x * scale + offsetX;
-          const drawY = node.y * scale + offsetY;
+          const drawX = node.x;
+          const drawY = node.y;
           const dx = drawX - x;
           const dy = drawY - y;
-          if (Math.sqrt(dx * dx + dy * dy) <= RADIUS * scale) {
+          if (Math.sqrt(dx * dx + dy * dy) <= RADIUS) {
             let isAllowed = false;
             let proposedPrev = null;
             Array.from(clickedNodesRef.current).forEach(prevIndex => {
@@ -308,32 +289,85 @@ const SequenceFilter = ({ value, onChange, onPanelSelect }) => {
         }
       };
       canvas.addEventListener('mousedown', handleMouseDown);
-      return () => canvas.removeEventListener('mousedown', handleMouseDown);
-    }, [refreshBtnRect, initialNodes, edges, maxClicks, RADIUS]);
+      return () => {
+        canvas.removeEventListener('mousedown', handleMouseDown);
+      };
+    }, [nodes, arrows, clickedNodes]);
 
     return (
-      <canvas
-        ref={canvasRef}
-        width={PANEL_WIDTH}
-        height={PANEL_HEIGHT}
-        style={{ display: 'block', margin: 'auto', backgroundColor: '#1c1c1c', border: '1px solid #888', width: PANEL_WIDTH + 'px', height: PANEL_HEIGHT + 'px' }}
-      />
+      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+        <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
+      </div>
+    );
+  };
+
+  // --- Visualizer (3Dmol.js) Panel ---
+  const MOL2_URL = process.env.NODE_ENV === 'development'
+    ? '/his-GG-1ubq-1-(<K48_1ubq-2-()>).mol2'
+    : 'his-GG-1ubq-1-(<K48_1ubq-2-()>).mol2';
+
+  const Visualizer = () => {
+    const viewerRef = useRef(null);
+    useEffect(() => {
+      // Dynamically load 3Dmol.js if not already loaded
+      if (!window.$3Dmol) {
+        const script = document.createElement('script');
+        script.src = 'https://3dmol.org/build/3Dmol-min.js';
+        script.async = true;
+        script.onload = () => initViewer();
+        document.body.appendChild(script);
+      } else {
+        initViewer();
+      }
+      function initViewer() {
+        if (!viewerRef.current) return;
+        viewerRef.current.innerHTML = '';
+        const element = viewerRef.current;
+        // Strictly enforce size and containment
+        element.style.width = '100%';
+        element.style.height = '100%';
+        element.style.minHeight = '0';
+        element.style.position = 'absolute'; // absolute for full fill
+        element.style.top = '0';
+        element.style.left = '0';
+        element.style.right = '0';
+        element.style.bottom = '0';
+        element.style.overflow = 'hidden';
+        element.style.background = '#232323';
+        element.style.border = '2px solid #333';
+        const config = { backgroundColor: '#232323' };
+        const viewer = window.$3Dmol.createViewer(element, config);
+        window.fetch(MOL2_URL)
+          .then(res => res.text())
+          .then(mol2str => {
+            viewer.addModel(mol2str, 'mol2');
+            viewer.setStyle({}, { cartoon: { color: 'spectrum' }, stick: {} });
+            viewer.zoomTo();
+            viewer.render();
+          });
+      }
+    }, []);
+    // Use a relative parent and absolute child for strict containment
+    return (
+      <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 0, flex: 1, overflow: 'hidden', display: 'flex' }}>
+        <div ref={viewerRef} style={{ width: '100%', height: '100%', minHeight: 0, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', background: '#232323', border: '2px solid #333' }} />
+      </div>
     );
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-      <div style={{ marginBottom: '1rem', width: panel_width }}>
-        <input
-          type="text"
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder="Filter sequences..."
-          style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #444', background: '#222', color: '#fff' }}
-        />
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', width: '100%' }}>
+      {/* Left/Main Panel */}
       <Panel>
         <GameScaffoldPanel />
+      </Panel>
+      {/* Right Hand Panel with Visualizer */}
+      <Panel>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ flex: 1, width: '100%', minHeight: 0, position: 'relative', overflow: 'hidden' }}>
+            <Visualizer />
+          </div>
+        </div>
       </Panel>
     </div>
   );

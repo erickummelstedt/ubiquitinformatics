@@ -1,24 +1,41 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
-const Visualizer = ({ data }) => {
-  if (!data) {
-    return <div style={{ minHeight: '120px', background: '#f5f5f5', borderRadius: '4px', padding: '1rem', gridColumn: '1 / -1' }}>No data selected</div>;
-  }
+const MOL2_URL = process.env.NODE_ENV === 'development'
+  ? '/his-GG-1ubq-1-(<K48_1ubq-2-()>).mol2'
+  : 'his-GG-1ubq-1-(<K48_1ubq-2-()>).mol2';
 
-  // Display the first key/value pairs in a readable way
+const Visualizer = () => {
+  const viewerRef = useRef(null);
+  useEffect(() => {
+    // Dynamically load 3Dmol.js if not already loaded
+    if (!window.$3Dmol) {
+      const script = document.createElement('script');
+      script.src = 'https://3dmol.org/build/3Dmol-min.js';
+      script.async = true;
+      script.onload = () => initViewer();
+      document.body.appendChild(script);
+    } else {
+      initViewer();
+    }
+    function initViewer() {
+      if (!viewerRef.current) return;
+      viewerRef.current.innerHTML = '';
+      const element = viewerRef.current;
+      const config = { backgroundColor: '#232323' };
+      const viewer = window.$3Dmol.createViewer(element, config);
+      window.fetch(MOL2_URL)
+        .then(res => res.text())
+        .then(mol2str => {
+          viewer.addModel(mol2str, 'mol2');
+          viewer.setStyle({}, { cartoon: { color: 'spectrum' }, stick: {} });
+          viewer.zoomTo();
+          viewer.render();
+        });
+    }
+  }, []);
   return (
-    <div style={{ minHeight: '120px', background: '#f5f5f5', borderRadius: '4px', padding: '1rem', gridColumn: '1 / -1' }}>
-      <h2>Selected Reaction Sequence</h2>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <tbody>
-          {Object.entries(data).map(([key, value]) => (
-            <tr key={key}>
-              <td style={{ fontWeight: 'bold', padding: '0.25rem 0.5rem', borderBottom: '1px solid #eee' }}>{key}</td>
-              <td style={{ padding: '0.25rem 0.5rem', borderBottom: '1px solid #eee', wordBreak: 'break-all' }}>{value}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div style={{ width: '100%', height: '100%', minHeight: 0 }}>
+      <div ref={viewerRef} style={{ width: '100%', height: '100%', minHeight: 0, flex: 1 }} />
     </div>
   );
 };
