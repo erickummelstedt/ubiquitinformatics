@@ -2,7 +2,9 @@ import React, { useRef, useEffect } from 'react';
 
 const Visualizer = ({ mol2Url }) => {
   const viewerRef = useRef(null);
+
   useEffect(() => {
+    // 3Dmol.js logic only
     if (!window.$3Dmol) {
       const script = document.createElement('script');
       script.src = 'https://3dmol.org/build/3Dmol-min.js';
@@ -33,12 +35,16 @@ const Visualizer = ({ mol2Url }) => {
         .then(res => res.text())
         .then(mol2str => {
           viewer.addModel(mol2str, 'mol2');
-          viewer.setStyle({}, { cartoon: { color: 'spectrum' }, stick: {} });
+          // Set style: surface and ribbon, both cornflower blue, no atoms
+          viewer.setStyle({}, {}); // clear all styles
+          viewer.setStyle({}, { cartoon: { color: 'cornflowerblue', opacity: 1.0 } });
+          viewer.addSurface(window.$3Dmol.SurfaceType.SES, { color: 'cornflowerblue', opacity: 0.8, transparent: true, voldata: undefined, volscheme: undefined, doNotHide: true });
           viewer.zoomTo();
           viewer.render();
         });
     }
   }, [mol2Url]);
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 0, flex: 1, overflow: 'hidden', display: 'flex' }}>
       <div ref={viewerRef} style={{ width: '100%', height: '100%', minHeight: 0, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', background: '#232323', border: '2px solid #333' }} />
