@@ -4,14 +4,20 @@ Features;
     DONE b. simulation of ubiquitin synthesis 
     DONE c. generate database
 
-    - build out the simulations to run in a single juypter notebook
+    - figure out K48 elongation/branching 
+    - build the tests for 2D and 3D representation of ubiquitin
+    - finalize the simulation - only up to pentamer
+    - connect user interface to ubiquitin ecosystem, build out fastAPI system
+    - user interface for opening up ubiquitin - use fastAPI template
+    - build the histag with a DHHHHHH at the moment its only HHHHHH
+
+
+    - build reaction maps and inventory checks 
+    - connect to automated python
 
     - Build in 3D simulation - finalize json_to_mol2.py with tests and everything.
         a. just 3Dmol.js
         b. build the histag with a DHHHHHH at the moment its only HHHHHH
-    
-    - connect user interface to ubiquitin ecosystem, build out fastAPI system
-    - user interface for opening up ubiquitin - use fastAPI template
     
     c. building reaction maps and inventory checks -- by end of april
     d. build 2D representation of ubiquitin

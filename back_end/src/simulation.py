@@ -307,6 +307,16 @@ def assign_correct_E2_enzyme(
 
     enzyme = assign_enzyme(reaction, elongation_or_branching)
 
+    # TODO 
+    # Add if K48 reaction and elongation
+    # if reaction == "K48_reaction" and elongation_or_branching == "elongation":
+    
+    # Check is the ubiquitin before is bound to a K63 or K48
+    # Get the number of new_bound_lysine - 1 then check in conjugated_lysines if it is K48 (if not it has to be K63)
+
+    # if the ubiquitin is bound to a K63 then the reaction is K48 Ube2K elongation
+    # if the ubiquitin is bound to a K48 then the reaction is K48 Ube2g2 elongation
+
     return enzyme
 
 def create_reaction_histories(
