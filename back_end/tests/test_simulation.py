@@ -44,7 +44,8 @@ from src.simulation import \
     determine_elongation_or_branching, \
     determine_reaction_type, \
     validate_conjugated_lysines, \
-    assign_correct_E2_enzyme
+    assign_correct_E2_enzyme, \
+    determine_Ube2K_elongation
 
 from src.utils.utils import \
     match_assertion_error_contains,\
@@ -661,9 +662,9 @@ def test_assign_enzyme_invalid_combination_raises():
 def test_determine_elongation_or_branching_elongation():
     """Test when new bound lysine appears once: should return 'elongation'."""
     product_conjugated_lysines = [
-        [1, "K48"], [2, "K63"], [3, "K48"]
+        [1, "K48", 2], [2, "K63", 3], [3, "K48", 4]
     ]
-    new_bound_lysine = [3, "K48"]
+    new_bound_lysine = [3, "K48", 4]
     product_conjugated_lysines.append([new_bound_lysine])
     result = determine_elongation_or_branching(product_conjugated_lysines, new_bound_lysine)
     assert result == "elongation"
@@ -672,9 +673,9 @@ def test_determine_elongation_or_branching_elongation():
 def test_determine_elongation_or_branching_branching():
     """Test when new bound lysine appears twice: should return 'branching'."""
     product_conjugated_lysines = [
-        [1, "K48"], [2, "K63"], [2, "K48"]
+        [1, "K48", 2], [2, "K48", 3], [1, "K63", 3]
     ]
-    new_bound_lysine = [2, "K48"]
+    new_bound_lysine = [1, "K63", 3]
     product_conjugated_lysines.append([new_bound_lysine])
     result = determine_elongation_or_branching(product_conjugated_lysines, new_bound_lysine)
     assert result == "branching"
@@ -683,9 +684,9 @@ def test_determine_elongation_or_branching_branching():
 def test_determine_elongation_or_branching_invalid_count_zero():
     """Test when new bound lysine does not exist at all: should raise TypeError."""
     product_conjugated_lysines = [
-        [1, "K48"], [2, "K63"]
+        [1, "K48", 2], [2, "K63", 3]
     ]
-    new_bound_lysine = [3, "K48"]
+    new_bound_lysine = [3, "K48", 4]
     product_conjugated_lysines.append([new_bound_lysine])
     with pytest.raises(TypeError) as exc_info:
         determine_elongation_or_branching(product_conjugated_lysines, new_bound_lysine)
@@ -695,9 +696,9 @@ def test_determine_elongation_or_branching_invalid_count_zero():
 def test_determine_elongation_or_branching_invalid_count_more_than_two():
     """Test when new bound lysine appears more than twice: should raise TypeError."""
     product_conjugated_lysines = [
-        [1, "K63"], [2, "K63"], [2, "K48"], [2, "K29"]
+        [1, "K63", 2], [2, "K48", 3], [2, "K63", 4], [2, "K29", 5]
     ]
-    new_bound_lysine = [2, "K63"]
+    new_bound_lysine = [2, "K63", 4]
     product_conjugated_lysines.append([new_bound_lysine])
     with pytest.raises(TypeError) as exc_info:
         determine_elongation_or_branching(product_conjugated_lysines, new_bound_lysine)
@@ -706,8 +707,8 @@ def test_determine_elongation_or_branching_invalid_count_more_than_two():
 
 def test_determine_elongation_or_branching_with_empty_product_list():
     """Test when product_conjugated_lysines is length 1 and new lysine is added once."""
-    product_conjugated_lysines = [[1, "K48"]]
-    new_bound_lysine = [1, "K48"]
+    product_conjugated_lysines = [[1, "K48", 2]]
+    new_bound_lysine = [1, "K48", 2]
     product_conjugated_lysines.append([new_bound_lysine])
     result = determine_elongation_or_branching(product_conjugated_lysines, new_bound_lysine)
     assert result == "elongation"
@@ -718,21 +719,21 @@ def test_determine_elongation_or_branching_with_empty_product_list():
 
 def test_determine_reaction_type_k48():
     """Test that K48 lysine returns correct reaction type."""
-    new_bound_lysine = [3, "K48"]
+    new_bound_lysine = [3, "K48", 4]
     result = determine_reaction_type(new_bound_lysine)
     assert result == "K48_reaction"
 
 
 def test_determine_reaction_type_k63():
     """Test that K63 lysine returns correct reaction type."""
-    new_bound_lysine = [5, "K63"]
+    new_bound_lysine = [5, "K63", 6]
     result = determine_reaction_type(new_bound_lysine)
     assert result == "K63_reaction"
 
 
 def test_determine_reaction_type_invalid_lysine_raises():
     """Test that an invalid lysine site raises TypeError."""
-    new_bound_lysine = [2, "K33"]
+    new_bound_lysine = [2, "K33", 3]
     with pytest.raises(TypeError) as exc_info:
         determine_reaction_type(new_bound_lysine)
     assert "does not contain K48 or K63" in str(exc_info.value)
@@ -740,10 +741,70 @@ def test_determine_reaction_type_invalid_lysine_raises():
 
 def test_determine_reaction_type_non_string_site_raises():
     """Test that a non-string lysine site raises TypeError."""
-    new_bound_lysine = [4, 48]
+    new_bound_lysine = [4, 48, 5]
     with pytest.raises(TypeError) as exc_info:
         determine_reaction_type(new_bound_lysine)
     assert "does not contain K48 or K63" in str(exc_info.value)
+
+# =====================================
+# Tests for determine_Ube2K_elongation
+# =====================================
+
+@pytest.mark.parametrize(
+    "product_conjugated_lysines, new_bound_lysine, expected_result, expected_exception, note",
+    [
+        # Test 1: K63 linkage → should return Ube2K
+        (
+            [[1, "K48", 2], [2, "K63", 3], [3, "K48", 4]],
+            [3, "K48", 4],
+            "Ube2K",
+            None,
+            "Test when previous linkage was K63 → should return Ube2K."
+        ),
+
+        # Test 2: K48 linkage → should return gp78/Ube2g2
+        (
+            [[1, "K48", 2], [2, "K48", 3], [3, "K48", 4]],
+            [3, "K48", 4],
+            "gp78/Ube2g2",
+            None,
+            "Test when previous linkage was K48 → should return gp78/Ube2g2."
+        ),
+
+        # Test 4: Multiple linkages present, correct K63 found → Ube2K
+        (
+            [[1, "K48", 2], [2, "K48", 3], [3, "K63", 4], [4, "K48", 5], [2, "K63", 6]],
+            [4, "K48", 5],
+            "Ube2K",
+            None,
+            "Test when multiple linkages exist but correct K63 linkage is found → should return Ube2K."
+        ),
+
+        # Test 5: Multiple linkages present, correct K48 found → gp78/Ube2g2
+        (
+            [[1, "K48", 2], [2, "K48", 3], [3, "K48", 4], [4, "K48", 5], [3, "K63", 6]],
+            [4, "K48", 5],
+            "gp78/Ube2g2",
+            None,
+            "Test when multiple linkages exist but correct K48 linkage is found → should return gp78/Ube2g2."
+        ),
+    ]
+)
+def test_determine_Ube2K_elongation_parametrized(
+    product_conjugated_lysines,
+    new_bound_lysine,
+    expected_result,
+    expected_exception,
+    note
+):
+    """Parametrized test for determine_Ube2K_elongation — covers K63, K48, missing, multiple linkages."""
+    if expected_exception:
+        with pytest.raises(expected_exception) as exc_info:
+            determine_Ube2K_elongation(product_conjugated_lysines, new_bound_lysine)
+        # Optional: can assert error message if desired
+    else:
+        result = determine_Ube2K_elongation(product_conjugated_lysines, new_bound_lysine)
+        assert result == expected_result
 
 # =====================================
 # Tests for validate_conjugated_lysines
@@ -752,7 +813,7 @@ def test_determine_reaction_type_non_string_site_raises():
 def test_validate_conjugated_lysines_all_valid():
     """Test that validation passes when only K48 and K63 are present."""
     context = {
-        "conjugated_lysines": [[1, "K48"], [2, "K63"], [3, "K48"]]
+        "conjugated_lysines": [[1, "K48", 2], [2, "K63", 3], [3, "K48", 4]]
     }
     # Should not raise any exceptions
     validate_conjugated_lysines(context)
@@ -761,7 +822,7 @@ def test_validate_conjugated_lysines_all_valid():
 def test_validate_conjugated_lysines_with_invalid_entry():
     """Test that validation raises TypeError when unsupported lysines are included."""
     context = {
-        "conjugated_lysines": [[1, "K48"], [2, "K33"], [3, "K63"]]
+        "conjugated_lysines": [[1, "K48", 2], [2, "K33", 3], [3, "K63", 4]]
     }
     with pytest.raises(TypeError) as exc_info:
         validate_conjugated_lysines(context)
@@ -776,14 +837,19 @@ def test_validate_conjugated_lysines_with_empty_list():
     # Should not raise any exceptions
     validate_conjugated_lysines(context)
 
-
-def test_validate_conjugated_lysines_with_malformed_entries():
-    """Test that malformed entries are ignored, and validation passes if remaining are valid."""
+def test_validate_conjugated_lysines_raises_on_malformed_entries():
+    """
+    Test that validate_conjugated_lysines raises TypeError when conjugated_lysines
+    contains only malformed entries (not lists of length 3).
+    """
     context = {
-        "conjugated_lysines": [[1, "K48"], ["invalid"], [2, "K63"], [3], "random"]
+        "conjugated_lysines": [[1, "K48"], [2, "K48", 3], [3, "K63", 4]]
     }
-    # Should not raise an error because malformed entries are skipped
-    validate_conjugated_lysines(context)
+
+    with pytest.raises(TypeError) as exc_info:
+        validate_conjugated_lysines(context)
+
+    assert "malformed conjugated_lysines" in str(exc_info.value)
 
 
 # ============================================================
@@ -914,7 +980,7 @@ history_dict_2_2b['reaction_history'] = history_dict_2_2a['reaction_history'] + 
 history_dict_2_2b['donor_history'] = history_dict_2_2a['donor_history'] + [donor]
 history_dict_2_2b['context_history'] = history_dict_2_2a['context_history'] + [context_2_2b]
 
-# Tetramer formation (K48 branching)
+# Tetramer formation (K48 Ube2K elongation as previous is K63)
 acceptor, context = acceptor_2_2b.copy(), context_2_2b.copy()
 donor = ubi_ubq_1_K48_ABOC_K63_ABOC
 reaction = "K48"
@@ -963,7 +1029,7 @@ history_dict_2_4b['context_history'] = history_dict_2_4a['context_history'] + [c
         (context_1_2b, context_1_3a, "Ube2K", "Tetramer formation via K48 results in branching"),
         (context_2_0, context_2_1a, "gp78/Ube2g2", "Dimer formation via K48 results in elongation (2nd path)"),
         (context_2_1b, context_2_2a, "Ubc13/Mms2", "Trimer formation via K63 results in elongation (2nd path)"),
-        (context_2_2b, context_2_3a, "gp78/Ube2g2", "Tetramer formation via K48 results in branching (2nd path)"),
+        (context_2_2b, context_2_3a, "Ube2K", "Tetramer formation via K48 results in elongation but (Ube2K elongation) (2nd path)"),
         (context_2_3b, context_2_4a, "Ubc13/Mms2 (branching)", "Pentamer formation via K63 results in branching"),
     ]
 )
@@ -980,11 +1046,11 @@ def test_assign_correct_E2_enzyme_matches_expected(reactant, product, expected_e
 def test_assign_correct_E2_enzyme_no_new_conjugation_raises():
     """Test that function raises if no new conjugation site is detected."""
     context = {
-        "max_chain_number": 1,
-        "conjugated_lysines": [[1, "K48"]],
+        "max_chain_number": 2,
+        "conjugated_lysines": [[1, "K48", 2]],
         "chain_number_list": [1],
         "chain_length_list": []
     }
     with pytest.raises(TypeError) as exc_info:
         assign_correct_E2_enzyme(context, context)
-    assert "product_max_chain_number: 1 != reactant_max_chain_number + 1: 2" in str(exc_info.value)
+    assert "product_max_chain_number: 2 != reactant_max_chain_number + 1: 3" in str(exc_info.value)

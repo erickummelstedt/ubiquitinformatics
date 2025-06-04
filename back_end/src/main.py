@@ -362,7 +362,7 @@ def process_branch(branch, working_dictionary, context):
     # Handle branches that have proteins bound  
     elif isinstance(branch["children"], dict):
         context["multimer_string_name"] += f"<{branch['site_name']}_"
-        context["conjugated_lysines"] += [[working_dictionary['chain_number'], str(branch['site_name'])]]
+        context["conjugated_lysines"] += [[working_dictionary['chain_number'], str(branch['site_name']), branch["children"]['chain_number']]]
         branch["children"], context = inner_wrapper_iterate_through_ubiquitin(
             branch["children"], context
         )

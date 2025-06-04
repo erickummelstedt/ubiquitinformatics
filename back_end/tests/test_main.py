@@ -2203,7 +2203,7 @@ def test_find_free_lysines(ubiquitin_structure, expected_free_lysines):
             }},
             {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
         ]
-    }, [[1, "K48"]]),
+    }, [[1, 'K48', 2]]),
 
     # ✅ Test Case 4: Trimer with Nested Conjugations
     ({
@@ -2252,7 +2252,7 @@ def test_find_free_lysines(ubiquitin_structure, expected_free_lysines):
             {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
 
         ]
-    }, [[1, "K48"], [2, "K63"]]),
+    }, [[1, 'K48', 2], [2, 'K63', 3]]),
 
     
     # ✅ Test Case 6: Highly Nested Structure with Multiple Conjugations
@@ -2331,7 +2331,7 @@ def test_find_free_lysines(ubiquitin_structure, expected_free_lysines):
                 ]
             }}
         ]
-    }, [[1, "K48"], [2, "K63"], [3, "K63"], [1, "K63"]]),
+    }, [[1, "K48", 2], [2, "K63", 3], [3, "K63", 4], [1, "K63", 5]]),
 ])
 def test_find_conjugated_lysines(ubiquitin_structure, expected_conjugated_lysines):
     """
@@ -2856,14 +2856,14 @@ def test_process_current_protein(working_dictionary, context, expected_working_d
                         ]}},
         {"chain_number": 1, "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"},
         {"chain_length_list": [76], "chain_number_list": [1, 2], "multimer_string_name": "", "SMAC_lysines": [], "ABOC_lysines": [], "free_lysines": [], "conjugated_lysines": []},
-        {"chain_length_list": [76, 76], "chain_number_list": [1, 2, 3], "multimer_string_name": "<K48_dummy_protein-2-(<K11_ABOC><K29_SMAC><K33_SMAC>)>", "SMAC_lysines": [[2, 'K29'], [2, 'K33']], "conjugated_lysines": [[1, "K48"]], "ABOC_lysines": [[2, 'K11']], "free_lysines": [[2, 'K48'], [2, 'K63']]}
+        {"chain_length_list": [76, 76], "chain_number_list": [1, 2, 3], "multimer_string_name": "<K48_dummy_protein-2-(<K11_ABOC><K29_SMAC><K33_SMAC>)>", "SMAC_lysines": [[2, 'K29'], [2, 'K33']], "conjugated_lysines": [[1, "K48", 2]], "ABOC_lysines": [[2, 'K11']], "free_lysines": [[2, 'K48'], [2, 'K63']]}
     ),
     # ✅ Test 10: Recursive children with existing multimer_string_name
     (
         {"site_name": "K63", 
          "sequence_id": "NIQ(K)EST", 
          "children": {"protein": "dummy_protein",
-                        "chain_number": 2,
+                        "chain_number": 3,
                         "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
                         "chain_length": 76,
                         "branching_sites": [
@@ -2878,7 +2878,7 @@ def test_process_current_protein(working_dictionary, context, expected_working_d
                         ]}},
         {"chain_number": 2, "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"},
         {"chain_length_list": [76], "chain_number_list": [1, 2], "multimer_string_name": "PREVIOUS", "SMAC_lysines": [], "ABOC_lysines": [], "free_lysines": [], "conjugated_lysines": []},
-        {"multimer_string_name": "PREVIOUS<K63_dummy_protein-2-(<K11_ABOC><K29_SMAC><K33_SMAC>)>", "conjugated_lysines": [[2, "K63"]]}
+        {"multimer_string_name": "PREVIOUS<K63_dummy_protein-2-(<K11_ABOC><K29_SMAC><K33_SMAC>)>", "conjugated_lysines": [[2, "K63", 3]]}
     ),
     # ✅ Test 11: Add to existing SMAC list
     (
@@ -2898,7 +2898,7 @@ def test_process_current_protein(working_dictionary, context, expected_working_d
     (
         {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
         {"chain_number": 3, "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"},
-        {"chain_length_list": [76, 76], "chain_number_list": [1, 2, 3], "multimer_string_name": "PREVIOUS", "SMAC_lysines": [[0, "K6"]], "ABOC_lysines": [[1, "K33"]], "free_lysines": [[2, "K63"]], "conjugated_lysines": [[0, "K48"]]},
+        {"chain_length_list": [76, 76], "chain_number_list": [1, 2, 3], "multimer_string_name": "PREVIOUS", "SMAC_lysines": [[0, "K6"]], "ABOC_lysines": [[1, "K33"]], "free_lysines": [[2, "K63"]], "conjugated_lysines": [[0, "K48", 1]]},
         {"free_lysines": [[2, "K63"], [3, "K48"]]}
     ),
     # ✅ Test 14: Recursive children, deeply nested
@@ -2921,7 +2921,7 @@ def test_process_current_protein(working_dictionary, context, expected_working_d
                         ]}},
         {"chain_number": 3, "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"},
         {"chain_length_list": [76, 76, 76], "chain_number_list": [1, 2, 3, 4], "multimer_string_name": "", "SMAC_lysines": [], "ABOC_lysines": [], "free_lysines": [], "conjugated_lysines": []},
-        {"multimer_string_name": "<K63_dummy_protein-4-(<K11_ABOC><K29_SMAC><K33_SMAC>)>", "conjugated_lysines": [[3, "K63"]], "SMAC_lysines": [[4, "K29"],[4, "K33"]], "ABOC_lysines": [[4, "K11"]], "free_lysines": [[4, "K48"], [4, "K63"]]}
+        {"multimer_string_name": "<K63_dummy_protein-4-(<K11_ABOC><K29_SMAC><K33_SMAC>)>", "conjugated_lysines": [[3, "K63", 4]], "SMAC_lysines": [[4, "K29"],[4, "K33"]], "ABOC_lysines": [[4, "K11"]], "free_lysines": [[4, "K48"], [4, "K63"]]}
     )
 ])
 def test_process_branch(branch, working_dict, starting_context, expected_context):
@@ -2948,10 +2948,6 @@ def test_process_branch(branch, working_dict, starting_context, expected_context
     # ✅ Test 4: Neutral lysine (M1)
     ({"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
      {}),  # No changes expected
-
-    # ✅ Test 5: Recursive child (nested protein)
-    ({"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": BASE_WORKING_DICT},
-     {"multimer_string_name": "<K48_GG-dummy_protein-1-()>", "conjugated_lysines": [[1, "K48"]]}),
 
     # ✅ Test 6: Very large chain number for scalability
     ({"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},

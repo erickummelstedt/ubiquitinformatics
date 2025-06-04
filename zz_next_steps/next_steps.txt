@@ -4,7 +4,11 @@ Features;
     DONE b. simulation of ubiquitin synthesis 
     DONE c. generate database
 
-    - figure out K48 elongation/branching 
+    DONE - figure out K48 elongation/branching 
+    
+    - run simulation for tetramers and pentamers (each individually saved)
+    - recreate the reaction schemes for tetramers and pentamers
+
     - build the tests for 2D and 3D representation of ubiquitin
     - finalize the simulation - only up to pentamer
     - connect user interface to ubiquitin ecosystem, build out fastAPI system

@@ -214,6 +214,44 @@ def determine_elongation_or_branching(product_conjugated_lysines, new_bound_lysi
             f"Count of chain number '{target_chain}' is {count}, expected 1 or 2"
         )
 
+def determine_Ube2K_elongation(product_conjugated_lysines, new_bound_lysine):
+    """
+    Determines whether the addition of a ubiquitin results in elongation via Ube2K or gp78/Ube2g2,
+    based on the linkage type of the preceding ubiquitin.
+
+    Context:
+    - Previous checks have already ruled out branching (i.e., the new bound lysine is not a K63 branch point).
+    - This function now identifies whether the elongation occurred after a K63 or K48 linkage:
+        * If the previous linkage was K63 → this is a K48 Ube2K elongation.
+        * If the previous linkage was K48 → this is a K48 gp78/Ube2g2 elongation.
+
+    Args:
+        product_conjugated_lysines (list): List of all conjugated lysines in the product context, 
+            where each entry is of the form [parent_chain_number, linkage_site (e.g. 'K63' or 'K48'), child_chain_number].
+        new_bound_lysine (list): The site where the most recent ubiquitin was added, 
+            in the form [chain_number, lysine_site].
+
+    Returns:
+        str: 'Ube2K' if elongation followed a K63 linkage, 'gp78/Ube2g2' if elongation followed a K48 linkage.
+
+    Raises:
+        TypeError: If the preceding linkage type cannot be determined.
+    """
+    target_chain = new_bound_lysine[0]
+
+    # This function only works for cases where the target_chain is equal to or greater than 3.
+    if target_chain >= 3:
+        if [(target_chain - 1), 'K63', target_chain] in product_conjugated_lysines:
+            return "Ube2K"
+        elif [(target_chain - 1), 'K48', target_chain] in product_conjugated_lysines:
+            return "gp78/Ube2g2"
+        elif len(product_conjugated_lysines) > 1:
+            raise TypeError(f"Cannot determine preceding linkage type for chain {target_chain}.")
+    else: 
+        return "gp78/Ube2g2"
+
+
+
 def determine_reaction_type(new_bound_lysine):
     """
     Determines the type of reaction (K48 or K63) from the lysine site of the newly bound ubiquitin.
@@ -247,13 +285,31 @@ def validate_conjugated_lysines(context):
         context (dict): A context dictionary containing a 'conjugated_lysines' list.
 
     Raises:
-        TypeError: If unsupported lysines are found.
+        TypeError: If unsupported lysines are found or if malformed entries are present.
     """
-    lysine_types = {
-        lys[1] for lys in context["conjugated_lysines"]
-        if isinstance(lys, list) and len(lys) == 2
-    }
+    conjugated_lysines = context.get("conjugated_lysines", [])
+
+    valid_entries = []
+    malformed_entries = []
+
+    for lys in conjugated_lysines:
+        if isinstance(lys, list) and len(lys) == 3:
+            valid_entries.append(lys)
+        else:
+            malformed_entries.append(lys)
+
+    # Raise if ANY malformed entry exists
+    if malformed_entries:
+        raise TypeError(
+            f"Context contains malformed conjugated_lysines entries: {malformed_entries}. "
+            "Each conjugated lysine must be a list of length 3."
+        )
+
+    # Now check lysine types only in valid entries
+    lysine_types = {lys[1] for lys in valid_entries}
+
     unsupported_lysines = lysine_types - {"K48", "K63"}
+
     if unsupported_lysines:
         raise TypeError(
             f"Context contains unsupported conjugated lysines: {unsupported_lysines}. "
@@ -307,15 +363,20 @@ def assign_correct_E2_enzyme(
 
     enzyme = assign_enzyme(reaction, elongation_or_branching)
 
-    # TODO 
-    # Add if K48 reaction and elongation
-    # if reaction == "K48_reaction" and elongation_or_branching == "elongation":
-    
-    # Check is the ubiquitin before is bound to a K63 or K48
-    # Get the number of new_bound_lysine - 1 then check in conjugated_lysines if it is K48 (if not it has to be K63)
+    # Add if K48 reaction and elongation there is an edge case where the enzyme is Ube2K instead of Ube2g2
+    if (reaction == "K48_reaction") and (elongation_or_branching == "elongation"):    
+        # 📝 This check verifies that for a K48 elongation event, the correct E2 enzyme must be 'gp78/Ube2g2'.
+        # If the enzyme returned does not match this expectation, it indicates incorrect assignment of E2 enzyme 
+        # for this reaction and topology.
+        if enzyme != "gp78/Ube2g2":
+            raise TypeError(
+                f"Expected enzyme to be 'gp78/Ube2g2' for K48 elongation, but got '{enzyme}'. "
+                "This indicates incorrect E2 enzyme assignment for the given reaction and topology."
+            )
 
-    # if the ubiquitin is bound to a K63 then the reaction is K48 Ube2K elongation
-    # if the ubiquitin is bound to a K48 then the reaction is K48 Ube2g2 elongation
+        enzyme = determine_Ube2K_elongation(
+            product_conjugated_lysines, new_bound_lysine
+        )
 
     return enzyme
 
