@@ -132,3 +132,35 @@ def inject_branching_sites(branches, target_chain_number, new_branching_sites, c
             inject_branching_sites(child.get("branching_sites", []), target_chain_number, new_branching_sites, current_chain_number + 1)
 
 
+def get_multimer_column_names(multimer_size):
+    """
+    Generates column names for a multimer reaction sequence 
+    based on the multimer size.
+
+    Args:
+        multimer_size (int): The size of the multimer (2 to 6).
+
+    Returns:
+        list: List of column names for the reaction steps.
+
+    Raises:
+        ValueError: If multimer_size is not supported.
+    """
+    if multimer_size < 2 or multimer_size > 6:
+        raise ValueError(
+            f"Unsupported multimer size: {multimer_size}. "
+            "Only sizes 2 to 6 are currently supported."
+        )
+
+    column_names = ['initial_acceptor']
+
+    # Define the order of labels
+    labels = ['dimer', 'trimer', 'tetramer', 'pentamer', 'hexamer']
+
+    for i in range(2, multimer_size + 1):
+        label = labels[i - 2]
+        column_names.append(f'{label}_formation')
+        if i < multimer_size:
+            column_names.append(f'{label}_deprotection')
+
+    return column_names

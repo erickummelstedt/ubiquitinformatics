@@ -851,6 +851,89 @@ def test_validate_conjugated_lysines_raises_on_malformed_entries():
 
     assert "malformed conjugated_lysines" in str(exc_info.value)
 
+# =====================================
+# Additioanl tests for validate_conjugated_lysines
+# =====================================
+
+# TEST 1: Valid input — normal case with only K48 and K63
+def test_validate_conjugated_lysines_valid():
+    """Valid input with only K48 and K63 lysines — should pass."""
+    context = {
+        "conjugated_lysines": [[1, "K48", 2], [2, "K63", 3], [3, "K48", 4]]
+    }
+    # Should not raise an error
+    validate_conjugated_lysines(context)
+
+
+# TEST 2: Valid input — empty conjugated_lysines list
+def test_validate_conjugated_lysines_empty_list():
+    """Empty conjugated_lysines list — should pass."""
+    context = {"conjugated_lysines": []}
+    validate_conjugated_lysines(context)
+
+
+# TEST 3: Malformed entry — lists of incorrect length
+def test_validate_conjugated_lysines_malformed_entry_raises():
+    """Malformed entry: lists of incorrect length — should raise TypeError."""
+    context = {
+        "conjugated_lysines": [[1, "K48"], [2, "K48", 3], [3, "K63", 4]]
+    }
+    with pytest.raises(TypeError) as exc_info:
+        validate_conjugated_lysines(context)
+    assert "malformed conjugated_lysines entries" in str(exc_info.value)
+
+
+# TEST 4: Unsupported lysine type
+def test_validate_conjugated_lysines_unsupported_lysine_raises():
+    """Unsupported lysine type — should raise TypeError."""
+    context = {
+        "conjugated_lysines": [[1, "K48", 2], [2, "K33", 3], [3, "K63", 4]]
+    }
+    with pytest.raises(TypeError) as exc_info:
+        validate_conjugated_lysines(context)
+    assert "unsupported conjugated lysines" in str(exc_info.value)
+
+
+# TEST 5: Only malformed entries present → should raise
+def test_validate_conjugated_lysines_all_malformed_entries_raises():
+    """Only malformed entries — should raise TypeError."""
+    context = {
+        "conjugated_lysines": [[1, "K48"], ["invalid_entry"], 123]
+    }
+    with pytest.raises(TypeError) as exc_info:
+        validate_conjugated_lysines(context)
+    assert "malformed conjugated_lysines entries" in str(exc_info.value)
+
+
+# TEST 6: Mixed correct & malformed entries — should still raise on malformed
+def test_validate_conjugated_lysines_mixed_entries_raises():
+    """Mixed valid and malformed entries — should raise on malformed."""
+    context = {
+        "conjugated_lysines": [[1, "K48", 2], [99], [3, "K63", 4]]
+    }
+    with pytest.raises(TypeError) as exc_info:
+        validate_conjugated_lysines(context)
+    assert "malformed conjugated_lysines entries" in str(exc_info.value)
+
+
+# TEST 7: No conjugated_lysines key — treated as empty
+def test_validate_conjugated_lysines_missing_key_okay():
+    """Missing 'conjugated_lysines' key — should pass as empty."""
+    context = {}
+    validate_conjugated_lysines(context)
+
+
+# TEST 8: Conjugated lysines with duplicate K48 or K63 — allowed
+@pytest.mark.parametrize("lysines", [
+    [[1, "K48", 2], [2, "K48", 3], [3, "K63", 4], [4, "K63", 5]],
+    [[1, "K48", 2], [2, "K48", 3]],
+    [[1, "K63", 2], [2, "K63", 3]]
+])
+def test_validate_conjugated_lysines_duplicate_valid(lysines):
+    """Duplicate valid lysines should not raise error."""
+    context = {"conjugated_lysines": lysines}
+    validate_conjugated_lysines(context)
+
 
 # ============================================================
 # Build reaction sequence for testing assign_correct_E2_enzyme

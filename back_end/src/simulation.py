@@ -46,7 +46,8 @@ from src.utils.utils import \
     inject_fasta_sequence_at_chain,\
     inject_protein_key,\
     inject_branching_sites, \
-    convert_json_to_dict
+    convert_json_to_dict, \
+    get_multimer_column_names
 
 from tests.test_data import \
     five_level_nested_ubiquitin_,\
@@ -245,12 +246,8 @@ def determine_Ube2K_elongation(product_conjugated_lysines, new_bound_lysine):
             return "Ube2K"
         elif [(target_chain - 1), 'K48', target_chain] in product_conjugated_lysines:
             return "gp78/Ube2g2"
-        elif len(product_conjugated_lysines) > 1:
-            raise TypeError(f"Cannot determine preceding linkage type for chain {target_chain}.")
     else: 
         return "gp78/Ube2g2"
-
-
 
 def determine_reaction_type(new_bound_lysine):
     """
@@ -434,49 +431,7 @@ def create_reaction_histories(
     return history_dicts
 
 
-def build_reaction_database():
-    
-    column_names = ['initial_acceptor',
-                    'dimer_formation', 
-                    'dimer_deprotection',
-                    'trimer_formation', 
-                    'trimer_deprotection',
-                    'tetramer_formation', 
-                    'tetramer_deprotection',
-                    'pentamer_formation', 
-                    'pentamer_deprotection',
-                    'hexamer_formation']
-    
-    acceptor_list = [
-        histag_ubi_ubq_1,
-        histag_ubi_ubq_1_K48_aboc,
-        histag_ubi_ubq_1_K63_aboc
-        ]
-    donor_list = [
-        ubi_ubq_1_K48_SMAC,
-        ubi_ubq_1_K63_SMAC,
-        ubi_ubq_1_K48_SMAC_K63_ABOC,
-        ubi_ubq_1_K48_ABOC_K63_SMAC,
-        ubi_ubq_1_K48_ABOC_K63_ABOC
-        ]
 
-    reaction_histories = create_reaction_histories(acceptor_list, donor_list, 6)
-
-    df = pd.DataFrame(reaction_histories)
-    # Expand each list in column 'A' into its own columns
-    ubiquitin_history = pd.DataFrame(df['ubiquitin_history'].to_list(), columns=column_names)
-    reaction_history = pd.DataFrame(df['reaction_history'].to_list(), columns=column_names)
-    donor_history = pd.DataFrame(df['donor_history'].to_list(), columns=column_names)
-    context_history = pd.DataFrame(df['context_history'].to_list(), columns=column_names)
-
-    # Save each expanded DataFrame as a CSV file to a relative folder
-    output_dir = project_root / 'back_end' / 'data' / 'reaction_database'
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    ubiquitin_history.to_csv(output_dir / "ubiquitin_history.csv", index=False)
-    reaction_history.to_csv(output_dir / "reaction_history.csv", index=False)
-    donor_history.to_csv(output_dir / "donor_history.csv", index=False)
-    context_history.to_csv(output_dir / "context_history.csv", index=False)
     
 
     

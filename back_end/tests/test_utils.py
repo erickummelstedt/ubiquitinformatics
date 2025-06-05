@@ -20,7 +20,8 @@ from src.utils.utils import \
     convert_json_to_dict, \
     inject_fasta_sequence_at_chain,\
     inject_protein_key,\
-    inject_branching_sites
+    inject_branching_sites, \
+    get_multimer_column_names
 
 from tests.test_data import \
     five_level_nested_ubiquitin_
@@ -550,3 +551,54 @@ def test_no_injection_when_chain_does_not_exist():
 
     # Expect structure unchanged since chain 99 doesn't exist
     assert nested == original
+
+# ====================================
+# TESTS: get_multimer_column_names
+# ====================================
+
+@pytest.mark.parametrize(
+    "multimer_size, expected_columns",
+    [
+        (2, ['initial_acceptor', 'dimer_formation']),
+        (3, ['initial_acceptor', 'dimer_formation', 'dimer_deprotection', 'trimer_formation']),
+        (4, ['initial_acceptor', 'dimer_formation', 'dimer_deprotection',
+             'trimer_formation', 'trimer_deprotection', 'tetramer_formation']),
+        (5, ['initial_acceptor', 'dimer_formation', 'dimer_deprotection',
+             'trimer_formation', 'trimer_deprotection', 'tetramer_formation',
+             'tetramer_deprotection', 'pentamer_formation']),
+        (6, ['initial_acceptor', 'dimer_formation', 'dimer_deprotection',
+             'trimer_formation', 'trimer_deprotection', 'tetramer_formation',
+             'tetramer_deprotection', 'pentamer_formation', 'pentamer_deprotection', 'hexamer_formation']),
+    ]
+)
+def test_get_multimer_column_names_valid_sizes(multimer_size, expected_columns):
+    """
+    Test correct column names for valid multimer sizes 2-6.
+    """
+    result = get_multimer_column_names(multimer_size)
+    assert result == expected_columns
+
+
+@pytest.mark.parametrize("invalid_size", [1, 0, -1, 7, 10, 100])
+def test_get_multimer_column_names_invalid_sizes(invalid_size):
+    """
+    Test that invalid multimer sizes raise ValueError.
+    """
+    with pytest.raises(ValueError) as exc_info:
+        get_multimer_column_names(invalid_size)
+
+    assert "Unsupported multimer size" in str(exc_info.value)
+
+
+def test_get_multimer_column_names_type_error():
+    """
+    Test that passing a non-integer raises TypeError.
+    """
+    with pytest.raises(TypeError):
+        get_multimer_column_names("five")  # string
+
+    with pytest.raises(TypeError):
+        get_multimer_column_names(3.5)  # float
+
+    with pytest.raises(TypeError):
+        get_multimer_column_names(None)  # NoneType
