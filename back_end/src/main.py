@@ -11,88 +11,8 @@ sys.path.insert(0, str(project_root))
 local_path = project_root / 'back_end'
 sys.path.insert(0, str(local_path))
 
-from src.utils.utils import convert_json_to_dict
-from src.utils.logging_utils import log_protein_details, log_branching_details, log_end_of_branching, log_end_of_protein
-
-'''
-	•	turn this into object-oriented code 
-	•	correctly introduce logging 
-	•	input if parent dictionary is str carry out a json loads
-	•	output json loads 
-	•	introduce a non-sql 
-    •	fix sequence set up; M1, K6, K11, K27, K29, K33, K48, K63
-'''
-
-'''
-Use descriptive names for variables, functions, and classes: Avoid abbreviations or cryptic names.
-	•	Follow PEP 8 standards: The official style guide for Python code.
-	•	Use 4 spaces per indentation level.
-	•	Limit line length to 79 characters.
-	•	Use consistent naming conventions (snake_case for functions and variables, PascalCase for classes).
-'''
-
-'''
-From main:
-- find_branching_site
-- validate_protein_keys
-- check_branching_sites
-- check_branching_sequences
-- validate_branching_sites
-- check_branching_site_sequence_match
-- check_children_format
-- validate_branching_sites
-
-From Utils
-- match_assertion_error_contains
-- all_strings_exist
-- all_strings_exist_in_list
-- convert_json_to_dict
-
-Build tests for the following
-Everything works; now build tests and clean up code for each of the following functions
-
-Redo cover all: 
-- iterate_through_ubiquitin
-- inner_wrapper_iterate_through_ubiquitin
-
-In utils
-- process_current_protein
-- process_branch
-
-For logging_utils
-- log_branching_details
-- log_end_of_branching
-- log_protein_details
-- log_end_of_protein
-
-
-NEED TO DO ThE FOLLOWING:
-- iterate_through_ubiquitin (all tests on deeply nested ubiquitins)
-For iterate_through_ubiquitin test the following:
-- validate_protein_keys
-- check_branching_sites
-- check_branching_sequences
-- validate_branching_sites
-- check_branching_site_sequence_match
-- check_children_format
-
-Context tests left: 
-- chain_number_list
-- chain_length_list
-
-Maybe add the following to iterate_through_ubiquitin
-def context_template():
-    return {
-        "chain_number_list": [1],
-        "chain_length_list": [],
-        "free_lysines": [],
-        "conjugated_lysines": [],
-        "SMAC_lysines": [],
-        "ABOC_lysines": [],
-        "multimer_string_name": ""
-    }
-
-'''
+from src.utils.utils import *
+from src.utils.logging_utils import *
 
 def find_branching_site(sequence_id, FASTA_sequence):
     """
@@ -844,3 +764,8 @@ def handle_lysine_modification(
         )
     return bra, working_dictionary
   
+
+
+
+
+

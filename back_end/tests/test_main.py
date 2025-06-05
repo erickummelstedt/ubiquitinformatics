@@ -16,49 +16,10 @@ sys.path.insert(0, str(local_path))
 
 # Import the functions from the original code
 # from src.main_testing import relabelling_ubiquitin_numbers, inner_wrapper_relabelling_ubiquitin_numbers
-from src.main import \
-    iterate_through_ubiquitin, \
-    inner_wrapper_iterate_through_ubiquitin, \
-    find_branching_site, \
-    validate_protein_keys, \
-    check_branching_sites, \
-    check_branching_sequences,\
-    validate_branching_sites,\
-    check_branching_site_sequence_match, \
-    check_children_format,\
-    process_current_protein, \
-    process_branch, \
-    add_max_chain_number, \
-    K_residue_ubi_addition, \
-    process_ubiquitin_reaction, \
-    ubiquitin_simulation, \
-    inner_wrapper_ubiquitin_simulation, \
-    handle_lysine_modification, \
-    ubiquitin_building, \
-    inner_wrapper_ubiquitin_building
-
-from src.utils.utils import \
-    match_assertion_error_contains,\
-    all_strings_exist, \
-    all_strings_exist_in_list, \
-    inject_fasta_sequence_at_chain,\
-    inject_protein_key,\
-    inject_branching_sites
-
-from tests.test_data import \
-    five_level_nested_ubiquitin_,\
-    k48_dimer_ubiquitin,\
-    string_k48_dimer_ubiquitin,\
-    ubiquitin_monomer, \
-    histag_ubiquitin_monomer,\
-    BASE_WORKING_DICT, \
-    BASE_CONTEXT
-
-from src.utils.logging_utils import \
-    log_branching_details,\
-    log_end_of_branching,\
-    log_protein_details,\
-    log_end_of_protein
+from src.main import *
+from src.utils.utils import *
+from tests.test_data import *
+from src.utils.logging_utils import *
 
 '''
 From main:

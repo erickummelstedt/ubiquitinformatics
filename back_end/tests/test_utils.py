@@ -13,24 +13,9 @@ sys.path.insert(0, str(project_root))
 local_path = project_root / 'back_end'
 sys.path.insert(0, str(local_path))
 
-from src.utils.utils import \
-    match_assertion_error_contains,\
-    all_strings_exist, \
-    all_strings_exist_in_list, \
-    convert_json_to_dict, \
-    inject_fasta_sequence_at_chain,\
-    inject_protein_key,\
-    inject_branching_sites, \
-    get_multimer_column_names
-
-from tests.test_data import \
-    five_level_nested_ubiquitin_
-
-from src.utils.logging_utils import \
-    log_branching_details,\
-    log_end_of_branching, \
-    log_protein_details, \
-    log_end_of_protein
+from src.utils.utils import *
+from tests.test_data import *
+from src.utils.logging_utils import *
 
 def test_match_all_parts_present():
     msg = "Missing sites: K48. Invalid format: 1234"

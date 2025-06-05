@@ -9,18 +9,9 @@ sys.path.insert(0, str(project_root))
 local_path = project_root / 'back_end'
 sys.path.insert(0, str(local_path))
 
-from src.simulation import create_reaction_histories
-from src.utils.utils import get_multimer_column_names
-from tests.test_data import (
-    histag_ubi_ubq_1,
-    histag_ubi_ubq_1_K48_aboc,
-    histag_ubi_ubq_1_K63_aboc,
-    ubi_ubq_1_K48_SMAC,
-    ubi_ubq_1_K63_SMAC,
-    ubi_ubq_1_K48_SMAC_K63_ABOC,
-    ubi_ubq_1_K48_ABOC_K63_SMAC,
-    ubi_ubq_1_K48_ABOC_K63_ABOC
-)
+from src.simulation import *
+from src.utils.utils import *
+from tests.test_data import *
 
 # Function to save reaction database
 def save_reaction_database(

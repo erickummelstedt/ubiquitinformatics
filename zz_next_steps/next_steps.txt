@@ -4,16 +4,27 @@ Features;
     DONE b. simulation of ubiquitin synthesis 
     DONE c. generate database
     DONE d. figure out K48 elongation/branching 
-    
-    - run simulation for tetramers and pentamers (each individually saved) 
-    - recreate the reaction schemes for tetramers and pentamers
+    DONE e. build the histag with a DHHHHHH at the moment its only HHHHHH in the JSON
+    DONE f. run simulation for tetramers and pentamers (each individually saved) 
 
+    - Filtering system for max_abocs; semi completed
+    - Get table of unprotected multimers; need to complete
+    - Connect the two (add multimer and final route chosen)
+    - Highlight the reaction schemes that were used in the end for each multimer - manually label them for pentamers
+
+    - Show cleanly on the website
+    - 2D representation below the skimming bar 
+
+
+    - Take up to 16 spots, but use 14 only each time for now
+    - Highlight the routes that were chosen
+    - Change loacation of test data (DATA file) file 
+    - Park the stuff regarding mathematically choosing routes
+    - recreate the reaction schemes for tetramers and pentamers
     - build the tests for 2D and 3D representation of ubiquitin
-    - finalize the simulation - only up to pentamer
     - connect user interface to ubiquitin ecosystem, build out fastAPI system
     - user interface for opening up ubiquitin - use fastAPI template
-    - build the histag with a DHHHHHH at the moment its only HHHHHH
-
+    - build the histag with a DHHHHHH at the moment its only HHHHHH in 3D simualation
 
     - build reaction maps and inventory checks 
     - connect to automated python
