@@ -1012,7 +1012,7 @@ def inner_wrapper_json_to_mol(input_dictionary, context, mol2_dictionary):
 
     # Append chain information to multimer string
     # Change to pdbid
-    if (working_dictionary["FASTA_sequence"] == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGHHHHHH") & (working_dictionary["chain_number"]==1):
+    if (working_dictionary["FASTA_sequence"] == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH") & (working_dictionary["chain_number"]==1):
         context["multimer_string_name"] += f"his-GG-{working_dictionary['protein']}-{working_dictionary['chain_number']}-("
     elif (working_dictionary["FASTA_sequence"] == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG") & (working_dictionary["chain_number"]==1):
         context["multimer_string_name"] += f"GG-{working_dictionary['protein']}-{working_dictionary['chain_number']}-("
@@ -1023,7 +1023,7 @@ def inner_wrapper_json_to_mol(input_dictionary, context, mol2_dictionary):
 
     # TODO: add to function
     # Change to pdbid
-    if (working_dictionary["FASTA_sequence"] == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGHHHHHH") & (working_dictionary["chain_number"]==1):
+    if (working_dictionary["FASTA_sequence"] == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH") & (working_dictionary["chain_number"]==1):
         # TODO 
         mol2_dictionary['BASE_ATOMS_DF'] = mol2_dictionary['ATOMS_HISTAG_UBIQUITIN_DF'].copy()
         mol2_dictionary['BASE_BONDS_DF'] = mol2_dictionary['BONDS_HISTAG_UBIQUITIN_DF'].copy()

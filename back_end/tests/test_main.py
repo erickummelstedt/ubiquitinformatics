@@ -201,7 +201,7 @@ def test_find_branching_site_nested_not_found(chain_number, altered_sequence):
         "protein": "2ubq",
         "chain_number": 2,
         "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH",
-        "chain_length": 82,
+        "chain_length": 83,
         "branching_sites": [{"site_name": "M1","sequence_id": "(M)QIF","children": ""},
                             {"site_name": "K6","sequence_id": "IFV(K)TLT","children": ""},
                             {"site_name": "K11","sequence_id": "LTG(K)TIT","children": ""},
@@ -1357,7 +1357,7 @@ def test_json_loading_with_extra_keys():
     """
     erroneous_json = json.dumps({
         "protein": "1ubq",
-        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGHHHHHH",
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH",
         "invalid_key": "some_value"
     })
     
@@ -1825,8 +1825,8 @@ def test_iterate_through_ubiquitin(ubiquitin_structure, expected_multimer_string
     ({
         "protein": "1ubq-his",
         "chain_number": 1,
-        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGHHHHHH",
-        "chain_length": 82,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH",
+        "chain_length": 83,
         "branching_sites": [
             {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
             {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
@@ -2692,8 +2692,8 @@ def test_find_SMAC_ABOC_lysines(ubiquitin_structure, expected_SMAC_lysines, expe
     ({
         "protein": "1ubq-his",
         "chain_number": 1,
-        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGHHHHHH",
-        "chain_length": 82,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH",
+        "chain_length": 83,
         "branching_sites": [
             {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
             {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
