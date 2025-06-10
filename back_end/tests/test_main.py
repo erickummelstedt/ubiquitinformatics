@@ -21,42 +21,6 @@ from src.utils.utils import *
 from tests.test_data import *
 from src.utils.logging_utils import *
 
-'''
-From main:
-- find_branching_site
-- validate_protein_keys
-- check_branching_sites
-- check_branching_sequences
-- validate_branching_sites
-- check_branching_site_sequence_match
-- check_children_format
-- validate_branching_sites
-- process_current_protein
-- process_branch
-
-From Utils
-- match_assertion_error_contains
-- all_strings_exist
-- all_strings_exist_in_list
-- convert_json_to_dict
-
-For logging_utils
-- log_branching_details
-- log_end_of_branching
-- log_protein_details
-- log_end_of_protein
-
-
-
-Build tests for the following
-Everything works; now build tests and clean up code for each of the following functions
-Redo cover all: 
-- iterate_through_ubiquitin
-- inner_wrapper_iterate_through_ubiquitin
-- add_max_chain_number
-
-'''
-
 # =====================================
 # === Tests for find_branching_site ===
 # Tests for validating the indexing of branching sites and handling of invalid or empty inputs.
@@ -3762,3 +3726,100 @@ def test_process_ubiquitin_fake_deprot_logs_info(caplog):
         bra, updated = process_ubiquitin_reaction(target_site, data, "FAKE_deprot", ubiquitin_monomer)
         assert bra["children"] == ""
         assert "FAKE deprotection: No action taken." in caplog.text
+
+# =====================================
+# === Tests for initialize_multimer_dicts ===
+# =====================================
+
+def test_initialize_returns_correct_structure():
+    # When: function is called
+    result = initialize_multimer_dicts(histag_ubi_ubq_1)
+
+    # Then: check structure
+    assert isinstance(result, dict), "Output should be a dictionary"
+    assert isinstance(result["multimers"], list)
+    assert isinstance(result["contexts"], list)
+    assert len(result["multimers"]) == 1
+    assert len(result["contexts"]) == 1
+
+    # Check acceptor contains expected keys
+    acceptor = result["multimers"][0]
+    context = result["contexts"][0]
+    assert isinstance(acceptor, dict)
+    assert isinstance(context, dict)
+    assert "chain_number_list" in context
+    assert "free_lysines" in context
+
+
+def test_initialize_with_empty_acceptor_raises():
+    # When: given an empty dict
+    with pytest.raises(KeyError):
+        initialize_multimer_dicts({})
+
+
+def test_initialize_does_not_mutate_input():
+    # Given: a deep copy of the input
+    input_copy = copy.deepcopy(histag_ubi_ubq_1)
+
+    # When: function is called
+    _ = initialize_multimer_dicts(histag_ubi_ubq_1)
+
+    # Then: ensure input wasn't mutated
+    assert histag_ubi_ubq_1 == input_copy, "Function should not mutate the input"
+
+# =====================================
+# === Tests for defining_json_multimers ===
+# =====================================
+
+# Catalan numbers: C(n-1) = number of unique binary trees with (n-1) additions
+CATALAN_NUMBERS_BEFORE_DELETE_DUPLICATES = {
+    2: 2,
+    3: 6,
+    4: 24,
+    5: 120,
+    6: 720,  # Include more if needed
+}
+
+@pytest.mark.parametrize("size,expected", CATALAN_NUMBERS_BEFORE_DELETE_DUPLICATES.items())
+def test_multimer_count_matches_catalan(size, expected):
+    """
+    For multimer size N, ensure that the number of structures matches the (N-1)th Catalan number.
+    """
+    multimers = initialize_multimer_dicts(histag_ubi_ubq_1)
+
+    for _ in range(2, size + 1):  # range starts from 2 because size=2 → trimer
+        multimers = defining_json_multimers(multimers, ubi_ubq_1)
+
+    actual = len(multimers['multimers'])
+    assert actual == expected, (
+        f"Expected {expected} multimers for size {size}, but got {actual}"
+    )
+
+# =====================================
+# === Tests for delete_duplicate_multimers ===
+# =====================================
+
+# Catalan numbers: C(n-1) = number of unique binary trees with (n-1) additions
+CATALAN_NUMBERS = {
+    2: 2,
+    3: 5,
+    4: 14,
+    5: 42,
+    6: 132,  # Include more if needed
+}
+
+@pytest.mark.parametrize("size,expected", CATALAN_NUMBERS.items())
+def test_multimer_count_matches_catalan(size, expected):
+    """
+    For multimer size N, ensure that the number of structures matches the (N-1)th Catalan number.
+    """
+    multimers = initialize_multimer_dicts(histag_ubi_ubq_1)
+
+    for _ in range(2, size + 1):  # range starts from 2 because size=2 → trimer
+        multimers = defining_json_multimers(multimers, ubi_ubq_1)
+        multimers = delete_duplicate_multimers(multimers)
+
+    actual = len(multimers['multimers'])
+    assert actual == expected, (
+        f"Expected {expected} multimers for size {size}, but got {actual}"
+    )

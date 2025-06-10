@@ -7,14 +7,17 @@ Features;
     DONE e. build the histag with a DHHHHHH at the moment its only HHHHHH in the JSON
     DONE f. run simulation for tetramers and pentamers (each individually saved) 
 
-    - Filtering system for max_abocs; semi completed
-    - Get table of unprotected multimers; need to complete
+    - DONE - Filtering system for max_abocs; semi completed; build tests
+    - DONE - Get table of unprotected multimers; need to complete
     - Connect the two (add multimer and final route chosen)
+
+    - Create UI aspect that pulls out the numbered choices
+    - Connect the calculations
+
     - Highlight the reaction schemes that were used in the end for each multimer - manually label them for pentamers
 
     - Show cleanly on the website
     - 2D representation below the skimming bar 
-
 
     - Take up to 16 spots, but use 14 only each time for now
     - Highlight the routes that were chosen

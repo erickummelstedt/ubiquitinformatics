@@ -9,9 +9,15 @@ sys.path.insert(0, str(project_root))
 local_path = project_root / 'back_end'
 sys.path.insert(0, str(local_path))
 
+from src.main import *
 from src.simulation import *
 from src.utils.utils import *
 from tests.test_data import *
+
+# =========================================================
+# Build reactionm database for polyubiquitins
+# This section creates a reaction database for polyubiquitin reactions.
+# =========================================================
 
 # Function to save reaction database
 def save_reaction_database(
@@ -62,3 +68,36 @@ for i in range(2,7):
         donor_list=donor_list, 
         multimer_size=i
     )
+
+# =========================================================
+# Build base multimers of polyubiquitin
+# This section initializes the multimers and builds them up to size 6.
+# =========================================================
+
+# Initialize the multimers
+multimers = initialize_multimer_dicts(histag_ubi_ubq_1)
+
+# Build multimers of increasing size
+for multimer_size in range(2, 7):
+    # Expand the multimer list by adding new ubiquitins
+    multimers = defining_json_multimers(multimers, ubi_ubq_1)
+
+    # Remove duplicate entries from the multimer dictionary
+    delete_duplicate_multimers(multimers)
+
+    # Convert the dictionary to a DataFrame
+    multimers_df = pd.DataFrame(multimers)
+
+    # Create output directory for the current multimer size
+    output_dir = (
+        project_root
+        / 'back_end'
+        / 'data'
+        / 'reaction_database'
+        / f'multimer_size_{multimer_size}'
+    )
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save the DataFrame as a CSV file
+    output_path = output_dir / "multimers.csv"
+    multimers_df.to_csv(output_path, index=False)

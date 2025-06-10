@@ -640,17 +640,17 @@ def ubiquitin_building(
         "chain_length_list": [],
     }
 
-    # Error handling fop invalid ubi_molecule_to_add
-    if ubi_molecule_to_add not in ('SMAC', 'ABOC'):
-        if not isinstance(ubi_molecule_to_add, dict):
-            raise TypeError("ubi_molecule_to_add must be a dictionary or 'SMAC'/'ABOC' string")
-
     # Normalize input to dicts
     parent_dictionary = convert_json_to_dict(parent_dictionary)
 
     # Only convert to dict if not a protecting group
     if ubi_molecule_to_add not in ('SMAC', 'ABOC'):
         ubi_molecule_to_add = convert_json_to_dict(ubi_molecule_to_add)
+
+     # Error handling fop invalid ubi_molecule_to_add
+    if ubi_molecule_to_add not in ('SMAC', 'ABOC'):
+        if not isinstance(ubi_molecule_to_add, dict):
+            raise TypeError("ubi_molecule_to_add must be a dictionary or 'SMAC'/'ABOC' string")
 
     # Build structure recursively
     output_dictionary, context = inner_wrapper_ubiquitin_building(
@@ -763,9 +763,78 @@ def handle_lysine_modification(
             ubi_molecule_to_add
         )
     return bra, working_dictionary
-  
+
+def initialize_multimer_dicts(initial_acceptor):
+    """
+    Set up the initial multimer and context dictionaries.
+    """
+    multimer_dicts = {
+        'multimers': [],
+        'contexts': []
+    }
+
+    # Initialize acceptor and context
+    acceptor, context = iterate_through_ubiquitin(initial_acceptor)
+
+    # Add to the dictionary
+    multimer_dicts['multimers'].append(acceptor)
+    multimer_dicts['contexts'].append(context)
+
+    return multimer_dicts
 
 
+def defining_json_multimers(multimer_dicts, unprotected_ubi):
+    """
+    Expands a list of multimers by conjugating new ubiquitins
+    at all free lysines.
+    """
+    multimers = multimer_dicts['multimers']
+    contexts = multimer_dicts['contexts']
 
+    new_multimer_dicts = {
+        'multimers': [],
+        'contexts': []
+    }
+
+    # Iterate through each multimer and its context
+    for multimer, context in zip(multimers, contexts):
+        free_lysines = context['free_lysines']
+
+        for free_lysine in free_lysines:
+            # Deep copy the multimer for safe modification
+            working_multimer = copy.deepcopy(multimer)
+
+            # Build new ubiquitin at the given site
+            working_multimer, working_context = ubiquitin_building(
+                working_multimer,
+                copy.deepcopy(unprotected_ubi),
+                free_lysine[0],
+                free_lysine[1]
+            )
+
+            new_multimer_dicts['multimers'].append(working_multimer)
+            new_multimer_dicts['contexts'].append(working_context)
+
+    return new_multimer_dicts
+
+
+def delete_duplicate_multimers(my_dict):
+    """
+    Removes duplicate dictionaries in each list of a given dictionary.
+    """
+    for key in my_dict:
+        my_list = my_dict[key]
+        unique = []
+        seen = set()
+
+        for d in my_list:
+            marker = json.dumps(d, sort_keys=True)
+            if marker not in seen:
+                seen.add(marker)
+                unique.append(d)
+
+        my_dict[key] = unique
+
+    return my_dict
 
 

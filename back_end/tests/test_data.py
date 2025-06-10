@@ -176,6 +176,7 @@ ubiquitin_library = {
 }
 
 ## set the values of the ubiquitin library
+ubi_ubq_1 = ubiquitin_library['ubi_ubq_1']
 ubi_ubq_1_K48_SMAC = ubiquitin_library['ubi_ubq_1_K48_SMAC']
 ubi_ubq_1_K63_SMAC = ubiquitin_library['ubi_ubq_1_K63_SMAC']
 ubi_ubq_1_K48_SMAC_K63_ABOC = ubiquitin_library['ubi_ubq_1_K48_SMAC_K63_ABOC']
@@ -184,6 +185,7 @@ ubi_ubq_1_K48_ABOC_K63_ABOC = ubiquitin_library['ubi_ubq_1_K48_ABOC_K63_ABOC']
 histag_ubi_ubq_1 = ubiquitin_library['histag_ubi_ubq_1']
 histag_ubi_ubq_1_K48_aboc = ubiquitin_library['histag_ubi_ubq_1_K48_aboc']
 histag_ubi_ubq_1_K63_aboc = ubiquitin_library['histag_ubi_ubq_1_K63_aboc']
+
 
 ubi_donor_list = [ubi_ubq_1_K48_SMAC, ubi_ubq_1_K63_SMAC, ubi_ubq_1_K48_SMAC_K63_ABOC, ubi_ubq_1_K48_ABOC_K63_SMAC, ubi_ubq_1_K48_ABOC_K63_ABOC]
 ubi_acceptor_list = [histag_ubi_ubq_1, histag_ubi_ubq_1_K48_aboc, histag_ubi_ubq_1_K63_aboc]
