@@ -6,9 +6,51 @@ Features;
     DONE d. figure out K48 elongation/branching 
     DONE e. build the histag with a DHHHHHH at the moment its only HHHHHH in the JSON
     DONE f. run simulation for tetramers and pentamers (each individually saved) 
+    DONE g. Create table of unprotected multimers; need to complete
+    DONE h. Filtering system for max_abocs; semi completed; build tests
 
-    - DONE - Filtering system for max_abocs; semi completed; build tests
-    - DONE - Get table of unprotected multimers; need to complete
+DONE 1. global deprotect at the end of the the files (maybe in FASTAPI)
+DONE 2. number of smacs* 
+
+Need to check the way that we check for branching to perfect it 
+# use checking as a test for the full code base
+
+# Find all the conditions that match acceptor
+# Rebuild so it finds itself
+
+Pull out the values! get the indexes that are needed -- DONE
+
+# Build the FAST-API functions consider whether they should be dynamic 
+# remove all atom representations
+3. Combine everything in written_form into one table (initial histag, donors and reactions) 
+- what do I need in the table? 
+- start from dimers
+4. Separately have all the JSONS in one table
+use the index 
+Get to here before labeling the data 
+
+You need to label data; 
+
+
+label each of the multimers - tetramers & pentamers
+create table, incase it runs the simulation oddly elsewhere 
+
+3. Combine (initial histag, donors and reactions) into one table
+4. Filter by multimer 
+
+5. highlight mulitmers for used reaction scheme (maybe build function for this)
+6. from chosen reaction schemes build reaction database and connect to inventory
+
+
+
+
+    1. To the data table add a column for a global deprotect at the end - save this table as the 
+    2. Implement FAST-API to select the multimer schemes you would like to implement from the HTML
+    - each multimer level has it's own reaction schemes are shown based on the whether the final column looks like the multimer
+    - function that pulls 
+
+
+
     - Connect the two (add multimer and final route chosen)
 
     - Create UI aspect that pulls out the numbered choices

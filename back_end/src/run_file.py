@@ -62,7 +62,7 @@ donor_list = [
         ]
 
 # Save reaction database for multimer sizes 2 to 6
-for i in range(2,7): 
+for i in range(2,6): 
     save_reaction_database(
         acceptor_list=acceptor_list, 
         donor_list=donor_list, 
@@ -78,7 +78,7 @@ for i in range(2,7):
 multimers = initialize_multimer_dicts(histag_ubi_ubq_1)
 
 # Build multimers of increasing size
-for multimer_size in range(2, 7):
+for multimer_size in range(2, 6):
     # Expand the multimer list by adding new ubiquitins
     multimers = defining_json_multimers(multimers, ubi_ubq_1)
 

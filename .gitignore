@@ -71,3 +71,4 @@ coverage.xml
 *.whl
 
 /back_end/data/
+/back_end/src/original_data/

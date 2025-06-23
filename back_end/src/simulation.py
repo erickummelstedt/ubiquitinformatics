@@ -191,16 +191,30 @@ def determine_Ube2K_elongation(product_conjugated_lysines, new_bound_lysine):
     Raises:
         TypeError: If the preceding linkage type cannot be determined.
     """
-    target_chain = new_bound_lysine[0]
+    new_bound_parent_chain = new_bound_lysine[0]
+    new_bound_child_chain = new_bound_lysine[2]
 
-    # This function only works for cases where the target_chain is equal to or greater than 3.
-    if target_chain >= 3:
+     # This function only works for cases when the new bound ubiquitin is number 2 in the chain
+    if new_bound_child_chain == 2:
         for parent_chain, lysine_site, child_chain in product_conjugated_lysines:
-            if child_chain == target_chain:
-                if lysine_site == 'K63' and parent_chain in range(1, target_chain):
+            if parent_chain == 1 and lysine_site == 'K63' and child_chain == 3:
+                return "Ube2K"
+        else: 
+            # If no K63 linkage was found, it must be a K48 elongation via gp78/Ube2g2
+            return "gp78/Ube2g2"
+    
+    # This part of the function only works for cases where a third or more ubiquitin is being added
+    if new_bound_child_chain >= 3:
+        # Check if the new bound lysine is a K63 branch point
+        for parent_chain, lysine_site, child_chain in product_conjugated_lysines:
+            if child_chain == new_bound_parent_chain:
+                print(new_bound_lysine)
+                if lysine_site == 'K63' and parent_chain in range(1, new_bound_parent_chain):
                     return "Ube2K"
-                elif lysine_site == 'K48' and parent_chain in range(1, target_chain):
+                elif lysine_site == 'K48' and parent_chain in range(1, new_bound_parent_chain):
                     return "gp78/Ube2g2"
+                else:
+                    return "problem and target chain = {target_chain}"
     else: 
         return "gp78/Ube2g2"
 
