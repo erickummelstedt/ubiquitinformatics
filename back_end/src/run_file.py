@@ -12,7 +12,7 @@ sys.path.insert(0, str(local_path))
 from src.main import *
 from src.simulation import *
 from src.utils.utils import *
-from src.reaction_summaries_validation import *
+from src.reaction_validation import *
 from tests.test_data import *
 
 # =========================================================

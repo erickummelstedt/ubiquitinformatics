@@ -337,9 +337,9 @@ def validate_dataframes_and_extract_indexes_tetramers(combined_df, original_data
 
     # Report any validation issues after all iterations
     if validation_errors:
-        print("\nValidation Errors:")
+        logging.warning("\nValidation Errors:")
         for i, msg in validation_errors:
-            print(f" - Row {i}: {msg}")
+            logging.warning(f" - Row {i}: {msg}")
 
     return indexed_values, validation_errors
 
@@ -421,9 +421,9 @@ def validate_dataframes_and_extract_indexes_pentamers(combined_df, original_data
 
     # Report any validation issues after all iterations
     if validation_errors:
-        print("\nValidation Errors:")
+        logging.warning("\nValidation Errors:")
         for i, msg in validation_errors:
-            print(f" - Row {i}: {msg}")
+            logging.warning(f" - Row {i}: {msg}")
 
     return indexed_values, validation_errors
 

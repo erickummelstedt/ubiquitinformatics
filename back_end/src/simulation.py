@@ -208,7 +208,7 @@ def determine_Ube2K_elongation(product_conjugated_lysines, new_bound_lysine):
         # Check if the new bound lysine is a K63 branch point
         for parent_chain, lysine_site, child_chain in product_conjugated_lysines:
             if child_chain == new_bound_parent_chain:
-                print(new_bound_lysine)
+
                 if lysine_site == 'K63' and parent_chain in range(1, new_bound_parent_chain):
                     return "Ube2K"
                 elif lysine_site == 'K48' and parent_chain in range(1, new_bound_parent_chain):
@@ -383,7 +383,6 @@ def create_reaction_histories(
 
     # Alternate deprotection and E2 steps until desired multimer size
     for step in range(2, multimer_size):
-        print(f"multimer size = {step + 1}")
 
         # Apply deprotection reactions
         deprotection_results = []
