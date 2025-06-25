@@ -12,7 +12,13 @@ sys.path.insert(0, str(local_path))
 from src.main import *
 from src.simulation import *
 from src.utils.utils import *
+from src.reaction_summaries_validation import *
 from tests.test_data import *
+
+# =========================================================
+# Run tests to ensure the code is working correctly
+# This section runs tests to validate the functionality of the code.
+# =========================================================
 
 # =========================================================
 # Build reactionm database for polyubiquitins
@@ -101,3 +107,64 @@ for multimer_size in range(2, 6):
     # Save the DataFrame as a CSV file
     output_path = output_dir / "multimers.csv"
     multimers_df.to_csv(output_path, index=False)
+
+# =========================================================
+# Build reaction database for polyubiquitins with different acceptors and donors
+# This section creates a reaction database for polyubiquitin reactions with different acceptors and donors.
+# =========================================================     
+
+indexed_values_tetramers, tetarmer_validation_errors = run_script_pulling_indexes_validataing(4, ubiquitin_library)
+indexed_values_pentamers, pentamer_validation_errors = run_script_pulling_indexes_validataing(5, ubiquitin_library)
+
+# =========================================================
+# Ensure the the building of multimers and reaction database is correct by looking at tetremers
+# and pentamers
+# Validate indexed values for tetramers and pentamers
+# This section checks that the indexed values for tetramers and pentamers match expected values
+# and that there are no validation errors.
+# =========================================================
+
+# Reference expected values
+test_indexed_values_tetramers = [423, 427, 363, 31, 443, 447, 95, 143, 191, 315, 319, 279, 335, 339]
+test_indexed_values_pentamers = [
+    2035, 2039, 1975, 1655, 47, 2055, 2059, 1719, 111, 1735, 1739, 1039, 127, 871,
+    2143, 2147, 2107, 1075, 2163, 2167, 431, 411, 875, 639, 643, 479, 787, 835,
+    1491, 1495, 1475, 1307, 1511, 1515, 1311, 1223, 1271, 1599, 1603, 1563, 1619, 1623
+]
+
+# Check that actual indexed values match expected values exactly (including order)
+if indexed_values_tetramers != test_indexed_values_tetramers:
+    raise ValueError(
+        f"Indexed values for tetramers do not match expected values.\n"
+        f"Expected: {test_indexed_values_tetramers}\n"
+        f"Got:      {indexed_values_tetramers}"
+    )
+
+if indexed_values_pentamers != test_indexed_values_pentamers: 
+    raise ValueError(
+        f"Indexed values for pentamers do not match expected values.\n"
+        f"Expected: {test_indexed_values_pentamers}\n"
+        f"Got:      {indexed_values_pentamers}"
+    )
+
+# Check that there are no validation errors
+if tetarmer_validation_errors:
+    raise ValueError(
+        f"Validation errors found for tetramers: {tetarmer_validation_errors}"
+    )       
+if pentamer_validation_errors:      
+    raise ValueError(
+        f"Validation errors found for pentamers: {pentamer_validation_errors}"
+    )
+
+# ==========================================================
+# If all checks pass, print success messages
+print("Indexed values for tetramers match expected values.")
+print("Indexed values for pentamers match expected values.")
+print("No validation errors found for tetramers and pentamers.")
+
+# If run_file.py completes without errors, it means all tests passed
+# and the reaction database and multimers were built correctly.
+# =========================================================
+print("All tests passed successfully. Reaction database and multimers built correctly.")
+# =========================================================

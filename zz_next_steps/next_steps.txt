@@ -8,15 +8,27 @@ Features;
     DONE f. run simulation for tetramers and pentamers (each individually saved) 
     DONE g. Create table of unprotected multimers; need to complete
     DONE h. Filtering system for max_abocs; semi completed; build tests
+    DONE i. global deprotect at the end of the the files (maybe in FASTAPI)
+    DONE h. number of smacs*
 
-DONE 1. global deprotect at the end of the the files (maybe in FASTAPI)
-DONE 2. number of smacs* 
+END OF NEXT WEEK - all backend is built
+- each reaction path, circular nature of testing
+- 
 
-Need to check the way that we check for branching to perfect it 
-# use checking as a test for the full code base
+TESTING - 
 
+# Original tables only built to pentamer
+# use checking pentamers and tetramers as a test for the full code base -- DONE
+# Rebuild the tables 
+# Then download off these..
+# build this all by the end of the day
+
+# build the reaction database, which is downloadable
+
+# filter by multimer
 # Find all the conditions that match acceptor
 # Rebuild so it finds itself
+# build calculations part 
 
 Pull out the values! get the indexes that are needed -- DONE
 
