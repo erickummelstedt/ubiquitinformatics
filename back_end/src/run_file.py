@@ -47,6 +47,7 @@ def save_reaction_database(
     output_dir = project_root / 'back_end' / 'data' / 'reaction_database' / f'multimer_size_{multimer_size}'
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Save the DataFrames to CSV files
     ubiquitin_history.to_csv(output_dir / "ubiquitin_history.csv", index=False)
     reaction_history.to_csv(output_dir / "reaction_history.csv", index=False)
     donor_history.to_csv(output_dir / "donor_history.csv", index=False)
@@ -123,8 +124,10 @@ indexed_values_pentamers, pentamer_validation_errors = run_script_pulling_indexe
 # This section checks that the indexed values for tetramers and pentamers match expected values
 # and that there are no validation errors.
 # =========================================================
+# Reference expected values 
+# They were selected by manually checking each output
+# =========================================================
 
-# Reference expected values
 test_indexed_values_tetramers = [423, 427, 363, 31, 443, 447, 95, 143, 191, 315, 319, 279, 335, 339]
 test_indexed_values_pentamers = [
     2035, 2039, 1975, 1655, 47, 2055, 2059, 1719, 111, 1735, 1739, 1039, 127, 871,
@@ -157,14 +160,24 @@ if pentamer_validation_errors:
         f"Validation errors found for pentamers: {pentamer_validation_errors}"
     )
 
+
+
+
+
+
+
 # ==========================================================
 # If all checks pass, print success messages
+# =========================================================
+
 print("Indexed values for tetramers match expected values.")
 print("Indexed values for pentamers match expected values.")
 print("No validation errors found for tetramers and pentamers.")
 
+# =========================================================
 # If run_file.py completes without errors, it means all tests passed
 # and the reaction database and multimers were built correctly.
 # =========================================================
+
 print("All tests passed successfully. Reaction database and multimers built correctly.")
 # =========================================================

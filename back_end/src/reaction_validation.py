@@ -463,8 +463,38 @@ def run_script_pulling_indexes_validataing(multimer_size, ubiquitin_library):
     # Perform the global deprotection and filtering
     filtered_data_dict = global_deprotection_filtering_by_smac(data_dict, ubiquitin_library)
 
+    filtereed_data_dir = project_root / 'back_end' / 'data' / 'filtered_reaction_database' / f'multimer_size_{multimer_size}'
+    filtereed_data_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save the filtered histories to CSV files
+    ubiquitin_history_filtered = filtered_data_dict['ubiquitin_history']
+    reaction_history_filtered = filtered_data_dict['reaction_history']
+    donor_history_filtered = filtered_data_dict['donor_history']   
+    context_history_filtered = filtered_data_dict['context_history'] 
+
+    # Copy the DataFrames to for indexing
+    ubiquitin_history_filtered_index = ubiquitin_history_filtered.copy()
+    reaction_history_filtered_index = reaction_history_filtered.copy()
+    donor_history_filtered_index = donor_history_filtered.copy()
+    context_history_filtered_index = context_history_filtered.copy()
+
+    # Reset the index and keep the original index as a column
+    ubiquitin_history_filtered_index.reset_index(inplace=True)
+    reaction_history_filtered_index.reset_index(inplace=True)
+    donor_history_filtered_index.reset_index(inplace=True)
+    context_history_filtered_index.reset_index(inplace=True)
+
+    # Save the indexed DataFrames to CSV files
+    ubiquitin_history_filtered_index.to_csv(filtereed_data_dir / "ubiquitin_history.csv", index=True)
+    reaction_history_filtered_index.to_csv(filtereed_data_dir / "reaction_history.csv", index=True)
+    donor_history_filtered_index.to_csv(filtereed_data_dir / "donor_history.csv", index=True)
+    context_history_filtered_index.to_csv(filtereed_data_dir / "context_history.csv", index=True)
+
     # Combine the filtered histories into a single DataFrame
     combined_df = combined_df_from_histories(filtered_data_dict, ubiquitin_library)
+
+    # Save the combined DataFrame to a CSV file
+    combined_df.to_csv(filtereed_data_dir / "combined_database.csv", index=False)
 
     # =========================================
     # Perform data cleaning and validation of synthesis routes chosen

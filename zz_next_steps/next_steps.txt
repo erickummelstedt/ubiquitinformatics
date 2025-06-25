@@ -10,24 +10,27 @@ Features;
     DONE h. Filtering system for max_abocs; semi completed; build tests
     DONE i. global deprotect at the end of the the files (maybe in FASTAPI)
     DONE h. number of smacs*
+    DONE i. each reaction path, circular nature of testing
+            DONE # Original tables only built to pentamer
+            DONE # use checking pentamers and tetramers as a test for the full code base -- DONE
+            DONE # Rebuild the tables 
+            DONE # Then download off these..
+            DONE # build this all by the end of the day
+
+    DONE - Save reaction summaries based on number of SMACS
+
+# All in the build file
+- Label the multimers Ub4-1 to Ub5-1 (easy)
+- Label dimers (create dimer library) (more time)
+- Have a function that pulls synthetic routes based on the multimer
+- Now have a function that pulls out the desired synthetic routes
+
+- remove the all atom shit
+
 
 END OF NEXT WEEK - all backend is built
-- each reaction path, circular nature of testing
-- 
-
 TESTING - 
 
-# Original tables only built to pentamer
-# use checking pentamers and tetramers as a test for the full code base -- DONE
-# Rebuild the tables 
-# Then download off these..
-# build this all by the end of the day
-
-# build the reaction database, which is downloadable
-
-# filter by multimer
-# Find all the conditions that match acceptor
-# Rebuild so it finds itself
 # build calculations part 
 
 Pull out the values! get the indexes that are needed -- DONE
