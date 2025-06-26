@@ -12,7 +12,7 @@ sys.path.insert(0, str(local_path))
 from src.main import *
 from src.simulation import *
 from src.utils.utils import *
-from src.reaction_validation import *
+from src.data_cleaning import *
 from tests.test_data import *
 
 # =========================================================
@@ -160,11 +160,35 @@ if pentamer_validation_errors:
         f"Validation errors found for pentamers: {pentamer_validation_errors}"
     )
 
+# ==========================================================
+# Check that all the data cleaning, validation and labeling went well
+# This section checks that the data cleaning, validation, and labeling processes were successful.
+# ==========================================================
 
+tetramer_mismatched_ubiquitin_history, tetramer_mismatched_combined_database = validate_data(4)
+pentamer_mismatched_ubiquitin_history, pentamer_mismatched_combined_database = validate_data(5)
 
+# Raise error if mismatched_ubiquitin_history.empty is not True
+if not tetramer_mismatched_ubiquitin_history.empty:
+    logging.error("Mismatched tetramer ubiquitin history found:")
+    logging.error(tetramer_mismatched_ubiquitin_history)
+    raise ValueError("Mismatched tetramer ubiquitin history found.")
 
+if not tetramer_mismatched_combined_database.empty:  
+    logging.error("Mismatched tetramer combined database found:")
+    logging.error(tetramer_mismatched_combined_database)
+    raise ValueError("Mismatched tetramer combined database found.")
 
+# Raise error if mismatched_ubiquitin_history.empty is not True
+if not pentamer_mismatched_ubiquitin_history.empty:
+    logging.error("Mismatched pentamer ubiquitin history found:")
+    logging.error(pentamer_mismatched_ubiquitin_history)
+    raise ValueError("Mismatched pentamer ubiquitin history found.")
 
+if not pentamer_mismatched_combined_database.empty:  
+    logging.error("Mismatched pentamer combined database found:")
+    logging.error(pentamer_mismatched_combined_database)
+    raise ValueError("Mismatched pentamer combined database found.")
 
 # ==========================================================
 # If all checks pass, print success messages

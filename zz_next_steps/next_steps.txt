@@ -16,16 +16,25 @@ Features;
             DONE # Rebuild the tables 
             DONE # Then download off these..
             DONE # build this all by the end of the day
-
     DONE - Save reaction summaries based on number of SMACS
+    DONE - carry out final tests
+
+- Build reaction map work
+- Build inventory from the ubiquitins chosen
+- 
+
+VERY IMPORTANT; SHOW ALL PENTAMERS ON THE PAGE AND CLICK ON THEM TO CHOOSE YOUR SYNTHESIS PATHWAY
+Maybe even a drag and drop so multiple can be adde
 
 # All in the build file
-- Label the multimers Ub4-1 to Ub5-1 (easy)
+DONE - Label the multimers Ub4-1 to Ub5-1 (easy)
+
+- Save rather than have this separate, save this in the 
 - Label dimers (create dimer library) (more time)
 - Have a function that pulls synthetic routes based on the multimer
 - Now have a function that pulls out the desired synthetic routes
 
-- remove the all atom shit
+- Remove the all atom shit
 
 
 END OF NEXT WEEK - all backend is built
