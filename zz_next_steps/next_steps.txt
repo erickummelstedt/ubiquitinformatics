@@ -19,12 +19,19 @@ Features;
     DONE - Save reaction summaries based on number of SMACS
     DONE - carry out final tests
 
+Input the series of ubiquitin numbers
 - Build reaction map work
 - Build inventory from the ubiquitins chosen
 - 
 
-VERY IMPORTANT; SHOW ALL PENTAMERS ON THE PAGE AND CLICK ON THEM TO CHOOSE YOUR SYNTHESIS PATHWAY
-Maybe even a drag and drop so multiple can be adde
+Incorporate into 
+
+Web App
+- Build input with saving capacities whereby you soemthing you can type the series of ubi5-x 
+and you get your 
+- VERY IMPORTANT; SHOW ALL PENTAMERS ON THE PAGE AND CLICK ON THEM TO CHOOSE 
+YOUR SYNTHESIS PATHWAY Maybe even a drag and drop so multiple can be adde
+- Introduce 
 
 # All in the build file
 DONE - Label the multimers Ub4-1 to Ub5-1 (easy)

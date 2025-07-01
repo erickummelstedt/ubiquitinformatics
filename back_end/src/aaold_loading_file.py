@@ -572,362 +572,6 @@ def playing_with_ubiquitin(js_data):
     ## return the figure.. 
     return updatable_ubiquitin_figure(node_trace_with_legend, edge_trace)
 
-def grouper(iterable, n):
-    args = [iter(iterable)] * n
-    return itertools.zip_longest(*args)
-
-
-def export_to_pdf(data, acceptor_size, multimer_size, amer):
-    c = canvas.Canvas(".data/pdfs/" + str(acceptor_size) + "mer__to_" + str(multimer_size) + "mer" +str(amer)+ ".pdf", pagesize=A4)
-    c.setFont('VeraBd', 2.5)
-    w, h = A4
-    img = ImageReader(".data/images/" + str(multimer_size) + "mer" +str(amer)+ ".png")
-    # Get the width and height of the image.
-    img_w, img_h = img.getSize()
-    # h - img_h is the height of the sheet minus the height
-    # of the image.
-    c.drawImage(img, 3*cm, 15*cm, width=15*cm, preserveAspectRatio=True)
-
-    if len(data)>1:
-        img1 = ImageReader(".data/images/temp_first_acceptor.png")
-        # Get the width and height of the image.
-        img1_w, img1_h = img1.getSize()
-        # h - img_h is the height of the sheet minus the height
-        # of the image.
-        c.drawImage(img1, 3*cm, 0*cm, width=15*cm, preserveAspectRatio=True)
-        
-    max_rows_per_page = 45
-    # Margin.
-    x_offset = 25
-    y_offset = 350
-    # Space between rows.
-    padding = 15
-
-    if acceptor_size == 2:
-        x_coor_list= [0,25,50,150]
-        for i in range((multimer_size-acceptor_size)*2):
-            x_coor_list.append(x_coor_list[-1]+60)
-    else:
-        x_coor_list= [0,25,50,150]
-        for i in range((multimer_size-acceptor_size)*2-1):
-            x_coor_list.append(x_coor_list[-1]+60)
-
-    xlist = [x + x_offset for x in x_coor_list]
-    ylist = [h - y_offset - i*padding for i in range(max_rows_per_page + 1)]
-
-    for rows in grouper(data, max_rows_per_page):
-        rows = tuple(filter(bool, rows))
-        c.grid(xlist, ylist[:len(rows) + 1])
-        for y, row in zip(ylist[:-1], rows):
-            for x, cell in zip(xlist, row):
-                c.drawString(x +4, y - padding + 3, str(cell))
-        c.showPage()    
-    c.save()
-    del(c)
-
-
-### creating images and pdfs..
-# this loops the export_to_pdf
-def export_multimer_pngs(multimer_size):
-    theMers = pd.read_csv(".data/multimers/" + str(multimer_size) + 'mers.csv')
-    theMers_list = theMers.values[0].tolist()
-    
-    for number in range(len(theMers_list)):
-        plotly_graph = playing_with_ubiquitin(theMers_list[number])
-        plotly_graph.write_image(".data/images/" + str(multimer_size)+ "mer" + str(number)+ ".png")
-        del(plotly_graph)
-
-
-## separate out to filter reactions separately...
-## much easier to test... 
-def export_multimer_pdfs(acceptor_size, multimer_size, enzyme_of_deprot_first='enzyme'):
-
-    acceptor_history_df = pd.read_csv('.data/core_data/' + str(acceptor_size) + "mer__to_" + str(multimer_size) + 'mer_acceptor_history.csv')
-    final_reaction_history_df = pd.read_csv('.data/core_data/' + str(acceptor_size) + "mer__to_" + str(multimer_size) + 'mer_final_reaction_history.csv')
-    monomer_history_df = pd.read_csv('.data/core_data/' + str(acceptor_size) + "mer__to_" + str(multimer_size) + 'mer_monomer_history.csv')
-    acceptor_history_global_deprot_df = pd.read_csv('.data/core_data/' + str(acceptor_size) + "mer__to_" + str(multimer_size) + 'mer_acceptor_history_global_deprot.csv')
-    acceptor_history_max_chain_number_df = pd.read_csv('.data/core_data/' + str(acceptor_size) + "mer__to_" + str(multimer_size) + 'mer_acceptor_history_max_chain_number.csv')
-    theMers = pd.read_csv(".data/multimers/" + str(multimer_size) + 'mers.csv')
-    theMers_list = theMers.values[0].tolist()
-    column_names = list(acceptor_history_df.columns)
-    last_column_name = column_names[-1]
-    first_column_name = column_names[0]
-    final_reactions_df = pd.DataFrame()
-    final_multimer_df = pd.DataFrame()
-
-    with open(".data/jsons/types_of_ubi_node_reverse.json") as h:
-            ubiquitin_library_reverse = json.loads(h.read())
-    with open(".data/jsons/types_of_ubi_node.json") as h:
-            ubiquitin_library = json.loads(h.read())
-    
-    ## change to mer__to_
-    if acceptor_size == 2: 
-        with open(".data/jsons/acceptors_reverse.json") as h:
-            acceptor_library_reverse = json.loads(h.read())
-        with open(".data/jsons/acceptors.json") as h:
-            acceptor_library = json.loads(h.read())
-    else: 
-        acceptor_library_reverse = ubiquitin_library_reverse.copy()
-
-    for number in range(len(theMers_list)):
-
-        aMer = theMers_list[number]
-
-        aMer_df_global_deprot_df = acceptor_history_global_deprot_df.loc[acceptor_history_global_deprot_df[last_column_name] == aMer]
-        aMer_df_acceptor_history_df = acceptor_history_df.loc[acceptor_history_global_deprot_df[last_column_name] == aMer]
-        aMer_df_final_reaction_history_df = final_reaction_history_df.loc[acceptor_history_global_deprot_df[last_column_name] == aMer]
-        aMer_df_monomer_history_df = monomer_history_df.loc[acceptor_history_global_deprot_df[last_column_name] == aMer]
-
-        aMer_df_global_deprot_df = aMer_df_global_deprot_df.astype(str)
-        aMer_df_acceptor_history_df = aMer_df_acceptor_history_df.astype(str)
-        aMer_df_final_reaction_history_df = aMer_df_final_reaction_history_df.astype(str)
-        aMer_df_monomer_history_df = aMer_df_monomer_history_df.astype(str)
-
-        aMer_df_global_deprot_df = aMer_df_global_deprot_df.reset_index().drop('index', axis = 1)
-        aMer_df_acceptor_history_df = aMer_df_acceptor_history_df.reset_index().drop('index', axis = 1)
-        aMer_df_final_reaction_history_df = aMer_df_final_reaction_history_df.reset_index().drop('index', axis = 1)
-        aMer_df_monomer_history_df = aMer_df_monomer_history_df.reset_index().drop('index', axis = 1)
-
-
-        ## list creation outside if statment
-        new_growing_pathway_list = []
-
-        print('PRE-REDUCTION length: ' + str(len(aMer_df_acceptor_history_df)))
-
-        if len(aMer_df_global_deprot_df)>0:
-            
-            # change this 
-            # this line is to prioritize K63 linkage first in the acceptors....
-            if acceptor_size == 2:
-                aMer_df_acceptor_history_df.loc[:,first_column_name] = aMer_df_acceptor_history_df.loc[:,first_column_name].map(acceptor_library_reverse)
-                boolean_df = (aMer_df_acceptor_history_df.loc[:,first_column_name] == 'sohei1')|(aMer_df_acceptor_history_df.loc[:,first_column_name] == 'sohei2')|(aMer_df_acceptor_history_df.loc[:,first_column_name] == 'sohei3')|(aMer_df_acceptor_history_df.loc[:,first_column_name] == 'sohei4')|(aMer_df_acceptor_history_df.loc[:,first_column_name] == 'sohei1_SMACdeprot')|(aMer_df_acceptor_history_df.loc[:,first_column_name] == 'sohei2_SMACdeprot')|(aMer_df_acceptor_history_df.loc[:,first_column_name] == 'sohei3_SMACdeprot')|(aMer_df_acceptor_history_df.loc[:,first_column_name] == 'sohei4_SMACdeprot')
-                if len(aMer_df_acceptor_history_df[boolean_df]) > 0:
-                    aMer_df_acceptor_history_df = aMer_df_acceptor_history_df[boolean_df]
-                    aMer_df_final_reaction_history_df = aMer_df_final_reaction_history_df[boolean_df]
-                    aMer_df_monomer_history_df = aMer_df_monomer_history_df[boolean_df]
-            
-            ## find most number of aboc
-            number_of_aboc_df = aMer_df_acceptor_history_df[[last_column_name]].map(find_number_of_ABOC)
-            max_abocs = int(number_of_aboc_df[last_column_name].max())
-            filtered_number_of_aboc_df = number_of_aboc_df[number_of_aboc_df[last_column_name]==max_abocs]
-            filtered_aMer_df_acceptor_history_df = aMer_df_acceptor_history_df[number_of_aboc_df[last_column_name]==max_abocs]
-            filtered_aMer_df_final_reaction_history_df = aMer_df_final_reaction_history_df[number_of_aboc_df[last_column_name]==max_abocs]
-            filtered_aMer_df_monomer_history_df = aMer_df_monomer_history_df[number_of_aboc_df[last_column_name]==max_abocs]
-            
-            filtered_aMer_df_acceptor_history_df = filtered_aMer_df_acceptor_history_df.astype(str)
-            filtered_aMer_df_final_reaction_history_df = filtered_aMer_df_final_reaction_history_df.astype(str)
-            filtered_aMer_df_monomer_history_df = filtered_aMer_df_monomer_history_df.astype(str)
-
-            print('REDUCTION 1 a length: ' + str(len(filtered_aMer_df_acceptor_history_df)))
-
-            ### reduction to keep branching as late as possible... Ube2K is the last branching item
-            ### keep smac deprot as late as possible...
-            for index, name in enumerate(column_names):
-                #filtered_aMer_df_monomer_history_df.loc[:,name].fillna()
-                    filtered_aMer_df_final_reaction_history_df.loc[:,name].astype(str)   
-
-                    if index > 0: 
-
-                        ## INDEX PLAYING index = index +1 
-                        if enzyme_of_deprot_first == 'deprot': 
-                            index = index + 1
-
-                        if index % 2 == 1: 
-                            ## K63 branching linear chain first
-                            #if len(filtered_aMer_df_final_reaction_history_df[filtered_aMer_df_final_reaction_history_df[name] == 'Ube13/Mms2']) > 0:
-                            #    filtered_aMer_df_acceptor_history_df = filtered_aMer_df_acceptor_history_df[filtered_aMer_df_final_reaction_history_df[name] == 'Ube13/Mms2']
-                            #    filtered_aMer_df_monomer_history_df = filtered_aMer_df_monomer_history_df[filtered_aMer_df_final_reaction_history_df[name] == 'Ube13/Mms2']
-                            #    filtered_number_of_aboc_df = filtered_number_of_aboc_df[filtered_aMer_df_final_reaction_history_df[name] == 'Ube13/Mms2']
-                            #    filtered_aMer_df_final_reaction_history_df = filtered_aMer_df_final_reaction_history_df[filtered_aMer_df_final_reaction_history_df[name] == 'Ube13/Mms2']
-                            
-                            ## Ube2K last branching linear chain first
-                            if len(filtered_aMer_df_final_reaction_history_df[filtered_aMer_df_final_reaction_history_df[name] != 'Ube2K']) > 0:
-                                filtered_aMer_df_acceptor_history_df = filtered_aMer_df_acceptor_history_df[filtered_aMer_df_final_reaction_history_df[name] != 'Ube2K']
-                                filtered_aMer_df_monomer_history_df = filtered_aMer_df_monomer_history_df[filtered_aMer_df_final_reaction_history_df[name] != 'Ube2K']
-                                filtered_number_of_aboc_df = filtered_number_of_aboc_df[filtered_aMer_df_final_reaction_history_df[name] != 'Ube2K']
-                                filtered_aMer_df_final_reaction_history_df = filtered_aMer_df_final_reaction_history_df[filtered_aMer_df_final_reaction_history_df[name] != 'Ube2K']
-                            
-                            ## linear chain first
-                            if len(filtered_aMer_df_final_reaction_history_df[filtered_aMer_df_final_reaction_history_df[name] != 'Ube13/Mms2_branching']) > 0:
-                                filtered_aMer_df_acceptor_history_df = filtered_aMer_df_acceptor_history_df[filtered_aMer_df_final_reaction_history_df[name] != 'Ube13/Mms2_branching']
-                                filtered_aMer_df_monomer_history_df = filtered_aMer_df_monomer_history_df[filtered_aMer_df_final_reaction_history_df[name] != 'Ube13/Mms2_branching']
-                                filtered_number_of_aboc_df = filtered_number_of_aboc_df[filtered_aMer_df_final_reaction_history_df[name] != 'Ube13/Mms2_branching']
-                                filtered_aMer_df_final_reaction_history_df = filtered_aMer_df_final_reaction_history_df[filtered_aMer_df_final_reaction_history_df[name] != 'Ube13/Mms2_branching']
-                            
-                        elif index % 2 == 0:
-                            if len(filtered_aMer_df_final_reaction_history_df[filtered_aMer_df_final_reaction_history_df[name] != 'SMAC_deprot']) > 0:
-                                filtered_aMer_df_acceptor_history_df = filtered_aMer_df_acceptor_history_df[filtered_aMer_df_final_reaction_history_df[name] != 'SMAC_deprot']
-                                filtered_aMer_df_monomer_history_df = filtered_aMer_df_monomer_history_df[filtered_aMer_df_final_reaction_history_df[name] != 'SMAC_deprot']
-                                filtered_number_of_aboc_df = filtered_number_of_aboc_df[filtered_aMer_df_final_reaction_history_df[name] != 'SMAC_deprot']
-                                filtered_aMer_df_final_reaction_history_df = filtered_aMer_df_final_reaction_history_df[filtered_aMer_df_final_reaction_history_df[name] != 'SMAC_deprot']
-                
-                        print('REDUCTION 2 a length: ' + str(len(filtered_aMer_df_acceptor_history_df)))
-
-                        filtered_aMer_df_acceptor_history_df = filtered_aMer_df_acceptor_history_df.reset_index().drop('index', axis = 1)
-                        filtered_aMer_df_monomer_history_df = filtered_aMer_df_monomer_history_df.reset_index().drop('index', axis = 1)
-                        filtered_number_of_aboc_df = filtered_number_of_aboc_df.reset_index().drop('index', axis = 1)
-                        filtered_aMer_df_final_reaction_history_df = filtered_aMer_df_final_reaction_history_df.reset_index().drop('index', axis = 1)
-
-                        if (len(filtered_aMer_df_acceptor_history_df)==2):
-                            if (filtered_aMer_df_acceptor_history_df.iloc[0,].values.tolist()[:-2] == filtered_aMer_df_acceptor_history_df.iloc[1,].values.tolist()[:-2]):
-                                filtered_aMer_df_acceptor_history_df = filtered_aMer_df_acceptor_history_df.iloc[[0]]
-                                filtered_aMer_df_monomer_history_df = filtered_aMer_df_monomer_history_df.iloc[[0]]
-                                filtered_number_of_aboc_df = filtered_number_of_aboc_df.iloc[[0]]
-                                filtered_aMer_df_final_reaction_history_df = filtered_aMer_df_final_reaction_history_df.iloc[[0]]
-
-                        filtered_aMer_df_acceptor_history_df = filtered_aMer_df_acceptor_history_df.reset_index().drop('index', axis = 1)
-                        filtered_aMer_df_monomer_history_df = filtered_aMer_df_monomer_history_df.reset_index().drop('index', axis = 1)
-                        filtered_number_of_aboc_df = filtered_number_of_aboc_df.reset_index().drop('index', axis = 1)
-                        filtered_aMer_df_final_reaction_history_df = filtered_aMer_df_final_reaction_history_df.reset_index().drop('index', axis = 1)
-                        
-                        print('REDUCTION 3 a length: ' + str(len(filtered_aMer_df_acceptor_history_df)))
-                        if (len(filtered_aMer_df_acceptor_history_df) > 1):
-                                filtered_aMer_df_acceptor_history_df = filtered_aMer_df_acceptor_history_df.iloc[[0]]
-                                filtered_aMer_df_monomer_history_df = filtered_aMer_df_monomer_history_df.iloc[[0]]
-                                filtered_number_of_aboc_df = filtered_number_of_aboc_df.iloc[[0]]
-                                filtered_aMer_df_final_reaction_history_df = filtered_aMer_df_final_reaction_history_df.iloc[[0]]
-
-                        ## pointless reduction just taking the last line...
-                        print('REDUCTION 4 a length: ' + str(len(filtered_aMer_df_acceptor_history_df)))
-
-                        filtered_aMer_df_acceptor_history_df.loc[:,name].astype(str)
-                        filtered_aMer_df_monomer_history_df.loc[:,name].astype(str)
-                        filtered_aMer_df_final_reaction_history_df.loc[:,name].astype(str)
-
-            print('REDUCTION 5 a length: ' + str(len(filtered_aMer_df_acceptor_history_df)))
-            final_multimer_df = pd.concat([final_multimer_df, filtered_aMer_df_acceptor_history_df], axis=0)
-            print('FINAL_MULTIMER_df length: ' + str(len(final_multimer_df)))
-
-
-            ## give new names to the monomers...
-            for index, name in enumerate(column_names):
-                #filtered_aMer_df_monomer_history_df.loc[:,name].fillna()
-                filtered_aMer_df_monomer_history_df.loc[:,name].astype(str)
-                
-                ## INDEX PLAYING index = index +1 
-                if enzyme_of_deprot_first == 'deprot': 
-                    index = index+1
-
-                if index % 2 == 1:
-                    filtered_aMer_df_monomer_history_df.loc[:,name] = filtered_aMer_df_monomer_history_df[name].map(ubiquitin_library_reverse)
-        
-            ### create table with everything... 
-            ## turn into list...
-            counter = 1
-            for index, row in enumerate(list(filtered_aMer_df_monomer_history_df.index)):
-                pathway_df = pd.concat([filtered_aMer_df_monomer_history_df.loc[[row]], filtered_aMer_df_final_reaction_history_df.loc[[row]]]).reset_index().drop('index', axis=1)   
-                pathway_df = pathway_df.astype(str)
-
-                if acceptor_size == 1: 
-                    pathway_df.loc[0, first_column_name] = acceptor_library_reverse[filtered_aMer_df_acceptor_history_df.loc[row, first_column_name]]
-
-                if acceptor_size == 2: 
-                    pathway_df.loc[0, first_column_name] = filtered_aMer_df_acceptor_history_df.loc[row, first_column_name]
-
-                
-                #if acceptor_size != 2:
-                #    pathway_df.loc[0, first_column_name] = acceptor_library_reverse[filtered_aMer_df_acceptor_history_df.loc[row, first_column_name]]
-                #
-                #elif acceptor_size == 2:
-                #    pathway_df.loc[0, first_column_name] = filtered_aMer_df_acceptor_history_df.loc[row, first_column_name]
-                #    ## create new column = 'new_column' 
-                #    pathway_df.insert(loc=1, column="new_col", value=['nan', 'nan'])
-                #    hi = pathway_df.iloc[0,0]
-                #    if '_SMACdeprot' in hi:
-                #        ## 0,0 == drop __SMAC deprot
-                #        pathway_df.iloc[0,0] = hi.replace("_SMACdeprot","");
-                #        ## 1,1 == SMAC_deprot
-                #        pathway_df.iloc[1,1] = "SMAC_deprot"
-                #    else: 
-                #        ## 1,1 == Fake_Wash
-                #        pathway_df.iloc[1,1] = "Fake_Wash"
-                
-
-                ## INDEX PLAYING index = index +1 
-                if enzyme_of_deprot_first != 'deprot': 
-                    pathway_df= pathway_df.drop(last_column_name, axis=1)
-                
-                pathway_df.insert(loc=0, column='component', value=['MONOMER', 'REACTION'])
-                pathway_df.insert(loc=0, column='pathway_route', value='PATHWAY_' + str(counter))
-                counter = counter+1
-                
-                if index == 0: 
-                    growing_pathway_df = pathway_df.copy()
-                    growing_pathway_df = growing_pathway_df.astype(str)
-                
-                else:
-                    growing_pathway_df = pd.concat([growing_pathway_df, pathway_df], axis = 0).reset_index().drop('index', axis=1)
-                    growing_pathway_df = growing_pathway_df.astype(str)
-                
-                growing_pathway_df.values.tolist()
-                new_growing_pathway_list = []
-
-                ## figure out a way to add the smac deprot as the first step 
-                for i in growing_pathway_df.values.tolist():
-                    new_growing_pathway_list.append(tuple(i))
-
-                diff_growing_pathway_df = pathway_df.copy()
-
-                ## creating_data_frame
-                if 'multimer_number' in diff_growing_pathway_df.columns:
-                    diff_growing_pathway_df['multimer_number']= number
-                else: 
-                    diff_growing_pathway_df.insert(loc=0, column='multimer_number', value=number)
-                
-                if 'multimer_json' in diff_growing_pathway_df.columns:
-                    diff_growing_pathway_df['multimer_json']= aMer
-                else: 
-                    diff_growing_pathway_df.insert(loc=0, column='multimer_json', value=aMer)
-                
-                final_reactions_df = pd.concat([final_reactions_df, diff_growing_pathway_df], axis=0)
-                
-                ## create first accpetor image 
-                temp_first_acceptor = filtered_aMer_df_acceptor_history_df.iloc[0,0]
-                
-                if acceptor_size == 2: 
-                    temp_first_acceptor = filtered_aMer_df_acceptor_history_df.iloc[0,0]
-                    temp_first_acceptor = acceptor_library[temp_first_acceptor]            
-                
-                plotly_graph = playing_with_ubiquitin(temp_first_acceptor)
-                plotly_graph.write_image(".data/images/temp_first_acceptor.png")
-                del(plotly_graph)                                    
-
-        
-        ## creating headers... 
-        if enzyme_of_deprot_first != 'deprot':
-            headers_list= ["PATHWAY","COMPONENT"]
-            for i in range((multimer_size-acceptor_size)*2):
-                headers_list.append("STEP_" + str(i))
-            headers_tuple = tuple(headers_list)
-        elif enzyme_of_deprot_first == 'deprot': 
-            headers_list= ["PATHWAY","COMPONENT"]
-            for i in range(((multimer_size-acceptor_size)*2) + 1):
-                headers_list.append("STEP_" + str(i))
-            headers_tuple = tuple(headers_list)
-
-        new_growing_pathway_list.insert(0,headers_tuple)
-
-        export_to_pdf(new_growing_pathway_list, acceptor_size, multimer_size, number)
-
-    final_reactions_df.to_csv('.data/reaction_history/' + str(acceptor_size) + "mer__to_" + str(multimer_size) + 'reaction_summary.csv', index=False)
-    final_multimer_df.to_csv('.data/reaction_history/' + str(acceptor_size) + "mer__to_" + str(multimer_size) + 'multimer_summary.csv', index=False)
-
-    return 
-
-def merge_multimer_pdfs(acceptor_size, multimer_size):   
-
-    theMers = pd.read_csv(".data/multimers/" +str(multimer_size) + 'mers.csv')
-    theMers_list = theMers.values[0].tolist()
-    merger = PdfWriter()
-    for i in range(0,len(theMers_list)):
-        pdf = ".data/pdfs/"+ str(acceptor_size) + "mer__to_" + str(multimer_size) +"mer" +str(i)+ ".pdf"
-        merger.append(pdf)
-
-    fake_var_for_merger = merger.write(".data/merged_pdfs/"+ str(acceptor_size) + "mer__to_" + str(multimer_size) + "mer_syn_pathways.pdf")
-    fake_var_for_merger
-    merger.close()
-    ".data/merged_pdfs/"+ str(acceptor_size) + "mer__to_" + str(multimer_size) + "mer_syn_pathways.pdf"
-
 
 
 
@@ -937,6 +581,103 @@ def merge_multimer_pdfs(acceptor_size, multimer_size):
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+
+## SMAC deprotection on deck...
+## so first step on deck will be smac deprot...
+## if smac deprot then index = index+1
+## you should re-input everything...
+
+def build_acceptor_jsons(largest_multimer_size):
+    ## getting the acceptors from the dataframe
+    starting_acceptor_size= 1
+    next_multimer_size= largest_multimer_size
+    ## figure out acceptors to use in the next section...
+    acceptors_df = pd.read_csv('/Users/ekummelstedt/le_code_base/ubiquitin_syn/Ubiquitin_Scripts/aa_looping_through_builders/.data/data_for_analysis/acceptor_df.csv')
+    multimer_summary = pd.read_csv('/Users/ekummelstedt/le_code_base/ubiquitin_syn/Ubiquitin_Scripts/aa_looping_through_builders/.data/reaction_history/' + str(starting_acceptor_size) + 'mer__to_'+ str(next_multimer_size-1)+'multimer_summary.csv')
+    unique_acceptors = list(multimer_summary['1'].map(getting_multimer_string_name).unique())
+    unique_acceptors_dict = {}
+    for i in unique_acceptors: 
+        unique_acceptors_dict[i] = len(multimer_summary[multimer_summary['1'].map(getting_multimer_string_name)==i])
+        
+    acceptor_json_list = []
+    for i in list(unique_acceptors_dict.keys()):
+        hi = list(acceptors_df[acceptors_df['acceptor_string'] == i]['acceptor_json'].values)
+        acceptor_json_list = acceptor_json_list + hi
+
+    ## add in sohei acceptor stuff, but rename it with the new nomenclature...
+    acceptor_json_list= list(set(acceptor_json_list))
+    ## sohei deprot first so that sohei without deprot overwrites...
+    acceptor_dict = {}
+    for json_i, string_i in zip(acceptor_json_list, list(unique_acceptors_dict.keys())):
+        acceptor_dict[string_i] = json_i
+    path_to_file = ".data/jsons/acceptors.json"
+
+    with open(path_to_file, 'w') as file:
+        json_string = json.dumps(acceptor_dict, indent=2)
+        file.write(json_string)     
+
+    reverse_acceptor_dict = {}
+    for json_i, string_i in zip(acceptor_json_list, list(unique_acceptors_dict.keys())):
+        reverse_acceptor_dict[json_i] = string_i
+    path_to_file = ".data/jsons/acceptors_reverse.json"
+    with open(path_to_file, 'w') as file:
+        json_string = json.dumps(reverse_acceptor_dict, indent=2)
+        file.write(json_string)
+
+    return acceptor_json_list
+
+def simulate_synthesis(largest_multimer, ubi_acceptor_list, ubi_donor_list):
+    
+    ## 2nd Simulation...
+    enzyme_of_deprot_first = 'enzyme'
+    starting_acceptor_history_list = []
+    for i in ubi_acceptor_list: 
+        # acceptor list
+        starting_acceptor_history_list.append([i])
+    starting_reaction_history_list= [[""]]*len(starting_acceptor_history_list)
+    starting_monomer_history_list= [[""]]*len(starting_acceptor_history_list)
+    create_synthesis_dataframes(starting_acceptor_history_list, starting_reaction_history_list, starting_monomer_history_list, ubi_donor_list, enzyme_of_deprot_first= enzyme_of_deprot_first)
+    starting_size = 1
+    export_multimer_pngs(2)
+    export_multimer_pdfs(starting_size,2, enzyme_of_deprot_first=enzyme_of_deprot_first)
+
+    starting_size = 1
+    for i in range(3,largest_multimer):
+        build_next_history(starting_size, ubi_donor_list, i, enzyme_of_deprot_first)
+        starting_size = 1
+        
+    for i in range(3,largest_multimer):
+        export_multimer_pngs(i)
+        export_multimer_pdfs(starting_size,i, enzyme_of_deprot_first)
+
+    for i in range(3,largest_multimer):
+        merge_multimer_pdfs(starting_size,i)
+
+    acceptor_json_list = build_acceptor_jsons(largest_multimer)
+
+    ## 2nd Simulation...
+    enzyme_of_deprot_first = 'deprot'
+    starting_acceptor_history_list = []
+    for i in acceptor_json_list: 
+        # acceptor list
+        starting_acceptor_history_list.append([i])
+    starting_reaction_history_list= [[""]]*len(starting_acceptor_history_list)
+    starting_monomer_history_list= [[""]]*len(starting_acceptor_history_list)
+
+    create_synthesis_dataframes(starting_acceptor_history_list, starting_reaction_history_list, starting_monomer_history_list, ubi_donor_list, enzyme_of_deprot_first)
+    # starting_size is defined by the input list of acceptors 
+    starting_size = 2
+    for i in range(4,largest_multimer):
+        build_next_history(starting_size, ubi_donor_list, i, enzyme_of_deprot_first)
+    for i in range(3,largest_multimer):
+        export_multimer_pngs(i)
+        export_multimer_pdfs(starting_size,i, enzyme_of_deprot_first)
+    for i in range(3,largest_multimer):
+        merge_multimer_pdfs(starting_size, i)
+
+    return
+
+
 def plot_96wells(figure=1, figure_name = 'Test',colorbar_type= 'PuRd', cdata=None, sdata=None, bdata=None, bcolors=None, bmeans=None, **kwargs):
     # from https://github.com/jaumebonet/RosettaSilentToolbox/blob/master/rstoolbox/plot/experimental.py
     """Plot data of a 96 well plate into an equivalent-shaped plot.
@@ -1151,102 +892,6 @@ def build_next_history(starting_acceptor_size, ubi_donor_list, next_multimer_siz
     monomer_history_list = monomer_history_df.values.tolist()
     create_synthesis_dataframes(acceptor_history_list,reaction_history_list,monomer_history_list, ubi_donor_list, enzyme_of_deprot_first)
     return 
-
-## SMAC deprotection on deck...
-## so first step on deck will be smac deprot...
-## if smac deprot then index = index+1
-## you should re-input everything...
-
-def build_acceptor_jsons(largest_multimer_size):
-    ## getting the acceptors from the dataframe
-    starting_acceptor_size= 1
-    next_multimer_size= largest_multimer_size
-    ## figure out acceptors to use in the next section...
-    acceptors_df = pd.read_csv('/Users/ekummelstedt/le_code_base/ubiquitin_syn/Ubiquitin_Scripts/aa_looping_through_builders/.data/data_for_analysis/acceptor_df.csv')
-    multimer_summary = pd.read_csv('/Users/ekummelstedt/le_code_base/ubiquitin_syn/Ubiquitin_Scripts/aa_looping_through_builders/.data/reaction_history/' + str(starting_acceptor_size) + 'mer__to_'+ str(next_multimer_size-1)+'multimer_summary.csv')
-    unique_acceptors = list(multimer_summary['1'].map(getting_multimer_string_name).unique())
-    unique_acceptors_dict = {}
-    for i in unique_acceptors: 
-        unique_acceptors_dict[i] = len(multimer_summary[multimer_summary['1'].map(getting_multimer_string_name)==i])
-        
-    acceptor_json_list = []
-    for i in list(unique_acceptors_dict.keys()):
-        hi = list(acceptors_df[acceptors_df['acceptor_string'] == i]['acceptor_json'].values)
-        acceptor_json_list = acceptor_json_list + hi
-
-    ## add in sohei acceptor stuff, but rename it with the new nomenclature...
-    acceptor_json_list= list(set(acceptor_json_list))
-    ## sohei deprot first so that sohei without deprot overwrites...
-    acceptor_dict = {}
-    for json_i, string_i in zip(acceptor_json_list, list(unique_acceptors_dict.keys())):
-        acceptor_dict[string_i] = json_i
-    path_to_file = ".data/jsons/acceptors.json"
-
-    with open(path_to_file, 'w') as file:
-        json_string = json.dumps(acceptor_dict, indent=2)
-        file.write(json_string)     
-
-    reverse_acceptor_dict = {}
-    for json_i, string_i in zip(acceptor_json_list, list(unique_acceptors_dict.keys())):
-        reverse_acceptor_dict[json_i] = string_i
-    path_to_file = ".data/jsons/acceptors_reverse.json"
-    with open(path_to_file, 'w') as file:
-        json_string = json.dumps(reverse_acceptor_dict, indent=2)
-        file.write(json_string)
-
-    return acceptor_json_list
-
-def simulate_synthesis(largest_multimer, ubi_acceptor_list, ubi_donor_list):
-    
-    ## 2nd Simulation...
-    enzyme_of_deprot_first = 'enzyme'
-    starting_acceptor_history_list = []
-    for i in ubi_acceptor_list: 
-        # acceptor list
-        starting_acceptor_history_list.append([i])
-    starting_reaction_history_list= [[""]]*len(starting_acceptor_history_list)
-    starting_monomer_history_list= [[""]]*len(starting_acceptor_history_list)
-    create_synthesis_dataframes(starting_acceptor_history_list, starting_reaction_history_list, starting_monomer_history_list, ubi_donor_list, enzyme_of_deprot_first= enzyme_of_deprot_first)
-    starting_size = 1
-    export_multimer_pngs(2)
-    export_multimer_pdfs(starting_size,2, enzyme_of_deprot_first=enzyme_of_deprot_first)
-
-    starting_size = 1
-    for i in range(3,largest_multimer):
-        build_next_history(starting_size, ubi_donor_list, i, enzyme_of_deprot_first)
-        starting_size = 1
-        
-    for i in range(3,largest_multimer):
-        export_multimer_pngs(i)
-        export_multimer_pdfs(starting_size,i, enzyme_of_deprot_first)
-
-    for i in range(3,largest_multimer):
-        merge_multimer_pdfs(starting_size,i)
-
-    acceptor_json_list = build_acceptor_jsons(largest_multimer)
-
-    ## 2nd Simulation...
-    enzyme_of_deprot_first = 'deprot'
-    starting_acceptor_history_list = []
-    for i in acceptor_json_list: 
-        # acceptor list
-        starting_acceptor_history_list.append([i])
-    starting_reaction_history_list= [[""]]*len(starting_acceptor_history_list)
-    starting_monomer_history_list= [[""]]*len(starting_acceptor_history_list)
-
-    create_synthesis_dataframes(starting_acceptor_history_list, starting_reaction_history_list, starting_monomer_history_list, ubi_donor_list, enzyme_of_deprot_first)
-    # starting_size is defined by the input list of acceptors 
-    starting_size = 2
-    for i in range(4,largest_multimer):
-        build_next_history(starting_size, ubi_donor_list, i, enzyme_of_deprot_first)
-    for i in range(3,largest_multimer):
-        export_multimer_pngs(i)
-        export_multimer_pdfs(starting_size,i, enzyme_of_deprot_first)
-    for i in range(3,largest_multimer):
-        merge_multimer_pdfs(starting_size, i)
-
-    return
-
 
 
 # building xlsx files
