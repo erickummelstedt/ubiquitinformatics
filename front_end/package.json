@@ -1,5 +1,5 @@
 {
-  "name": "front_end2",
+  "name": "front_end",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:all": "concurrently \"npm run dev\" \"cd ../back_end && uvicorn src.fast_api:app --reload\""
   },
   "dependencies": {
     "react": "^19.1.0",
@@ -18,6 +19,7 @@
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",
+    "concurrently": "^7.6.0",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",

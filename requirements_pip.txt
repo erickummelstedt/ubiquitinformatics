@@ -5,3 +5,5 @@ pandas
 pytest
 scipy
 py3Dmol
+fastapi 
+uvicorn

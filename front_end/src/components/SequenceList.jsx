@@ -1,7 +1,4 @@
 import React from 'react';
-import Visualizer from './Visualizer';
-
-const MOL2_URL = '/his-GG-1ubq-1-(<K48_1ubq-2-()>).mol2';
 
 // Utility to convert ^* to superscript and _* to subscript
 const superscriptMap = {
@@ -97,16 +94,6 @@ const SequenceList = ({ sequences, onSelect }) => {
             );
           })}
         </ul>
-      </div>
-      {/* Visualizer bar: 6 small 3Dmol.js viewers */}
-      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 0, height: 180, width: '90vw', marginLeft: 'calc(-45vw + 50%)', marginTop: 16, background: '#181818', border: '1px solid #ccc', borderRadius: 50, padding: 16 }}>
-        {[...Array(6)].map((_, i) => (
-          <div key={i} style={{ height: 200, width: 200, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: i !== 0 ? 16 : 0 }}>
-            <div style={{ width: 200, height: 200, position: 'relative' }}>
-              <Visualizer mol2Url={MOL2_URL} />
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );

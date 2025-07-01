@@ -5,26 +5,24 @@ This front-end React/Vite dashboard is organized into modular components for cla
 
 ---
 
-## 1. `SequenceFilter.jsx`
+## 1. `ScaffoldDashboard.jsx`
 **Role:** Main layout and composition file.
 
 - **Imports:**
   - `Panel` (panel styling/layout)
   - `GameScaffoldPanel` (interactive scaffold/canvas)
-  - `Visualizer` (3Dmol.js molecular viewer)
 - **Layout:**
-  - Uses a flex row to display two panels side by side, with a gap for visual separation.
-  - **Left Panel:** Contains the interactive scaffold (GameScaffoldPanel).
-  - **Right Panel:** Contains the molecular visualizer (Visualizer).
+  - Uses a flex row to display a single panel for the interactive scaffold.
+  - **Panel:** Contains the interactive scaffold (`GameScaffoldPanel`).
 - **Props:**
-  - Passes the .mol2 file URL as a prop to `Visualizer`.
+  - None specific (can be extended as needed).
 
 ---
 
 ## 2. `Panel.jsx`
 **Role:** Generic styled container for content panels.
 
-- **Usage:** Wraps both the left and right panels in `SequenceFilter`.
+- **Usage:** Wraps the main panel in `ScaffoldDashboard`.
 - **Props:**
   - `children`: Content to display inside the panel.
   - `style`: Optional style overrides.
@@ -49,38 +47,20 @@ This front-end React/Vite dashboard is organized into modular components for cla
 - **Logic:**
   - Handles drawing, click detection, and interactive updates.
 - **Usage:**
-  - Used in the left panel of `SequenceFilter`.
-
----
-
-## 4. `Visualizer.jsx`
-**Role:** 3D molecular structure viewer using 3Dmol.js.
-
-- **Features:**
-  - Loads and displays a .mol2 file in a contained 3D viewer.
-  - Strictly contained within its parent panel.
-- **Props:**
-  - `mol2Url`: Path/URL to the .mol2 file to visualize.
-- **Logic:**
-  - Dynamically loads 3Dmol.js if needed.
-  - Fetches and renders the molecule.
-- **Usage:**
-  - Used in the right panel of `SequenceFilter`.
+  - Used in the main panel of `ScaffoldDashboard`.
 
 ---
 
 ## How It All Connects
-- `SequenceFilter.jsx` is the main entry point for the dashboard UI.
-- It composes two `Panel` components side by side:
-  - The left panel contains `GameScaffoldPanel` for interactive simulation.
-  - The right panel contains `Visualizer` for molecular structure viewing.
+- `ScaffoldDashboard.jsx` is the main entry point for the dashboard UI.
+- It composes a single `Panel` component containing `GameScaffoldPanel` for interactive simulation.
 - All components are modular and can be edited or extended independently.
-- Data and configuration (e.g., .mol2 file path, scaffold structure) are passed as props for flexibility.
+- Data and configuration (e.g., scaffold structure) are passed as props for flexibility.
 
 ---
 
 ## Extensibility
-- New panels or features can be added by creating new components and including them in `SequenceFilter`.
+- New panels or features can be added by creating new components and including them in `ScaffoldDashboard`.
 - Logic can be further abstracted into custom hooks for testability.
 - Styling can be moved to CSS modules or styled-components for theming.
 
