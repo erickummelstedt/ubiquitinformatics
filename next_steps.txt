@@ -21,14 +21,34 @@ Features;
 
 Input the series of ubiquitin numbers
 DONE - Build reaction map work....
-- Combine all the files into 1
+DONE - Combine all the files into 1
+DONE - Integrate reaction map work with fast_api
 
-- Integrate reaction map work with fast_api
-- Build inventory from the ubiquitins chosen
+Working in functions_implement_in_fast_api
+
+1.
+- Build inventory from the ubiquitins chosen - LONG
 - Integrate .xlsx generation with fast_api 
 
+2. 
 - Build OT_flex_file from reaction
 - Integrate OT_flex_file generation with fast_api 
+
+3. 
+- Build Reaction_Sequences list
+- Integrate Reaction_Sequences generation with fast_api 
+
+4. 
+- Build Protocol_Doc
+- Integrate Protocol_Doc generation with fast_api 
+
+5. 
+- Draw out all the pentamers and tetramers
+
+# have the inheco plate in there and also the deck layout
+
+
+END OF WEEK
 
 WebApp features;
 - Build out functionality first and then make it more user friendly
