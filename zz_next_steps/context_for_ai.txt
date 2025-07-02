@@ -1,9 +1,0 @@
-Front_end_2 is the new folder for the website/front_end. The website/front_end is javascript based, I would like it to be intereactive and therefore perhaps react/vite based, however I am open to suggestions.
-
-I would like it to connect with the back_end folder through FastAPI however we can make the connection later. The front_end will show how the simulations of ubiquitin multimer synthesis is carried out (you can read through the comprehensive test suite to better understand the code base to understand the system; I recommend simluation.py & main.py for understanding the science). The simulations are complete and the database created can be found in /Users/ekummelstedt/le_code_base/ubiquitinformatics/back_end/data/reaction_database. The front_end will therefore be a dashboard showcasing these reactions. 
-
-I would also like to show the all_atom representation that has been developed in /Users/ekummelstedt/le_code_base/ubiquitinformatics/back_end/src/all_atom/json_to_mol2.py and the output can be found in /Users/ekummelstedt/le_code_base/ubiquitinformatics/back_end/data/jsons_to_mol2. I would like there to be a scroll menu going through the reaction sequences that when one reaction sequence is highlighted then the visualisation is shown below it. 
-
-The selection of reaction sequences will be filter from a little gui developed in main.js, the connection between this gui and the database and thus the visualisation will be finalised at a later date. For now I would be happy if only the first line of the the reaction_database is shown in the front_end. 
-
-I would like the whole thing to be completely tested. Please tell me how to best proceed.

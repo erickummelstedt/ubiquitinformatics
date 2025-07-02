@@ -17,6 +17,12 @@ ENV/
 *.log
 *.out
 *.err
+logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # Operating system files
 .DS_Store
@@ -72,3 +78,19 @@ coverage.xml
 
 /back_end/data/
 /back_end/src/original_data/
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

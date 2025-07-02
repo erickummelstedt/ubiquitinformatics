@@ -20,9 +20,46 @@ Features;
     DONE - carry out final tests
 
 Input the series of ubiquitin numbers
-- Build reaction map work
+DONE - Build reaction map work....
+- Combine all the files into 1
+
+- Integrate reaction map work with fast_api
 - Build inventory from the ubiquitins chosen
+- Integrate .xlsx generation with fast_api 
+
+- Build OT_flex_file from reaction
+- Integrate OT_flex_file generation with fast_api 
+
+WebApp features;
+- Build out functionality first and then make it more user friendly
+- Draw out all the pentamers and tetramers
+- Save the files; 
+    - acceptors
+    - donors/enzymes
+    - deprots
+    - xlsx
+    - OT_flex_file
+    - Reaction sequences
+    - 
+
+- Maybe dockerfile everything
+
+Future features; 
+- One the first page; explore reaction sequences
 - 
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Incorporate into 
 

@@ -15,11 +15,13 @@ const PAGE_CONFIG = {
 const ScaffoldDashboard = () => {
   const [page, setPage] = useState('draw');
   const [selectedPanels, setSelectedPanels] = useState([]); // Track selected panel indices
+  const [figures, setFigures] = useState(null); // Store backend images
   const { count, panelWidth, panelHeight } = PAGE_CONFIG[page];
 
-  // Reset selection when page changes
+  // Reset selection and images when page changes
   React.useEffect(() => {
     setSelectedPanels([]);
+    setFigures(null);
   }, [page]);
 
   // Count selections for each label
@@ -37,7 +39,6 @@ const ScaffoldDashboard = () => {
 
   // Submit handler to call FastAPI backend
   const handleSubmit = async () => {
-    // Prepare the selected label list (e.g., ["Ub4_1", "Ub4_2", ...])
     const selectedLabels = selectedPanels.map(idx =>
       page === 'tetramers' ? `Ub4_${idx + 1}` : page === 'pentamers' ? `Ub5_${idx + 1}` : null
     ).filter(Boolean);
@@ -49,7 +50,8 @@ const ScaffoldDashboard = () => {
       });
       if (!response.ok) throw new Error('Submission failed');
       const result = await response.json();
-      alert('Submission successful!\n' + JSON.stringify(result));
+      setFigures(result.figures); // Store images
+      // alert('Submission successful!\n' + JSON.stringify(result));
     } catch (err) {
       alert('Submission failed: ' + err.message);
     }
@@ -215,6 +217,52 @@ const ScaffoldDashboard = () => {
           >
             Submit
           </button>
+        </div>
+      )}
+      {/* Render backend images if available */}
+      {figures && (
+        <div style={{ margin: '32px auto', maxWidth: 1200, display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div style={{width: '100%'}}>
+            <button
+              style={{marginBottom: 24, width: 300, background: '#388e3c', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 0', fontWeight: 700, fontSize: 16, cursor: 'pointer', display: 'block', marginLeft: 'auto', marginRight: 'auto'}}
+              onClick={async () => {
+                const baseName = window.prompt('Enter a base file name for this group of files:', 'ubiquitin_plate');
+                if (!baseName) return;
+                // Save all keys in figures as files
+                for (const key of Object.keys(figures)) {
+                  // Determine file extension and MIME type
+                  let ext = 'png';
+                  let mime = 'image/png';
+                  if (key.endsWith('.xlsx')) { ext = 'xlsx'; mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'; }
+                  else if (key.endsWith('.csv')) { ext = 'csv'; mime = 'text/csv'; }
+                  else if (key.endsWith('.py')) { ext = 'py'; mime = 'text/x-python'; }
+                  else if (key.endsWith('.doc') || key.endsWith('.docx')) { ext = key.endsWith('.docx') ? 'docx' : 'doc'; mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'; }
+                  else if (key.endsWith('.txt')) { ext = 'txt'; mime = 'text/plain'; }
+                  // If key has a known extension, remove it from the base name
+                  let cleanKey = key.replace(/\.(png|xlsx|csv|py|docx?|txt)$/i, '');
+                  await new Promise(resolve => setTimeout(resolve, 200));
+                  const link = document.createElement('a');
+                  link.href = `data:${mime};base64,${figures[key]}`;
+                  link.download = `${baseName}_${cleanKey}.${ext}`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }
+              }}
+            >Save All Files</button>
+          </div>
+          <div>
+            <div style={{textAlign: 'center', fontWeight: 600, marginBottom: 8}}>Enzyme + Donor Mixes</div>
+            <img src={`data:image/png;base64,${figures.enzymes_donors_96}`} alt="Enzyme + Donor Plate" style={{maxWidth: 350, borderRadius: 8, boxShadow: '0 2px 12px #0003'}} />
+          </div>
+          <div>
+            <div style={{textAlign: 'center', fontWeight: 600, marginBottom: 8}}>Deprotections</div>
+            <img src={`data:image/png;base64,${figures.deprots_96}`} alt="Deprotections Plate" style={{maxWidth: 350, borderRadius: 8, boxShadow: '0 2px 12px #0003'}} />
+          </div>
+          <div>
+            <div style={{textAlign: 'center', fontWeight: 600, marginBottom: 8}}>Acceptors</div>
+            <img src={`data:image/png;base64,${figures.acceptors_96}`} alt="Acceptors Plate" style={{maxWidth: 350, borderRadius: 8, boxShadow: '0 2px 12px #0003'}} />
+          </div>
         </div>
       )}
     </div>
