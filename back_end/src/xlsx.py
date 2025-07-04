@@ -162,6 +162,7 @@ default_final_concentrations = {
 initial_concentraions = {
     'TCEP': 10,  # in mM 
     'ATP/Mg2+': 100,  # in mM
+    'hUba1': 10,  # in µM
 }
 
 mixture_counts, component_counts, mixture_code_map = count_mixture_and_components(
@@ -356,13 +357,71 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
         std = wb['Base Reagent Prep']
         wb.remove(std)
     ws_prep = wb.create_sheet('Base Reagent Prep')
-    # Place initial concentrations for hUba1, TCEP, ATP/Mg2+ in the top left corner with units
-    ws_prep.cell(row=1, column=1).value = 'Initial Conc. hUba1 (uM)'
-    ws_prep.cell(row=1, column=2).value = initial_concentraions.get('hUba1', '') if 'hUba1' in initial_concentraions else ''
-    ws_prep.cell(row=2, column=1).value = 'Initial Conc. TCEP (mM)'
-    ws_prep.cell(row=2, column=2).value = initial_concentraions.get('TCEP', '')
-    ws_prep.cell(row=3, column=1).value = 'Initial Conc. ATP/Mg2+ (mM)'
-    ws_prep.cell(row=3, column=2).value = initial_concentraions.get('ATP/Mg2+', '')
+    # Place initial concentrations for hUba1, TCEP, ATP/Mg2+ in the top left corner with units, starting at cell B2
+    start_row, start_col = 2, 2  # B2
+    ws_prep.cell(row=start_row, column=start_col).value = 'Initial Conc.'
+    ws_prep.cell(row=start_row+1, column=start_col).value = 'hUba1 (uM)'
+    ws_prep.cell(row=start_row+2, column=start_col).value = 'TCEP (mM)'
+    ws_prep.cell(row=start_row+3, column=start_col).value = 'ATP/Mg2+ (mM)'
+    ws_prep.cell(row=start_row+1, column=start_col+1).value = initial_concentraions.get('hUba1', '') if 'hUba1' in initial_concentraions else ''
+    ws_prep.cell(row=start_row+2, column=start_col+1).value = initial_concentraions.get('TCEP', '')
+    ws_prep.cell(row=start_row+3, column=start_col+1).value = initial_concentraions.get('ATP/Mg2+', '')
+    # Expand columns and center the writing
+    from openpyxl.styles import Alignment, Border, Side, Font
+    for row in range(start_row, start_row+4):
+        for col in range(start_col, start_col+2):
+            cell = ws_prep.cell(row=row, column=col)
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+            cell.font = Font(bold=True) if row == start_row else Font(bold=False)
+    # Set column widths for better appearance
+    ws_prep.column_dimensions['B'].width = 18
+    ws_prep.column_dimensions['C'].width = 14
+    # Add a medium border under the title row, but remove the right border from the value column
+    for col in range(start_col, start_col+2):
+        cell = ws_prep.cell(row=start_row, column=col)
+        if col == start_col+1:
+            cell.border = Border(
+                top=cell.border.top,
+                left=cell.border.left,
+                right=Side(border_style=None),
+                bottom=Side(border_style="medium")
+            )
+        else:
+            cell.border = Border(
+                top=cell.border.top,
+                left=cell.border.left,
+                right=cell.border.right,
+                bottom=Side(border_style="medium")
+            )
+    # Remove the right border from all cells in value column
+    for row in range(start_row, start_row+4):
+        cell = ws_prep.cell(row=row, column=start_col+1)
+        cell.border = Border(
+            top=cell.border.top,
+            left=cell.border.left,
+            right=Side(border_style=None),
+            bottom=cell.border.bottom
+        )
+    # Draw a medium border around the whole table (B2:C5)
+    for row in range(start_row, start_row+4):
+        for col in range(start_col, start_col+2):
+            cell = ws_prep.cell(row=row, column=col)
+            border_args = {}
+            if row == start_row:
+                border_args['top'] = Side(border_style="medium")
+            if row == start_row+3:
+                border_args['bottom'] = Side(border_style="medium")
+            if col == start_col:
+                border_args['left'] = Side(border_style="medium")
+            if col == start_col+1:
+                border_args['right'] = Side(border_style="medium")
+            # Merge with any existing border
+            cell.border = Border(
+                left=border_args.get('left', cell.border.left),
+                right=border_args.get('right', cell.border.right),
+                top=border_args.get('top', cell.border.top),
+                bottom=border_args.get('bottom', cell.border.bottom)
+            )
     # --- Function to create the Base Reagent Prep table at a given location for a given reagent ---
     def create_base_reagent_prep_table(ws_prep, ws_comp, reagent, top_left_row, top_left_col):
         """
@@ -381,10 +440,12 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
             ws_prep.cell(row=top_left_row + i, column=top_left_col).font = Font(bold=True)
             ws_prep.cell(row=top_left_row + i, column=top_left_col).border = right_border
             ws_prep.cell(row=top_left_row + i, column=top_left_col).alignment = Alignment(wrap_text=True, horizontal='center', vertical='center')
+        
         # Add header for Volume (uL) above the third column
         ws_prep.cell(row=top_left_row, column=top_left_col+2).value = 'Volume (uL)'
         ws_prep.cell(row=top_left_row, column=top_left_col+2).font = Font(bold=True)
         ws_prep.cell(row=top_left_row, column=top_left_col+2).alignment = Alignment(horizontal='center', vertical='center')
+        
         # Remove any old header above (only if row > 1)
         if top_left_row > 1:
             ws_prep.cell(row=top_left_row-1, column=top_left_col+2).value = None
@@ -461,7 +522,11 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
         for i, reagent_name in enumerate(extra_reagents):
             for j in range(3):
                 cell = ws_prep.cell(row=add_table_row+1+i, column=extra_col+j)
-                cell.font = Font(bold=True)
+                # Only the first column (Reagent) is bold, others are not
+                if j == 0:
+                    cell.font = Font(bold=True)
+                else:
+                    cell.font = Font(bold=False)
                 cell.alignment = Alignment(horizontal='center', vertical='center')
             ws_prep.cell(row=add_table_row+1+i, column=extra_col).value = reagent_name
             # Final Conc.
@@ -471,18 +536,75 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
                 ws_prep.cell(row=add_table_row+1+i, column=extra_col+1).value = default_final_concentrations.get('TCEP', '')
             elif reagent_name == 'ATP/Mg2+ (mM)':
                 ws_prep.cell(row=add_table_row+1+i, column=extra_col+1).value = default_final_concentrations.get('ATP/Mg2+', '')
-            # Volume left blank for user
-            ws_prep.cell(row=add_table_row+1+i, column=extra_col+2).value = ''
+            # Set Volume (uL) formula
+            comp_vol_cell = ws_prep.cell(row=top_left_row+1, column=top_left_col+1).coordinate
+            if reagent_name == 'hUba1 (uM)':
+                init_conc_cell = ws_prep.cell(row=3, column=3).coordinate  # C3
+            elif reagent_name == 'TCEP (mM)':
+                init_conc_cell = ws_prep.cell(row=4, column=3).coordinate  # C4
+            elif reagent_name == 'ATP/Mg2+ (mM)':
+                init_conc_cell = ws_prep.cell(row=5, column=3).coordinate  # C5
+            else:
+                init_conc_cell = None
+            final_conc_cell = ws_prep.cell(row=add_table_row+1+i, column=extra_col+1).coordinate
+            if init_conc_cell:
+                if reagent_name == 'hUba1 (uM)':
+                    ws_prep.cell(row=add_table_row+1+i, column=extra_col+2).value = f"=IF({init_conc_cell}>0,({final_conc_cell}*2*{comp_vol_cell})/{init_conc_cell},0)"
+                else:
+                    ws_prep.cell(row=add_table_row+1+i, column=extra_col+2).value = f"=IF({init_conc_cell}>0,({final_conc_cell}*{comp_vol_cell})/{init_conc_cell},0)"
+            else:
+                ws_prep.cell(row=add_table_row+1+i, column=extra_col+2).value = ''
+        # Add HEPES buffer row
+        hepes_row = add_table_row+1+len(extra_reagents)
+        for j in range(3):
+            cell = ws_prep.cell(row=hepes_row, column=extra_col+j)
+            # Only the first column (Reagent) is bold, others are not
+            if j == 0:
+                cell.font = Font(bold=True)
+            else:
+                cell.font = Font(bold=False)
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+        ws_prep.cell(row=hepes_row, column=extra_col).value = 'HEPES buffer'
+        ws_prep.cell(row=hepes_row, column=extra_col+1).value = ''
+        # Build formula for HEPES buffer volume
+        # Component volume cell
+        comp_vol_cell = ws_prep.cell(row=top_left_row+1, column=top_left_col+1).coordinate
+        # Collect all other volume cells in both tables
+        volume_cells = []
+        # Main table: stock volumes (every other row, starting from top_left_row+4, col=top_left_col+2, 3 stock volumes)
+        for k in [4,6,8]:
+            volume_cells.append(ws_prep.cell(row=top_left_row+k, column=top_left_col+2).coordinate)
+        # Additional reagents table: hUba1, TCEP, ATP/Mg2+ (rows add_table_row+1 to add_table_row+len(extra_reagents), col=extra_col+2)
+        for k in range(len(extra_reagents)):
+            volume_cells.append(ws_prep.cell(row=add_table_row+1+k, column=extra_col+2).coordinate)
+        sum_formula = '+'.join(volume_cells)
+        ws_prep.cell(row=hepes_row, column=extra_col+2).value = f"={comp_vol_cell}-({sum_formula})"
         # --- Draw a single, unbroken medium border around both tables as one block ---
         from openpyxl.styles import Border, Side
         outer_side = Side(border_style="medium")  # less bold than thick
         inner_side = Side(border_style="thin")
+
+        # Add a light bold (medium) border under the title/header row of the component calcualtion table & additional reagents table
+        for row_num in [top_left_row, add_table_row, add_table_row -1]:
+            for j in range(3):
+                cell = ws_prep.cell(row=row_num, column=extra_col + j)
+                cell.border = Border(
+                    top=cell.border.top,
+                    left=cell.border.left,
+                    right=cell.border.right,
+                    bottom=Side(border_style="medium")
+                )
+
         # Rectangle: from top_left_row, top_left_col to bottom row/col of second table
-        total_rows = (10 + 1 + 1 + len(extra_reagents))  # main table + blank + header + extra reagents
+        # Bottom border should be directly under HEPES buffer (not after the extra blank row)
+        total_rows = (10 + 1 + 1 + len(extra_reagents) + 1)  # main table + blank + header + extra reagents + HEPES
         start_row = top_left_row
-        end_row = top_left_row + total_rows - 1
+        end_row = hepes_row  # last row with content is HEPES buffer
         start_col = top_left_col
         end_col = top_left_col + 2
+        # Add a blank row after HEPES buffer for visual separation
+        for c in range(start_col, end_col+1):
+            ws_prep.cell(row=hepes_row+1, column=c).value = None
         for r in range(start_row, end_row + 1):
             for c in range(start_col, end_col + 1):
                 cell = ws_prep.cell(row=r, column=c)
@@ -496,7 +618,7 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
                     border_args['left'] = outer_side
                 if c == end_col:
                     border_args['right'] = outer_side
-                # For the bottom (additional reagents) table, add thin vertical lines between columns
+                # For the bottom (additional reagents) table, add thin vertical lines between columns (now up to HEPES buffer)
                 if r >= add_table_row and r <= end_row:
                     if c == start_col + 1:
                         border_args['left'] = inner_side
@@ -510,19 +632,18 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
                         top=border_args.get('top', existing.top),
                         bottom=border_args.get('bottom', existing.bottom)
                     )
-    # Create Base Reagent Prep tables for each reagent at specified locations
-    reagent_locations = {
-        'Ubc13/Mms2': (1, 1),
-        'gp78/Ube2g2': (1, 5),
-        'Ube2K': (1, 9),
-        'ubi_ubq_1_K48_ABOC_K63_ABOC': (1, 13),
-        'ubi_ubq_1_K48_SMAC_K63_ABOC': (1, 17),
-        'ubi_ubq_1_K48_ABOC_K63_SMAC': (1, 21),
-        'ubi_ubq_1_K48_SMAC': (1, 25),
-        'ubi_ubq_1_K63_SMAC': (1, 29)
-    }
+    # Create the Base Reagent Prep table for each reagent at specified locations
     # Only create the Base Reagent Prep table for 'Ubc13/Mms2' at (5, 4)
-    create_base_reagent_prep_table(ws_prep, ws_comp, 'Ubc13/Mms2', 5, 4)
+    create_base_reagent_prep_table(ws_prep, ws_comp, 'Ubc13/Mms2', 2, 5)
+    create_base_reagent_prep_table(ws_prep, ws_comp, 'gp78/Ube2g2', 20, 5)
+    create_base_reagent_prep_table(ws_prep, ws_comp, 'Ube2K', 38, 5)
+
+    # Create the Base Reagent Prep table for the donors
+    create_base_reagent_prep_table(ws_prep, ws_comp, 'ubi_ubq_1_K48_ABOC_K63_ABOC', 2, 10)
+    create_base_reagent_prep_table(ws_prep, ws_comp, 'ubi_ubq_1_K48_SMAC_K63_ABOC', 20, 10)
+    create_base_reagent_prep_table(ws_prep, ws_comp, 'ubi_ubq_1_K48_ABOC_K63_SMAC', 38, 10)
+    create_base_reagent_prep_table(ws_prep, ws_comp, 'ubi_ubq_1_K48_SMAC', 56, 10)
+    create_base_reagent_prep_table(ws_prep, ws_comp, 'ubi_ubq_1_K63_SMAC', 74, 10)
     wb.save(filename)
 
 create_combined_xlsx(mixture_counts, component_counts, 'mixture_and_component_counts.xlsx', all_components=components, e_d_encoded_dictionary=e_d_encoded_dictionary)
