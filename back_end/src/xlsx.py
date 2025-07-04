@@ -153,7 +153,15 @@ default_final_concentrations = {
     'ubi_ubq_1_K63_SMAC': 20, # in µM
     # Acceptors
     'Acceptor Dimer Concentration': 10,  # in nmol
-    'Reaction Volume [uL]': 200  # in µL
+    'Reaction Volume [uL]': 200,  # in µL
+    # TCEP & ATP
+    'TCEP': 1,  # in mM 
+    'ATP/Mg2+': 10,  # in mM
+}
+
+initial_concentraions = {
+    'TCEP': 10,  # in mM 
+    'ATP/Mg2+': 100,  # in mM
 }
 
 mixture_counts, component_counts, mixture_code_map = count_mixture_and_components(
@@ -348,99 +356,176 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
         std = wb['Base Reagent Prep']
         wb.remove(std)
     ws_prep = wb.create_sheet('Base Reagent Prep')
-    # Get headers from the Component Counts sheet
-    prep_headers = [ws_comp.cell(row=1, column=col).value for col in range(1, ws_comp.max_column+1)]
-    # For each reagent, create a table with the same columns as Component Counts, but only for that reagent
-    start_row = 1
-    for reagent in base_reagents:
-        # Write table title
-        ws_prep.cell(row=start_row, column=1).value = f"Preparation for {reagent}"
-        ws_prep.cell(row=start_row, column=1).font = Font(bold=True)
+    # Place initial concentrations for hUba1, TCEP, ATP/Mg2+ in the top left corner with units
+    ws_prep.cell(row=1, column=1).value = 'Initial Conc. hUba1 (uM)'
+    ws_prep.cell(row=1, column=2).value = initial_concentraions.get('hUba1', '') if 'hUba1' in initial_concentraions else ''
+    ws_prep.cell(row=2, column=1).value = 'Initial Conc. TCEP (mM)'
+    ws_prep.cell(row=2, column=2).value = initial_concentraions.get('TCEP', '')
+    ws_prep.cell(row=3, column=1).value = 'Initial Conc. ATP/Mg2+ (mM)'
+    ws_prep.cell(row=3, column=2).value = initial_concentraions.get('ATP/Mg2+', '')
+    # --- Function to create the Base Reagent Prep table at a given location for a given reagent ---
+    def create_base_reagent_prep_table(ws_prep, ws_comp, reagent, top_left_row, top_left_col):
+        """
+        Create the Base Reagent Prep table for a given reagent at the specified top-left cell (row, col).
+        """
+        prep_headers = [
+            'Component',
+            'Component Volume (uL)',
+            'Amount Needed (nmol)'
+        ]
+        from openpyxl.styles import Border, Side, Font, Alignment
+        right_border = Border(right=Side(border_style="thin"))
         # Write headers
-        for col, header in enumerate(prep_headers, start=1):
-            ws_prep.cell(row=start_row+1, column=col).value = header
-            ws_prep.cell(row=start_row+1, column=col).font = Font(bold=True)
-            ws_prep.cell(row=start_row+1, column=col).border = border
-            ws_prep.cell(row=start_row+1, column=col).alignment = Alignment(wrap_text=True, horizontal='center', vertical='center')
-        # Find the row in ws_comp for this reagent
+        for i, header in enumerate(prep_headers):
+            ws_prep.cell(row=top_left_row + i, column=top_left_col).value = header
+            ws_prep.cell(row=top_left_row + i, column=top_left_col).font = Font(bold=True)
+            ws_prep.cell(row=top_left_row + i, column=top_left_col).border = right_border
+            ws_prep.cell(row=top_left_row + i, column=top_left_col).alignment = Alignment(wrap_text=True, horizontal='center', vertical='center')
+        # Add header for Volume (uL) above the third column
+        ws_prep.cell(row=top_left_row, column=top_left_col+2).value = 'Volume (uL)'
+        ws_prep.cell(row=top_left_row, column=top_left_col+2).font = Font(bold=True)
+        ws_prep.cell(row=top_left_row, column=top_left_col+2).alignment = Alignment(horizontal='center', vertical='center')
+        # Remove any old header above (only if row > 1)
+        if top_left_row > 1:
+            ws_prep.cell(row=top_left_row-1, column=top_left_col+2).value = None
+        # Write values (formulas) for the reagent
         found = False
         for comp_row in range(2, ws_comp.max_row+1):
             comp_name = ws_comp.cell(row=comp_row, column=1).value
             if comp_name == reagent:
-                for col in range(1, ws_comp.max_column+1):
-                    val = ws_comp.cell(row=comp_row, column=col).value
-                    ws_prep.cell(row=start_row+2, column=col).value = val
+                ws_prep.cell(row=top_left_row, column=top_left_col+1).value = f"='Component Counts'!A{comp_row}"
+                ws_prep.cell(row=top_left_row, column=top_left_col+1).alignment = Alignment(horizontal='center', vertical='center')
+                ws_prep.cell(row=top_left_row, column=top_left_col+1).font = Font(bold=True)
+                ws_prep.cell(row=top_left_row+1, column=top_left_col+1).value = f"='Component Counts'!D{comp_row}"
+                ws_prep.cell(row=top_left_row+2, column=top_left_col+1).value = f"='Component Counts'!F{comp_row}"
                 found = True
                 break
         if not found:
-            for col in range(1, ws_comp.max_column+1):
-                ws_prep.cell(row=start_row+2, column=col).value = ''
-        # Auto-fit columns for this table
-        for col in range(1, ws_comp.max_column+1):
-            header_cell = ws_prep.cell(row=start_row+1, column=col)
-            col_letter = header_cell.column_letter
-            max_length = len(str(header_cell.value)) if header_cell.value is not None else 0
-            val_cell = ws_prep.cell(row=start_row+2, column=col)
-            val_length = len(str(val_cell.value)) if val_cell.value is not None else 0
-            if val_length > max_length:
-                max_length = val_length
-            ws_prep.column_dimensions[col_letter].width = max_length + 2
-        # Add a blank row before the next table
-        start_row += 4
-    # --- Create new worksheet for base reagent preparation in the same workbook ---
-    reagent = 'Ubc13/Mms2'  # Only do for one reagent for now
-    # Remove existing 'Base Reagent Prep' sheet if it exists
-    if 'Base Reagent Prep' in wb.sheetnames:
-        std = wb['Base Reagent Prep']
-        wb.remove(std)
-    ws_prep = wb.create_sheet('Base Reagent Prep')
-    # Transposed table: headers in column A, values in column B
-    prep_headers = [
-        'Component',
-        'Component Volume (uL)',
-        'Amount Needed (nmol)'
-    ]
-    for row, header in enumerate(prep_headers, start=1):
-        ws_prep.cell(row=row, column=1).value = header
-        ws_prep.cell(row=row, column=1).font = Font(bold=True)
-        ws_prep.cell(row=row, column=1).border = border
-        ws_prep.cell(row=row, column=1).alignment = Alignment(wrap_text=True, horizontal='center', vertical='center')
-    # Find the row in ws_comp for this reagent
-    found = False
-    for comp_row in range(2, ws_comp.max_row+1):
-        comp_name = ws_comp.cell(row=comp_row, column=1).value
-        if comp_name == reagent:
-            ws_prep.cell(row=1, column=2).value = f"='Component Counts'!A{comp_row}"
-            ws_prep.cell(row=2, column=2).value = f"='Component Counts'!C{comp_row}"
-            ws_prep.cell(row=3, column=2).value = f"='Component Counts'!E{comp_row}"
-            found = True
-            break
-    if not found:
-        ws_prep.cell(row=1, column=2).value = reagent
-        ws_prep.cell(row=2, column=2).value = ''
-        ws_prep.cell(row=3, column=2).value = ''
-    # Add 6 new rows for stock conc. and stock volume for 1, 2, 3
-    extra_labels = [
-        'Stock Conc. 1', 'Stock Volume 1',
-        'Stock Conc. 2', 'Stock Volume 2',
-        'Stock Conc. 3', 'Stock Volume 3'
-    ]
-    for i, label in enumerate(extra_labels, start=4):
-        ws_prep.cell(row=i, column=1).value = label
-        ws_prep.cell(row=i, column=1).font = Font(bold=True)
-        ws_prep.cell(row=i, column=1).border = border
-        ws_prep.cell(row=i, column=1).alignment = Alignment(wrap_text=True, horizontal='center', vertical='center')
-        ws_prep.cell(row=i, column=2).value = ''
-    # Auto-fit columns for this table
-    for col in range(1, 3):
-        header_cell = ws_prep.cell(row=1, column=col)
-        col_letter = header_cell.column_letter
-        max_length = max(len(str(ws_prep.cell(row=row, column=col).value)) for row in range(1, 10))
-        ws_prep.column_dimensions[col_letter].width = max_length + 2
+            ws_prep.cell(row=top_left_row, column=top_left_col+1).value = reagent
+            ws_prep.cell(row=top_left_row, column=top_left_col+1).alignment = Alignment(horizontal='center', vertical='center')
+            ws_prep.cell(row=top_left_row, column=top_left_col+1).font = Font(bold=True)
+            ws_prep.cell(row=top_left_row+1, column=top_left_col+1).value = ''
+            ws_prep.cell(row=top_left_row+2, column=top_left_col+1).value = ''
+        # Add 6 new rows for stock conc. and stock volume for 1, 2, 3, with default value 0
+        extra_labels = [
+            'Stock Conc. 1 (uM)', 'Stock Volume 1 (uL)',
+            'Stock Conc. 2 (uM)', 'Stock Volume 2 (uL)',
+            'Stock Conc. 3 (uM)', 'Stock Volume 3 (uL)'
+        ]
+        for i, label in enumerate(extra_labels):
+            row = top_left_row + 3 + i
+            ws_prep.cell(row=row, column=top_left_col).value = label
+            ws_prep.cell(row=row, column=top_left_col).font = Font(bold=True)
+            ws_prep.cell(row=row, column=top_left_col).border = right_border
+            ws_prep.cell(row=row, column=top_left_col).alignment = Alignment(wrap_text=True, horizontal='center', vertical='center')
+            ws_prep.cell(row=row, column=top_left_col+1).value = 0
+        # Write formulas for stock volumes in the volume column (col 3)
+        ws_prep.cell(row=top_left_row+4, column=top_left_col+2).value = f"=IF(AND({chr(65+top_left_col)}{top_left_row+3}>0,{chr(65+top_left_col)}{top_left_row+2}>0),MIN({chr(65+top_left_col)}{top_left_row+4},ROUND({chr(65+top_left_col)}{top_left_row+2}*1000/{chr(65+top_left_col)}{top_left_row+3},2)),0)"
+        ws_prep.cell(row=top_left_row+6, column=top_left_col+2).value = f"=IF(AND({chr(65+top_left_col)}{top_left_row+5}>0,MAX(0,{chr(65+top_left_col)}{top_left_row+2}-{chr(65+top_left_col+1)}{top_left_row+4}*{chr(65+top_left_col)}{top_left_row+3}/1000)>0),MIN({chr(65+top_left_col)}{top_left_row+6},ROUND(MAX(0,{chr(65+top_left_col)}{top_left_row+2}-{chr(65+top_left_col+1)}{top_left_row+4}*{chr(65+top_left_col)}{top_left_row+3}/1000)*1000/{chr(65+top_left_col)}{top_left_row+5},2)),0)"
+        ws_prep.cell(row=top_left_row+8, column=top_left_col+2).value = f"=IF(AND({chr(65+top_left_col)}{top_left_row+7}>0,MAX(0,{chr(65+top_left_col)}{top_left_row+2}-{chr(65+top_left_col+1)}{top_left_row+4}*{chr(65+top_left_col)}{top_left_row+3}/1000-{chr(65+top_left_col+1)}{top_left_row+6}*{chr(65+top_left_col)}{top_left_row+5}/1000)>0),MIN({chr(65+top_left_col+2)}{top_left_row+8},ROUND(MAX(0,{chr(65+top_left_col)}{top_left_row+2}-{chr(65+top_left_col+1)}{top_left_row+4}*{chr(65+top_left_col)}{top_left_row+3}/1000-{chr(65+top_left_col+1)}{top_left_row+6}*{chr(65+top_left_col)}{top_left_row+5}/1000)*1000/{chr(65+top_left_col)}{top_left_row+7},2)),0)"
+        # At the bottom, add a cell for 'Required nmol needed' and formula
+        ws_prep.cell(row=top_left_row+9, column=top_left_col).value = 'Required nmol needed'
+        ws_prep.cell(row=top_left_row+9, column=top_left_col).font = Font(bold=True)
+        ws_prep.cell(row=top_left_row+9, column=top_left_col).border = right_border
+        ws_prep.cell(row=top_left_row+9, column=top_left_col).alignment = Alignment(wrap_text=True, horizontal='center', vertical='center')
+        ws_prep.cell(row=top_left_row+9, column=top_left_col+1).value = f"=ROUND(MAX(0,{chr(65+top_left_col)}{top_left_row+2}-{chr(65+top_left_col+1)}{top_left_row+4}*{chr(65+top_left_col)}{top_left_row+3}/1000-{chr(65+top_left_col+1)}{top_left_row+6}*{chr(65+top_left_col)}{top_left_row+5}/1000-{chr(65+top_left_col+1)}{top_left_row+8}*{chr(65+top_left_col)}{top_left_row+7}/1000),2)"
+        # Add a border between the second and third column for all relevant rows
+        mid_right_border = Border(right=Side(border_style="thin"))
+        for i in range(0, 10):
+            ws_prep.cell(row=top_left_row + i, column=top_left_col+1).border = mid_right_border
+        # Auto-fit columns for this table: set all columns to the width of the first column
+        first_col_letter = ws_prep.cell(row=top_left_row, column=top_left_col).column_letter
+        first_col_width = max(len(str(ws_prep.cell(row=top_left_row + i, column=top_left_col).value)) for i in range(0, 10)) + 2
+        for col in range(top_left_col, top_left_col+3):
+            col_letter = ws_prep.cell(row=top_left_row, column=col).column_letter
+            ws_prep.column_dimensions[col_letter].width = first_col_width
+        # Place the Additional Reagent section below the main table, with only one blank row for spacing
+        add_reagent_start_row = top_left_row + 10  # 10 rows for main table
+        ws_prep.cell(row=add_reagent_start_row, column=top_left_col).value = None
+        # Now add the additional reagents table below the single blank row
+        add_table_row = add_reagent_start_row + 1
+        if reagent in ['Ubc13/Mms2', 'gp78/Ube2g2', 'Ube2K']:
+            extra_reagents = ['hUba1 (uM)', 'TCEP (mM)', 'ATP/Mg2+ (mM)']
+        else:
+            extra_reagents = ['TCEP (mM)', 'ATP/Mg2+ (mM)']
+        extra_col = top_left_col
+        ws_prep.cell(row=add_table_row, column=extra_col).value = 'Reagent'
+        ws_prep.cell(row=add_table_row, column=extra_col+1).value = 'Final Conc.'
+        ws_prep.cell(row=add_table_row, column=extra_col+2).value = 'Volume (uL)'
+        # Style header row for second table
+        for j, label in enumerate(['Reagent', 'Final Conc.', 'Volume (uL)']):
+            cell = ws_prep.cell(row=add_table_row, column=extra_col+j)
+            cell.font = Font(bold=True)
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+        # Fill in second table and style cells
+        for i, reagent_name in enumerate(extra_reagents):
+            for j in range(3):
+                cell = ws_prep.cell(row=add_table_row+1+i, column=extra_col+j)
+                cell.font = Font(bold=True)
+                cell.alignment = Alignment(horizontal='center', vertical='center')
+            ws_prep.cell(row=add_table_row+1+i, column=extra_col).value = reagent_name
+            # Final Conc.
+            if reagent_name == 'hUba1 (uM)':
+                ws_prep.cell(row=add_table_row+1+i, column=extra_col+1).value = default_final_concentrations.get('hUba1', '')
+            elif reagent_name == 'TCEP (mM)':
+                ws_prep.cell(row=add_table_row+1+i, column=extra_col+1).value = default_final_concentrations.get('TCEP', '')
+            elif reagent_name == 'ATP/Mg2+ (mM)':
+                ws_prep.cell(row=add_table_row+1+i, column=extra_col+1).value = default_final_concentrations.get('ATP/Mg2+', '')
+            # Volume left blank for user
+            ws_prep.cell(row=add_table_row+1+i, column=extra_col+2).value = ''
+        # --- Draw a single, unbroken medium border around both tables as one block ---
+        from openpyxl.styles import Border, Side
+        outer_side = Side(border_style="medium")  # less bold than thick
+        inner_side = Side(border_style="thin")
+        # Rectangle: from top_left_row, top_left_col to bottom row/col of second table
+        total_rows = (10 + 1 + 1 + len(extra_reagents))  # main table + blank + header + extra reagents
+        start_row = top_left_row
+        end_row = top_left_row + total_rows - 1
+        start_col = top_left_col
+        end_col = top_left_col + 2
+        for r in range(start_row, end_row + 1):
+            for c in range(start_col, end_col + 1):
+                cell = ws_prep.cell(row=r, column=c)
+                border_args = {}
+                # Outer border
+                if r == start_row:
+                    border_args['top'] = outer_side
+                if r == end_row:
+                    border_args['bottom'] = outer_side
+                if c == start_col:
+                    border_args['left'] = outer_side
+                if c == end_col:
+                    border_args['right'] = outer_side
+                # For the bottom (additional reagents) table, add thin vertical lines between columns
+                if r >= add_table_row and r <= end_row:
+                    if c == start_col + 1:
+                        border_args['left'] = inner_side
+                    if c == start_col + 1:
+                        border_args['right'] = inner_side
+                if border_args:
+                    existing = cell.border
+                    cell.border = Border(
+                        left=border_args.get('left', existing.left),
+                        right=border_args.get('right', existing.right),
+                        top=border_args.get('top', existing.top),
+                        bottom=border_args.get('bottom', existing.bottom)
+                    )
+    # Create Base Reagent Prep tables for each reagent at specified locations
+    reagent_locations = {
+        'Ubc13/Mms2': (1, 1),
+        'gp78/Ube2g2': (1, 5),
+        'Ube2K': (1, 9),
+        'ubi_ubq_1_K48_ABOC_K63_ABOC': (1, 13),
+        'ubi_ubq_1_K48_SMAC_K63_ABOC': (1, 17),
+        'ubi_ubq_1_K48_ABOC_K63_SMAC': (1, 21),
+        'ubi_ubq_1_K48_SMAC': (1, 25),
+        'ubi_ubq_1_K63_SMAC': (1, 29)
+    }
+    # Only create the Base Reagent Prep table for 'Ubc13/Mms2' at (5, 4)
+    create_base_reagent_prep_table(ws_prep, ws_comp, 'Ubc13/Mms2', 5, 4)
     wb.save(filename)
 
 create_combined_xlsx(mixture_counts, component_counts, 'mixture_and_component_counts.xlsx', all_components=components, e_d_encoded_dictionary=e_d_encoded_dictionary)
-
 
 
 # ============================================================

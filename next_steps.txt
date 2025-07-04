@@ -30,7 +30,10 @@ Working in functions_implement_in_fast_api
 - Build inventory from the ubiquitins chosen - LONG
 - Integrate .xlsx generation with fast_api 
     - Build final cal sheet based on conc. and volume in inventory
-    - 
+    - Enyzme solution has Uba1 + TCEP 
+    - Donors has ATP + TCEP 
+
+    - Add in function for 
 
 2. 
 - Build OT_flex_file from reaction
