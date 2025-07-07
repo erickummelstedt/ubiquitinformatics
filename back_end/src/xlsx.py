@@ -70,7 +70,7 @@ ubiquitin_history = data_dict['ubiquitin_history']
 
 # Create the plate dataframes for the selected indexes
 # Select the indexes of the multimer_ids that are used in synthesis
-selected_ids = ["Ub4_5","Ub4_13","Ub4_13","Ub4_13","Ub4_10","Ub4_2","Ub4_2","Ub4_2","Ub4_2","Ub4_2","Ub4_2","Ub4_2","Ub4_2","Ub4_8"]
+selected_ids = ["Ub4_5","Ub4_10","Ub4_2","Ub4_2","Ub4_2","Ub4_2","Ub4_2","Ub4_2","Ub4_2","Ub4_2","Ub4_8", "Ub4_11","Ub4_7"]
 indexes = list()
 
 # Get the indexes of the selected multimer_ids that are used in synthesis
@@ -196,7 +196,7 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
     Adds a sum row at the bottom of the mixture counts.
     
     """
-    # Mixture DataFrame
+    # Mixed Reagents DataFrame
     mixture_data = []
     for index, (mixture, count) in enumerate(mixture_counts.items()):
         code = e_d_encoded_dictionary.get(mixture)  # Get the value from the encoding dictionary
@@ -209,17 +209,17 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
     # Add Excel formula for 'Donor + Enzyme Volume (uL)' column
     from openpyxl import load_workbook
     with pd.ExcelWriter(filename, engine='openpyxl') as writer:
-        mixture_df.to_excel(writer, sheet_name='Mixture Counts', index=False)
+        mixture_df.to_excel(writer, sheet_name='Mixed Reagents Counts', index=False)
         # Write the component sheet as before
         if all_components is not None:
             comp_data = [(comp, component_counts.get(comp, 0)) for comp in all_components]
-            component_df = pd.DataFrame(comp_data, columns=['Component', 'Count'])
+            component_df = pd.DataFrame(comp_data, columns=['Base Reagent', 'Count'])
         else:
-            component_df = pd.DataFrame(list(component_counts.items()), columns=['Component', 'Count'])
-        component_df.to_excel(writer, sheet_name='Component Counts', index=False)
+            component_df = pd.DataFrame(list(component_counts.items()), columns=['Base Reagent', 'Count'])
+        component_df.to_excel(writer, sheet_name='Base Reagent Counts', index=False)
     # Add the formula column after writing with pandas
     wb = load_workbook(filename)
-    ws = wb['Mixture Counts']
+    ws = wb['Mixed Reagents Counts']
     # Insert new column for 'Donor + Enzyme Volume (uL)\n(Count * Reaction Volume (uL) * 1.1)' after 'Reaction Volume (uL)'
     insert_at = 5  # After 4th column (A-D: Mix, Id, Count, Reaction Vol)
     ws.insert_cols(insert_at)
@@ -268,7 +268,7 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
     for col in ws.columns:
         header_cell = col[0]
         col_letter = header_cell.column_letter
-        if header_cell.value == 'Mass Required (mg)\n(Mass (Da) * Amount Needed (nmol) / 1000)':
+        if header_cell.value == 'Mass Required (mg)\n(MW (Da) * Amount Needed (nmol) / 1000)':
             ws.column_dimensions[col_letter].width = 10  # Set a tighter width for this column
             continue
         if '\n' in str(header_cell.value):
@@ -310,26 +310,26 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
                     cell = ws.cell(row=row, column=col)
                     cell.fill = green_fill
                     cell.font = Font(bold=True)  # Make highlighted cell bold
-    # Format Component Counts sheet
-    ws_comp = wb['Component Counts']
+    # Format Base Reagent Counts sheet
+    ws_comp = wb['Base Reagent Counts']
     # Insert 'Reaction Volume (uL)' column after 'Count'
     ws_comp.insert_cols(3)
     ws_comp.cell(row=1, column=3).value = 'Reaction Volume (uL)'
-    # Insert 'Component Volume (uL)\n(Count * Reaction Volume (uL) * 1.1 / 2)' after 'Reaction Volume (uL)'
+    # Insert 'Total Volume (uL)\n(Count * Reaction Volume (uL) * 1.1 / 2)' after 'Reaction Volume (uL)'
     ws_comp.insert_cols(4)
-    ws_comp.cell(row=1, column=4).value = 'Component Volume (uL)\n(Count * Reaction Volume (uL) * 1.1 / 2)'
-    # Insert 'Final Concentration (uM)' after 'Component Volume (uL)...'
+    ws_comp.cell(row=1, column=4).value = 'Total Volume (uL)\n(Count * Reaction Volume (uL) * 1.1 / 2)'
+    # Insert 'Final Concentration (uM)' after 'Total Volume (uL)...'
     ws_comp.insert_cols(5)
     ws_comp.cell(row=1, column=5).value = 'Final Concentration (uM)'
     # Insert 'Amount Needed (nmol)\n(Count * Reaction Volume (uL)\n* Final Concentration (uM) * 1.1 / 1000)' after Final Concentration
     ws_comp.insert_cols(6)
     ws_comp.cell(row=1, column=6).value = 'Amount Needed (nmol)\n(Count * Reaction Volume (uL)\n* Final Concentration (uM) * 1.1 / 1000)'
-    # Insert 'Mass (Da)' as the last column
+    # Insert 'MW (Da)' as the last column
     ws_comp.insert_cols(7)
-    ws_comp.cell(row=1, column=7).value = 'Mass (Da)'
+    ws_comp.cell(row=1, column=7).value = 'MW (Da)'
     # Insert 'Mass Required (ug)' as the next column
     ws_comp.insert_cols(8)
-    ws_comp.cell(row=1, column=8).value = 'Mass Required (mg)\n(Mass (Da) * Amount Needed (nmol) / 1000)'
+    ws_comp.cell(row=1, column=8).value = 'Mass Required (mg)\n(MW (Da) * Amount Needed (nmol) / 1000)'
     # Set values for all rows except header
     for row in range(2, ws_comp.max_row+1):
         comp = ws_comp.cell(row=row, column=1).value
@@ -343,10 +343,10 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
         ws_comp.cell(row=row, column=5).value = default_final_concentrations.get(comp, '')
         # Set mass value in the last column
         ws_comp.cell(row=row, column=7).value = masses.get(comp, '')
-        # Set Mass Required (ug) as Excel formula: (Mass (Da) * Amount Needed (nmol)) / 1,000,000, rounded to 2 decimals
+        # Set Mass Required (ug) as Excel formula: (MW (Da) * Amount Needed (nmol)) / 1,000,000, rounded to 3 decimals
         mass_cell = ws_comp.cell(row=row, column=7).coordinate
         amount_needed_cell = ws_comp.cell(row=row, column=6).coordinate
-        ws_comp.cell(row=row, column=8).value = f"=IF(AND(ISNUMBER({mass_cell}),ISNUMBER({amount_needed_cell})),ROUND({mass_cell}*{amount_needed_cell}/1000000,2),"")"
+        ws_comp.cell(row=row, column=8).value = f"=IF(AND(ISNUMBER({mass_cell}),ISNUMBER({amount_needed_cell})),ROUND({mass_cell}*{amount_needed_cell}/1000000,3),"")"
     # Header formatting: bold, centered, bordered, wrap text
     from openpyxl.styles import Font, Border, Side, Alignment
     header_font = Font(bold=True)
@@ -360,7 +360,7 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
     for col in ws_comp.columns:
         header_cell = col[0]
         col_letter = header_cell.column_letter
-        if header_cell.value == 'Mass Required (mg)\n(Mass (Da) * Amount Needed (nmol) / 1000)':
+        if header_cell.value == 'Mass Required (mg)\n(MW (Da) * Amount Needed (nmol) / 1000)':
             ws_comp.column_dimensions[col_letter].width = 30  # Set a tighter width for this column
             continue
         if '\n' in str(header_cell.value):
@@ -462,28 +462,43 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
     hUba1_needs_labels = [
         'Total hUba1 Needs',
         'Volume (uL)',
-        'pmol',
+        'nmol',
+        'MW (Da)',
         'Mass (mg)'
     ]
     for i, label in enumerate(hUba1_needs_labels):
         ws_prep.cell(row=hUba1_needs_start_row + i, column=hUba1_needs_start_col).value = label
         # Only bold the first label ('Total hUba1 Needs'), others not bold
         ws_prep.cell(row=hUba1_needs_start_row + i, column=hUba1_needs_start_col).font = Font(bold=(i == 0))
-        ws_prep.cell(row=hUba1_needs_start_row + i, column=hUba1_needs_start_col).alignment = Alignment(horizontal='left', vertical='center')
-        ws_prep.cell(row=hUba1_needs_start_row + i, column=hUba1_needs_start_col + 1).value = ''
+        # Center the writing in column B7 to B11 (label column)
+        ws_prep.cell(row=hUba1_needs_start_row + i, column=hUba1_needs_start_col).alignment = Alignment(horizontal='center', vertical='center')
+        # For 'Volume (uL)' row, insert formula summing G14, G32, G50
+        if label == 'Volume (uL)':
+            ws_prep.cell(row=hUba1_needs_start_row + i, column=hUba1_needs_start_col + 1).value = '=G14+G32+G50'
+        # For 'nmol' row, insert formula: =C3*C8/1000
+        elif label == 'nmol':
+            ws_prep.cell(row=hUba1_needs_start_row + i, column=hUba1_needs_start_col + 1).value = '=C3*C8/1000'
+        # For 'MW (Da)' row, insert value from masses['hUba1']
+        elif label == 'MW (Da)':
+            ws_prep.cell(row=hUba1_needs_start_row + i, column=hUba1_needs_start_col + 1).value = masses['hUba1']
+        # For 'Mass (mg)' row, insert formula: =ROUND(C9*C10/1E6, 3)
+        elif label == 'Mass (mg)':
+            ws_prep.cell(row=hUba1_needs_start_row + i, column=hUba1_needs_start_col + 1).value = '=ROUND(C9*C10/1E6, 3)'
+        else:
+            ws_prep.cell(row=hUba1_needs_start_row + i, column=hUba1_needs_start_col + 1).value = ''
         ws_prep.cell(row=hUba1_needs_start_row + i, column=hUba1_needs_start_col + 1).alignment = Alignment(horizontal='center', vertical='center')
     # Draw a border around the hUba1 needs box (B7:C10) and underline under the top row (B7:C7)
     from openpyxl.styles import Border, Side
     border_side = Side(border_style="medium")
     underline_side = Side(border_style="medium")
-    for row in range(hUba1_needs_start_row, hUba1_needs_start_row + 4):
+    for row in range(hUba1_needs_start_row, hUba1_needs_start_row + 5):
         for col in range(hUba1_needs_start_col, hUba1_needs_start_col + 2):
             cell = ws_prep.cell(row=row, column=col)
             border_args = {}
             if row == hUba1_needs_start_row:
                 border_args['top'] = border_side
                 border_args['bottom'] = underline_side  # underline under top row
-            if row == hUba1_needs_start_row + 3:
+            if row == hUba1_needs_start_row + 4:
                 border_args['bottom'] = border_side
             if col == hUba1_needs_start_col:
                 border_args['left'] = border_side
@@ -502,8 +517,8 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
         Create the Base Reagent Prep table for a given reagent at the specified top-left cell (row, col).
         """
         prep_headers = [
-            'Component',
-            'Component Volume (uL)',
+            'Base Reagent',
+            'Total Volume (uL)',
             'Amount Needed (nmol)'
         ]
         from openpyxl.styles import Border, Side, Font, Alignment
@@ -528,11 +543,11 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
         for comp_row in range(2, ws_comp.max_row+1):
             comp_name = ws_comp.cell(row=comp_row, column=1).value
             if comp_name == reagent:
-                ws_prep.cell(row=top_left_row, column=top_left_col+1).value = f"='Component Counts'!A{comp_row}"
+                ws_prep.cell(row=top_left_row, column=top_left_col+1).value = f"='Base Reagent Counts'!A{comp_row}"
                 ws_prep.cell(row=top_left_row, column=top_left_col+1).alignment = Alignment(horizontal='center', vertical='center')
                 ws_prep.cell(row=top_left_row, column=top_left_col+1).font = Font(bold=True)
-                ws_prep.cell(row=top_left_row+1, column=top_left_col+1).value = f"='Component Counts'!D{comp_row}"
-                ws_prep.cell(row=top_left_row+2, column=top_left_col+1).value = f"='Component Counts'!F{comp_row}"
+                ws_prep.cell(row=top_left_row+1, column=top_left_col+1).value = f"='Base Reagent Counts'!D{comp_row}"
+                ws_prep.cell(row=top_left_row+2, column=top_left_col+1).value = f"='Base Reagent Counts'!F{comp_row}"
                 found = True
                 break
         if not found:
@@ -641,7 +656,7 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
         ws_prep.cell(row=hepes_row, column=extra_col).value = 'HEPES buffer'
         ws_prep.cell(row=hepes_row, column=extra_col+1).value = ''
         # Build formula for HEPES buffer volume
-        # Component volume cell
+        # Base Reagent volume cell
         comp_vol_cell = ws_prep.cell(row=top_left_row+1, column=top_left_col+1).coordinate
         # Collect all other volume cells in both tables
         volume_cells = []
