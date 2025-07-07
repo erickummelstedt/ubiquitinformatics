@@ -32,20 +32,15 @@ Working in functions_implement_in_fast_api
     - DONE Build final cal sheet based on conc. and volume in inventory
     - DONE Enyzme solution has Uba1 + TCEP 
     - DONE Donors has ATP + TCEP 
-
-
 - DONE Add in mass needed for each enzyme 
 - DONE Remove total volume for enzyme and donors
-
-
-- Add in calculations for uba1
-- pmol needed 
-- mass needed
-- Total volume
-
-
+- DONE Add in calculations for uba1
+- DONE pmol needed 
+- DONE mass needed
+- DONE Total volume
 
 - Add in acceptors
+- Add how they are made
 
 2. 
 - Build OT_flex_file from reaction
@@ -53,8 +48,6 @@ Working in functions_implement_in_fast_api
 
 - FINISH by morning..
 - Connect to the file generation this afternoon
-
-
 
 3. 
 - Build Reaction_Sequences list

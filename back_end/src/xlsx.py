@@ -99,6 +99,7 @@ enzymes_donors_96_counts = count_nonzero_values(enzymes_donors_96)
 deprots_96_counts = count_nonzero_values(deprots_96)
 acceptors_96_counts = count_nonzero_values(acceptors_96)
 
+
 from collections import defaultdict
 
 def count_mixture_and_components(e_d_encoded_dict, count_dict, component_list):
@@ -739,8 +740,77 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
     ws_prep.column_dimensions['K'].width = 28
     wb.save(filename)
 
-create_combined_xlsx(mixture_counts, component_counts, 'mixture_and_component_counts.xlsx', all_components=components, e_d_encoded_dictionary=e_d_encoded_dictionary)
+    # --- New: Add Acceptor Counts worksheet if acceptors_96_counts is provided ---
+    def add_acceptor_counts_sheet(wb, acceptors_96_counts):
+        """
+        Add a worksheet displaying acceptor counts (acceptors_96_counts dict) to the workbook.
+        Also display dimer_encoded_dictionary as a table using pandas, starting at D2.
+        """
+        ws_acceptor = wb.create_sheet('Acceptor Counts')
+        
+        column_start = 2  # Start at column B
 
+        # --- Display merged dimer_encoded_dictionary and acceptors_96_counts as a table using pandas, starting at D2 ---
+        if 'dimer_encoded_dictionary' in globals() and dimer_encoded_dictionary and acceptors_96_counts:
+            import pandas as pd
+            # dimer_encoded_dictionary: {encoded_value: dimer_key}
+            # acceptors_96_counts: {encoded_value: count}
+            merged = []
+            for dimer_name, encoded_value in dimer_encoded_dictionary.items():
+                count = acceptors_96_counts.get(encoded_value, 0)
+                merged.append({'Encoded Value': encoded_value, 'Acceptor': dimer_name, 'Count': count})
+            merged_df = pd.DataFrame(merged, columns=['Encoded Value', 'Acceptor', 'Count'])
+            # Write headers
+            for col_idx, col_name in enumerate(merged_df.columns, start=column_start):
+                ws_acceptor.cell(row=2, column=col_idx).value = col_name
+                ws_acceptor.cell(row=2, column=col_idx).font = header_font
+                ws_acceptor.cell(row=2, column=col_idx).alignment = Alignment(horizontal='center', vertical='center')
+            # Write data
+            for row_idx, row in enumerate(merged_df.itertuples(index=False), start=3):
+                for col_idx, value in enumerate(row, start=column_start):
+                    ws_acceptor.cell(row=row_idx, column=col_idx).value = value
+                    ws_acceptor.cell(row=row_idx, column=col_idx).alignment = Alignment(horizontal='center', vertical='center')
+
+
+        acceptor_description_dict = [
+            {"No.": "Ub₂ᴬ 9", "linkage": "K48", "proximal Ub K48": "-", "proximal Ub K63": "K", "distal Ub K48": "Smac", "distal Ub K63": "Aboc"},
+            {"No.": "Ub₂ᴬ 10", "linkage": "K48", "proximal Ub K48": "-", "proximal Ub K63": "K", "distal Ub K48": "Aboc", "distal Ub K63": "Smac"},
+            {"No.": "Ub₂ᴬ 11", "linkage": "K48", "proximal Ub K48": "-", "proximal Ub K63": "K", "distal Ub K48": "Aboc", "distal Ub K63": "-"},
+            {"No.": "Ub₂ᴬ 12", "linkage": "K48", "proximal Ub K48": "-", "proximal Ub K63": "Aboc", "distal Ub K48": "Smac", "distal Ub K63": "K"},
+            {"No.": "Ub₂ᴬ 13", "linkage": "K48", "proximal Ub K48": "-", "proximal Ub K63": "Aboc", "distal Ub K48": "Smac", "distal Ub K63": "-"},
+            {"No.": "Ub₂ᴬ 14", "linkage": "K48", "proximal Ub K48": "-", "proximal Ub K63": "Aboc", "distal Ub K48": "Aboc", "distal Ub K63": "-"},
+            {"No.": "Ub₂ᴬ 15", "linkage": "K63", "proximal Ub K48": "K", "proximal Ub K63": "-", "distal Ub K48": "Smac", "distal Ub K63": "Aboc"},
+            {"No.": "Ub₂ᴬ 16", "linkage": "K63", "proximal Ub K48": "K", "proximal Ub K63": "-", "distal Ub K48": "Aboc", "distal Ub K63": "Smac"},
+            {"No.": "Ub₂ᴬ 17", "linkage": "K63", "proximal Ub K48": "K", "proximal Ub K63": "-", "distal Ub K48": "Aboc", "distal Ub K63": "-"},
+            {"No.": "Ub₂ᴬ 18", "linkage": "K63", "proximal Ub K48": "Aboc", "proximal Ub K63": "-", "distal Ub K48": "K", "distal Ub K63": "-"},
+            {"No.": "Ub₂ᴬ 19", "linkage": "K63", "proximal Ub K48": "Aboc", "proximal Ub K63": "-", "distal Ub K48": "Smac", "distal Ub K63": "-"},
+            {"No.": "Ub₂ᴬ 20", "linkage": "K63", "proximal Ub K48": "Aboc", "proximal Ub K63": "-", "distal Ub K48": "Aboc", "distal Ub K63": "Smac"},
+        ]
+
+        # Create a DataFrame for acceptor descriptions
+        acceptor_df = pd.DataFrame(acceptor_description_dict)
+        # Assume ws is your openpyxl worksheet, df is your pandas DataFrame
+        start_row = 2  # Row 2
+        start_col = 6  # Column F
+
+        # Write headers
+        for col_idx, col_name in enumerate(acceptor_df.columns, start=start_col):
+            ws_acceptor.cell(row=start_row, column=col_idx).value = col_name
+
+        # Write data
+        for row_idx, row in enumerate(acceptor_df.itertuples(index=False), start=start_row + 1):
+            for col_idx, value in enumerate(row, start=start_col):
+                ws_acceptor.cell(row=row_idx, column=col_idx).value = value
+
+        print(dimer_encoded_dictionary)
+        print(acceptors_96_counts)
+
+    # At the end of create_combined_xlsx, add acceptor counts sheet if provided
+    if 'acceptors_96_counts' in globals() and acceptors_96_counts:
+        add_acceptor_counts_sheet(wb, acceptors_96_counts)
+    wb.save(filename)
+
+create_combined_xlsx(mixture_counts, component_counts, 'mixture_and_component_counts.xlsx', all_components=components, e_d_encoded_dictionary=e_d_encoded_dictionary)
 
 # ============================================================
 # Close Excel file and open it
