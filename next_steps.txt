@@ -27,17 +27,34 @@ DONE - Integrate reaction map work with fast_api
 Working in functions_implement_in_fast_api
 
 1.
-- Build inventory from the ubiquitins chosen - LONG
-- Integrate .xlsx generation with fast_api 
-    - Build final cal sheet based on conc. and volume in inventory
-    - Enyzme solution has Uba1 + TCEP 
-    - Donors has ATP + TCEP 
+- DONE Build inventory from the ubiquitins chosen - LONG
+- DONE Integrate .xlsx generation with fast_api 
+    - DONE Build final cal sheet based on conc. and volume in inventory
+    - DONE Enyzme solution has Uba1 + TCEP 
+    - DONE Donors has ATP + TCEP 
 
-    - Add in function for 
+
+- DONE Add in mass needed for each enzyme 
+- DONE Remove total volume for enzyme and donors
+
+
+- Add in calculations for uba1
+- pmol needed 
+- mass needed
+- Total volume
+
+
+
+- Add in acceptors
 
 2. 
 - Build OT_flex_file from reaction
 - Integrate OT_flex_file generation with fast_api 
+
+- FINISH by morning..
+- Connect to the file generation this afternoon
+
+
 
 3. 
 - Build Reaction_Sequences list
