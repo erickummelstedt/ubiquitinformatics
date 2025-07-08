@@ -100,6 +100,7 @@ deprots_96_counts = count_nonzero_values(deprots_96)
 acceptors_96_counts = count_nonzero_values(acceptors_96)
 
 
+
 from collections import defaultdict
 
 def count_mixture_and_components(e_d_encoded_dict, count_dict, component_list):
@@ -183,20 +184,48 @@ masses = {
     'ubi_ubq_1_K63_SMAC': 8733.00, # in Da
 }
 
+# Define acceptor description dictionary
+acceptor_description_dict = [
+    {"No.": "Ub₂ᴬ 9", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "K", "Distal Ub K48": "Smac", "Distal Ub K63": "Aboc", "MW (Da)": 18372},
+    {"No.": "Ub₂ᴬ 10", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "K", "Distal Ub K48": "Aboc", "Distal Ub K63": "Smac", "MW (Da)": 18372},
+    {"No.": "Ub₂ᴬ 11", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "K", "Distal Ub K48": "Aboc", "Distal Ub K63": "-", "MW (Da)": 18360},
+    {"No.": "Ub₂ᴬ 12", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "Aboc", "Distal Ub K48": "Smac", "Distal Ub K63": "K", "MW (Da)": 18372},
+    {"No.": "Ub₂ᴬ 13", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "Aboc", "Distal Ub K48": "Smac", "Distal Ub K63": "-", "MW (Da)": 18504},
+    {"No.": "Ub₂ᴬ 14", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "Aboc", "Distal Ub K48": "Aboc", "Distal Ub K63": "-", "MW (Da)": 18504},
+    {"No.": "Ub₂ᴬ 15", "Dimer Linkage": "K63", "Proximal Ub K48": "K", "Proximal Ub K63": "-", "Distal Ub K48": "Smac", "Distal Ub K63": "Aboc", "MW (Da)": 18372},
+    {"No.": "Ub₂ᴬ 16", "Dimer Linkage": "K63", "Proximal Ub K48": "K", "Proximal Ub K63": "-", "Distal Ub K48": "Aboc", "Distal Ub K63": "Smac", "MW (Da)": 18372},
+    {"No.": "Ub₂ᴬ 17", "Dimer Linkage": "K63", "Proximal Ub K48": "K", "Proximal Ub K63": "-", "Distal Ub K48": "Aboc", "Distal Ub K63": "-", "MW (Da)": 18360},
+    {"No.": "Ub₂ᴬ 18", "Dimer Linkage": "K63", "Proximal Ub K48": "Aboc", "Proximal Ub K63": "-", "Distal Ub K48": "K", "Distal Ub K63": "-", "MW (Da)": 18372},
+    {"No.": "Ub₂ᴬ 19", "Dimer Linkage": "K63", "Proximal Ub K48": "Aboc", "Proximal Ub K63": "-", "Distal Ub K48": "Smac", "Distal Ub K63": "-", "MW (Da)": 18504},
+    {"No.": "Ub₂ᴬ 20", "Dimer Linkage": "K63", "Proximal Ub K48": "Aboc", "Proximal Ub K63": "-", "Distal Ub K48": "Aboc", "Distal Ub K63": "Smac", "MW (Da)": 18504},
+]
+
+# prep_headers change depending on the regent
+prep_header_dict = {
+    'Ubc13/Mms2' : 'Enzyme',
+    'gp78/Ube2g2' : 'Enzyme',
+    'Ube2K' : 'Enzyme',
+    'ubi_ubq_1_K48_ABOC_K63_ABOC' : 'Donor: Ubᴰ 5',
+    'ubi_ubq_1_K48_SMAC_K63_ABOC' : 'Donor: Ubᴰ 2',
+    'ubi_ubq_1_K48_ABOC_K63_SMAC' : 'Donor: Ubᴰ 4',
+    'ubi_ubq_1_K48_SMAC' : 'Donor: Ubᴰ 1',
+    'ubi_ubq_1_K63_SMAC' : 'Donor: Ubᴰ 3',
+}
+
 mixture_counts, component_counts, mixture_code_map = count_mixture_and_components(
     e_d_encoded_dictionary, enzymes_donors_96_counts, components)
 
 
 # Create Excel output file combining mixture_counts and component_counts
-def create_combined_xlsx(mixture_counts, component_counts, filename, all_components=None, e_d_encoded_dictionary=None):
+def create_combined_xlsx_bytes(mixture_counts, component_counts, filename, all_components=None, e_d_encoded_dictionary=None):
+    
     """
-
     Create an Excel file with two sheets: one for mixture_counts and one for component_counts.
     Ensures all components from all_components are present in the component sheet (with 0 if missing).
     Includes mixture codes in the mixture sheet if provided.
     Adds a sum row at the bottom of the mixture counts.
-    
     """
+    
     # Mixed Reagents DataFrame
     mixture_data = []
     for index, (mixture, count) in enumerate(mixture_counts.items()):
@@ -209,65 +238,95 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
     mixture_df = pd.concat([mixture_df, pd.DataFrame([sum_row])], ignore_index=True)
     # Add Excel formula for 'Donor + Enzyme Volume (uL)' column
     from openpyxl import load_workbook
-    with pd.ExcelWriter(filename, engine='openpyxl') as writer:
-        mixture_df.to_excel(writer, sheet_name='Mixed Reagents Counts', index=False)
+    
+    # Start column index for the mixture sheet
+    start_column_index = 1  # Start from the second column (B) (0-indexed, so 1 is column B)
+    start_row_index = 1  # Start from the second row (0-indexed, so 1 is row 2)
+    start_row = start_row_index + 1
+
+    from io import BytesIO
+    output = BytesIO()
+    # Create the Excel file with pandas
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        mixture_df.to_excel(writer, sheet_name='Mixed Reagents Counts', index=False, startcol=start_column_index, startrow=start_row_index)
         # Write the component sheet as before
         if all_components is not None:
             comp_data = [(comp, component_counts.get(comp, 0)) for comp in all_components]
             component_df = pd.DataFrame(comp_data, columns=['Base Reagent', 'Count'])
         else:
             component_df = pd.DataFrame(list(component_counts.items()), columns=['Base Reagent', 'Count'])
-        component_df.to_excel(writer, sheet_name='Base Reagent Counts', index=False)
-    # Add the formula column after writing with pandas
-    wb = load_workbook(filename)
+        component_df.to_excel(writer, sheet_name='Base Reagent Counts', index=False, startcol=start_column_index, startrow=start_row_index)
+
+    # Now load the workbook from the BytesIO buffer
+    output.seek(0)
+    wb = load_workbook(output)
     ws = wb['Mixed Reagents Counts']
+
     # Insert new column for 'Donor + Enzyme Volume (uL)\n(Count * Reaction Volume (uL) * 1.1)' after 'Reaction Volume (uL)'
-    insert_at = 5  # After 4th column (A-D: Mix, Id, Count, Reaction Vol)
+    insert_at = len(mixture_df.columns) + start_column_index + 1 # After 4th column (A-D: Mix, Id, Count, Reaction Vol)
     ws.insert_cols(insert_at)
-    ws.cell(row=1, column=insert_at).value = 'Donor + Enzyme Volume (uL)\n(Count * Reaction Volume (uL) * 1.1)'
+    ws.cell(row=start_row, column=insert_at).value = 'Donor + Enzyme Volume (uL)\n(Count * Reaction Volume (uL) * 1.1)'
+    
+    # Get 'Reaction Volume (uL)' and 'Count' column indexes
+    reaction_vol_col_idx = start_column_index + 4  # Assuming 'Reaction Volume (uL)' is the 4th column (D)   
+    count_col_idx = start_column_index + 3  # Assuming 'Count' is the 3rd column (C) 
+
     # Add formula for each row except the sum row
-    for row in range(2, ws.max_row):
-        count_cell = ws.cell(row=row, column=3).coordinate  # 'Count' column
-        reaction_vol_cell = ws.cell(row=row, column=4).coordinate  # 'Reaction Volume (uL)' column
+    for row in range(start_row + 1, ws.max_row):
+        count_cell = ws.cell(row=row, column=reaction_vol_col_idx).coordinate  # 'Count' column
+        reaction_vol_cell = ws.cell(row=row, column=count_col_idx).coordinate  # 'Reaction Volume (uL)' column
         formula = f"={count_cell}*{reaction_vol_cell}*1.1"
         ws.cell(row=row, column=insert_at).value = formula
     # --- Add new columns for Donor, Donor Volume (uL), Enzyme, Enzyme Volume (uL) as Excel formulas ---
     # Insert Donor and Enzyme columns after 'Donor + Enzyme Volume (uL)\n(Count * Reaction Volume (uL) * 1.1)'
     donor_col = insert_at + 1
-    enzyme_col = insert_at + 3
-    ws.insert_cols(donor_col, amount=4)
-    ws.cell(row=1, column=donor_col).value = 'Donor'
-    ws.cell(row=1, column=donor_col+1).value = 'Donor Volume (uL)'
-    ws.cell(row=1, column=enzyme_col).value = 'Enzyme'
-    ws.cell(row=1, column=enzyme_col+1).value = 'Enzyme Volume (uL)'
+    donor_id_col = donor_col + 1
+    donor_vol_col = donor_id_col + 1
+    enzyme_col = donor_vol_col + 1
+    enzyme_vol_col = enzyme_col + 1
+
+    # Insert columns for Donor, Donor Id, Donor Volume, Enzyme, Enzyme Volume
+    ws.insert_cols(donor_col, amount=enzyme_vol_col-insert_at)  # Insert 5 columns for Donor, Donor Id, Donor Volume, Enzyme, Enzyme Volume
+    ws.cell(row=start_row, column=donor_col).value = 'Donor'    
+    ws.cell(row=start_row, column=donor_id_col).value = 'Donor Id'
+    ws.cell(row=start_row, column=donor_vol_col).value = 'Donor Volume (uL)'
+    ws.cell(row=start_row, column=enzyme_col).value = 'Enzyme'
+    ws.cell(row=start_row, column=enzyme_vol_col).value = 'Enzyme Volume (uL)'
+
     # Fill Donor and Enzyme columns by parsing the tuple string
     import ast
-    for row in range(2, ws.max_row):
-        mix_val = ws.cell(row=row, column=1).value
+    for row in range(start_row + 1, ws.max_row):
+        mix_val = ws.cell(row=row, column=start_column_index+1).value
         try:
             t = ast.literal_eval(mix_val) if isinstance(mix_val, str) and mix_val.startswith('(') else ('','')
             donor, enzyme = t if isinstance(t, tuple) and len(t) == 2 else ('','')
         except Exception:
             donor, enzyme = '', ''
         ws.cell(row=row, column=donor_col).value = donor
+        # Set the donor ID based on the donor name
+        ws.cell(row=row, column=donor_id_col).value = prep_header_dict.get(donor)
         ws.cell(row=row, column=enzyme_col).value = enzyme
         # Set Excel formulas for volumes: (Count * Reaction Volume (uL) * 1.1) / 2
-        count_cell = ws.cell(row=row, column=3).coordinate
-        reaction_vol_cell = ws.cell(row=row, column=4).coordinate
-        ws.cell(row=row, column=donor_col+1).value = f"=({count_cell}*{reaction_vol_cell}*1.1)/2"
-        ws.cell(row=row, column=enzyme_col+1).value = f"=({count_cell}*{reaction_vol_cell}*1.1)/2"
+        count_cell = ws.cell(row=row, column=count_col_idx).coordinate
+        reaction_vol_cell = ws.cell(row=row, column=reaction_vol_col_idx).coordinate
+        # Set formulas for Donor Volume and Enzyme Volume
+        ws.cell(row=row, column=donor_vol_col).value = f"=({count_cell}*{reaction_vol_cell}*1.1)/2"
+        ws.cell(row=row, column=enzyme_vol_col).value = f"=({count_cell}*{reaction_vol_cell}*1.1)/2"
+    
     # Update header formatting and auto-fit for all columns (including new ones)
     from openpyxl.styles import Font, Border, Side, Alignment
     header_font = Font(bold=True)
-    border = Border(bottom=Side(border_style="thin"), left=Side(border_style="thin"), right=Side(border_style="thin"), top=Side(border_style="thin"))
-    for col in range(1, ws.max_column + 1):
-        cell = ws.cell(row=1, column=col)
+    border = Border(bottom=Side(border_style="medium"))#, left=Side(border_style="thin"), right=Side(border_style="thin"), top=Side(border_style="thin"))
+    for col in range(start_column_index + 1, ws.max_column + 1):
+        cell = ws.cell(row=start_row, column=col)
         cell.font = header_font
         cell.border = border
         cell.alignment = Alignment(wrap_text=True, horizontal='center', vertical='center')
     # Auto-fit all columns to the width of their titles or widest value, accounting for wrapping
-    for col in ws.columns:
-        header_cell = col[0]
+    for index, col in enumerate(ws.columns):
+        if index < start_column_index:
+            continue # Skip the columns before the start_column_index
+        header_cell = col[start_column_index]  # Header cell is the first row in the column
         col_letter = header_cell.column_letter
         if header_cell.value == 'Mass Required (mg)\n(MW (Da) * Amount Needed (nmol) / 1000)':
             ws.column_dimensions[col_letter].width = 10  # Set a tighter width for this column
@@ -277,7 +336,7 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
             max_length = max(len(line) for line in lines)
         else:
             max_length = len(str(header_cell.value)) if header_cell.value is not None else 0
-        for cell in col[1:]:
+        for cell in col[start_column_index+1:]:
             cell_length = len(str(cell.value)) if cell.value is not None else 0
             if cell_length > max_length:
                 max_length = cell_length
@@ -288,17 +347,17 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
     green_fill = PatternFill(start_color="CCFFCC", end_color="CCFFCC", fill_type="solid")
     # Get column indices for the specified columns (excluding 'Donor + Enzyme Mix')
     col_names = [
-        'Donor + Enzyme Id', 'Donor', 'Donor Volume (uL)', 'Enzyme', 'Enzyme Volume (uL)'
+        'Donor + Enzyme Id', 'Donor', 'Donor Id','Donor Volume (uL)', 'Enzyme', 'Enzyme Volume (uL)'
     ]
     col_indices = {}
-    for col in range(1, ws.max_column + 1):
-        header = ws.cell(row=1, column=col).value
+    for col in range(start_column_index + 1, ws.max_column + 1):
+        header = ws.cell(row=start_row, column=col).value
         if header in col_names:
             col_indices[header] = col
     # Highlight rows where 'Count' (col 3) is nonzero and not the sum row
-    for row in range(2, ws.max_row+1):
-        count_val = ws.cell(row=row, column=3).value
-        first_col_val = ws.cell(row=row, column=1).value
+    for row in range(start_row+1, ws.max_row+1):
+        count_val = ws.cell(row=row, column=count_col_idx).value
+        first_col_val = ws.cell(row=row, column=start_column_index+1).value
         try:
             is_nonzero = float(count_val) != 0
         except Exception:
@@ -311,56 +370,83 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
                     cell = ws.cell(row=row, column=col)
                     cell.fill = green_fill
                     cell.font = Font(bold=True)  # Make highlighted cell bold
+    
+    count_idx = 2
+    donor_idx = 3
+    reaction_vol_idx = donor_idx + 1
+    total_vol_idx = reaction_vol_idx + 1
+    final_conc_idx = total_vol_idx + 1
+    amount_needed_idx = final_conc_idx + 1
+    mw_idx = amount_needed_idx + 1
+    mass_required_idx = mw_idx + 1
+
     # Format Base Reagent Counts sheet
     ws_comp = wb['Base Reagent Counts']
-    # Insert 'Reaction Volume (uL)' column after 'Count'
-    ws_comp.insert_cols(3)
-    ws_comp.cell(row=1, column=3).value = 'Reaction Volume (uL)'
+
+    # Insert 'Donor ID' column after Counts
+    ws_comp.insert_cols(start_column_index + donor_idx)  # Insert after 'Count' (which is now at col 2)
+    ws_comp.cell(row=start_row_index + 1, column=start_column_index + donor_idx).value = 'Donor Id'
+    # Insert 'Reaction Volume (uL)' column after 'Donor Id'
+    ws_comp.insert_cols(start_column_index + reaction_vol_idx)  # Insert after 'Count' (which is now at col 2)
+    ws_comp.cell(row=start_row_index + 1, column=start_column_index + reaction_vol_idx).value = 'Reaction Volume (uL)'
     # Insert 'Total Volume (uL)\n(Count * Reaction Volume (uL) * 1.1 / 2)' after 'Reaction Volume (uL)'
-    ws_comp.insert_cols(4)
-    ws_comp.cell(row=1, column=4).value = 'Total Volume (uL)\n(Count * Reaction Volume (uL) * 1.1 / 2)'
+    ws_comp.insert_cols(start_column_index + total_vol_idx)
+    ws_comp.cell(row=start_row_index + 1, column=start_column_index + total_vol_idx).value = 'Total Volume (uL)\n(Count * Reaction Volume (uL) * 1.1 / 2)'
     # Insert 'Final Concentration (uM)' after 'Total Volume (uL)...'
-    ws_comp.insert_cols(5)
-    ws_comp.cell(row=1, column=5).value = 'Final Concentration (uM)'
+    ws_comp.insert_cols(start_column_index + final_conc_idx)
+    ws_comp.cell(row=start_row_index + 1, column=start_column_index + final_conc_idx).value = 'Final Concentration (uM)'
     # Insert 'Amount Needed (nmol)\n(Count * Reaction Volume (uL)\n* Final Concentration (uM) * 1.1 / 1000)' after Final Concentration
-    ws_comp.insert_cols(6)
-    ws_comp.cell(row=1, column=6).value = 'Amount Needed (nmol)\n(Count * Reaction Volume (uL)\n* Final Concentration (uM) * 1.1 / 1000)'
+    ws_comp.insert_cols(start_column_index + amount_needed_idx)
+    ws_comp.cell(row=start_row_index + 1, column=start_column_index + amount_needed_idx).value = 'Amount Needed (nmol)\n(Count * Reaction Volume (uL)\n* Final Concentration (uM) * 1.1 / 1000)'
     # Insert 'MW (Da)' as the last column
-    ws_comp.insert_cols(7)
-    ws_comp.cell(row=1, column=7).value = 'MW (Da)'
+    ws_comp.insert_cols(start_column_index + mw_idx)
+    ws_comp.cell(row=start_row_index + 1, column=start_column_index + mw_idx).value = 'MW (Da)'
     # Insert 'Mass Required (ug)' as the next column
-    ws_comp.insert_cols(8)
-    ws_comp.cell(row=1, column=8).value = 'Mass Required (mg)\n(MW (Da) * Amount Needed (nmol) / 1000)'
+    ws_comp.insert_cols(start_column_index + mass_required_idx)
+    ws_comp.cell(row=start_row_index + 1, column=start_column_index + mass_required_idx).value = 'Mass Required (mg)\n(MW (Da) * Amount Needed (nmol) / 1000)'
     # Set values for all rows except header
-    for row in range(2, ws_comp.max_row+1):
-        comp = ws_comp.cell(row=row, column=1).value
+    for row in range(start_row+1, ws_comp.max_row+1):
+        comp = ws_comp.cell(row=row, column=start_column_index + 1).value
+        # Set the 'Donor' and 'Donor Id' based on the component
+        reagent = ws_comp.cell(row=row, column=start_column_index + donor_idx - 2).value
+        reagent_id = prep_header_dict.get(reagent)
+        cleaned_id = reagent_id.replace("Enzyme", "").replace("Donor: ", "").strip()
+        ws_comp.cell(row=row, column=start_column_index + donor_idx).value = cleaned_id
+        # Set the 'Reaction Volume (uL)' based on the default final concentrations
         reaction_volume = default_final_concentrations.get('Reaction Volume [uL]', 200)
-        ws_comp.cell(row=row, column=3).value = reaction_volume
-        count_cell = ws_comp.cell(row=row, column=2).coordinate  # 'Count' now at col 2
-        reaction_vol_cell = ws_comp.cell(row=row, column=3).coordinate  # 'Reaction Volume (uL)' now at col 3
-        ws_comp.cell(row=row, column=4).value = f"=({count_cell}*{reaction_vol_cell}*1.1)/2"
-        final_conc_cell = ws_comp.cell(row=row, column=5).coordinate
-        ws_comp.cell(row=row, column=6).value = f"=({count_cell}*{reaction_vol_cell}*{final_conc_cell}*1.1/1000)"
-        ws_comp.cell(row=row, column=5).value = default_final_concentrations.get(comp, '')
+        ws_comp.cell(row=row, column=start_column_index + reaction_vol_idx).value = reaction_volume
+        # Set the 'Count' value
+        count_cell = ws_comp.cell(row=row, column=start_column_index + count_idx).coordinate  # 'Count' now at col 2
+        reaction_vol_cell = ws_comp.cell(row=row, column=start_column_index + reaction_vol_idx).coordinate  # 'Reaction Volume (uL)' now at col 3
+        # Set Total Volume (uL) as Excel formula: (Count * Reaction Volume (uL) * 1.1) / 2
+        ws_comp.cell(row=row, column=start_column_index + total_vol_idx).value = f"=({count_cell}*{reaction_vol_cell}*1.1)/2"
+        final_conc_cell = ws_comp.cell(row=row, column=start_column_index + final_conc_idx).coordinate
+        # Set Final Concentration (uM) based on the default final concentrations
+        ws_comp.cell(row=row, column=start_column_index + amount_needed_idx).value = f"=({count_cell}*{reaction_vol_cell}*{final_conc_cell}*1.1/1000)"
+        ws_comp.cell(row=row, column=start_column_index + final_conc_idx).value = default_final_concentrations.get(comp, '')
         # Set mass value in the last column
-        ws_comp.cell(row=row, column=7).value = masses.get(comp, '')
+        ws_comp.cell(row=row, column=start_column_index + mw_idx).value = masses.get(comp, '')
         # Set Mass Required (ug) as Excel formula: (MW (Da) * Amount Needed (nmol)) / 1,000,000, rounded to 3 decimals
-        mass_cell = ws_comp.cell(row=row, column=7).coordinate
-        amount_needed_cell = ws_comp.cell(row=row, column=6).coordinate
-        ws_comp.cell(row=row, column=8).value = f"=IF(AND(ISNUMBER({mass_cell}),ISNUMBER({amount_needed_cell})),ROUND({mass_cell}*{amount_needed_cell}/1000000,3),"")"
+        mass_cell = ws_comp.cell(row=row, column=start_column_index + mw_idx).coordinate
+        amount_needed_cell = ws_comp.cell(row=row, column=start_column_index + amount_needed_idx).coordinate
+        ws_comp.cell(row=row, column=start_column_index + mass_required_idx).value = f"=IF(AND(ISNUMBER({mass_cell}),ISNUMBER({amount_needed_cell})),ROUND({mass_cell}*{amount_needed_cell}/1000000,3),"")"
     # Header formatting: bold, centered, bordered, wrap text
     from openpyxl.styles import Font, Border, Side, Alignment
     header_font = Font(bold=True)
-    border = Border(bottom=Side(border_style="thin"), left=Side(border_style="thin"), right=Side(border_style="thin"), top=Side(border_style="thin"))
-    for col in range(1, ws_comp.max_column + 1):
-        cell = ws_comp.cell(row=1, column=col)
+    border = Border(bottom=Side(border_style="medium")) # if you want more borders insert here, left=Side(border_style="thin"), right=Side(border_style="thin"), top=Side(border_style="thin"))
+    for col in range(start_column_index + 1, ws_comp.max_column + 1):
+        cell = ws_comp.cell(row=start_row_index + 1, column=col)
         cell.font = header_font
         cell.border = border
         cell.alignment = Alignment(wrap_text=True, horizontal='center', vertical='center')
     # Auto-fit all columns to the width of their titles or widest value
-    for col in ws_comp.columns:
-        header_cell = col[0]
+    # Auto-fit all columns to the width of their titles or widest value, accounting for wrapping
+    for index, col in enumerate(ws_comp.columns):
+        if index < start_column_index:
+            continue # Skip the columns before the start_column_index
+        header_cell = col[start_column_index]
         col_letter = header_cell.column_letter
+        # Special case for 'Mass Required (mg)\n(MW (Da) * Amount Needed (nmol) / 1000)' column
         if header_cell.value == 'Mass Required (mg)\n(MW (Da) * Amount Needed (nmol) / 1000)':
             ws_comp.column_dimensions[col_letter].width = 30  # Set a tighter width for this column
             continue
@@ -369,23 +455,18 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
             max_length = max(len(line) for line in lines)
         else:
             max_length = len(str(header_cell.value)) if header_cell.value is not None else 0
-        for cell in col[1:]:
+        for cell in col[start_column_index + 1:]:
             cell_length = len(str(cell.value)) if cell.value is not None else 0
             if cell_length > max_length:
                 max_length = cell_length
         adjusted_width = max_length + 2
         ws_comp.column_dimensions[col_letter].width = adjusted_width
+
+
+
+
+        
     # --- Create new worksheet for base reagent preparation in the same workbook ---
-    base_reagents = [
-        'Ubc13/Mms2',
-        'gp78/Ube2g2',
-        'Ube2K',
-        'ubi_ubq_1_K48_ABOC_K63_ABOC',
-        'ubi_ubq_1_K48_SMAC_K63_ABOC',
-        'ubi_ubq_1_K48_ABOC_K63_SMAC',
-        'ubi_ubq_1_K48_SMAC',
-        'ubi_ubq_1_K63_SMAC'
-    ]
     # Remove existing 'Base Reagent Prep' sheet if it exists
     if 'Base Reagent Prep' in wb.sheetnames:
         std = wb['Base Reagent Prep']
@@ -517,11 +598,16 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
         """
         Create the Base Reagent Prep table for a given reagent at the specified top-left cell (row, col).
         """
+
+
+        base_reagent = prep_header_dict.get(reagent)
+
         prep_headers = [
-            'Base Reagent',
+            base_reagent,
             'Total Volume (uL)',
             'Amount Needed (nmol)'
         ]
+
         from openpyxl.styles import Border, Side, Font, Alignment
         right_border = Border(right=Side(border_style="thin"))
         # Write headers
@@ -539,16 +625,22 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
         # Remove any old header above (only if row > 1)
         if top_left_row > 1:
             ws_prep.cell(row=top_left_row-1, column=top_left_col+2).value = None
+
         # Write values (formulas) for the reagent
         found = False
         for comp_row in range(2, ws_comp.max_row+1):
-            comp_name = ws_comp.cell(row=comp_row, column=1).value
+            # TODO Here is one of two places where we write the an individual column number
+            # In this case it is column 2, which is the second column in the ws_comp sheet
+            # This is prone to errors if the column order changes
+            comp_name = ws_comp.cell(row=comp_row, column=2).value
             if comp_name == reagent:
-                ws_prep.cell(row=top_left_row, column=top_left_col+1).value = f"='Base Reagent Counts'!A{comp_row}"
+                # Here is the second place where we write the component name - B, E, G - prone to errors
+                # Write the component name in the first column of the prep table
+                ws_prep.cell(row=top_left_row, column=top_left_col+1).value = f"='Base Reagent Counts'!B{comp_row}"
                 ws_prep.cell(row=top_left_row, column=top_left_col+1).alignment = Alignment(horizontal='center', vertical='center')
                 ws_prep.cell(row=top_left_row, column=top_left_col+1).font = Font(bold=True)
-                ws_prep.cell(row=top_left_row+1, column=top_left_col+1).value = f"='Base Reagent Counts'!D{comp_row}"
-                ws_prep.cell(row=top_left_row+2, column=top_left_col+1).value = f"='Base Reagent Counts'!F{comp_row}"
+                ws_prep.cell(row=top_left_row+1, column=top_left_col+1).value = f"='Base Reagent Counts'!F{comp_row}"
+                ws_prep.cell(row=top_left_row+2, column=top_left_col+1).value = f"='Base Reagent Counts'!H{comp_row}"
                 found = True
                 break
         if not found:
@@ -674,7 +766,7 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
         outer_side = Side(border_style="medium")  # less bold than thick
         inner_side = Side(border_style="thin")
 
-        # Add a light bold (medium) border under the title/header row of the component calcualtion table & additional reagents table
+        # Add a light bold (medium) border under the title line of the component calcualtion table & additional reagents table
         for row_num in [top_left_row, add_table_row, add_table_row -1]:
             for j in range(3):
                 cell = ws_prep.cell(row=row_num, column=extra_col + j)
@@ -729,16 +821,15 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
     create_base_reagent_prep_table(ws_prep, ws_comp, 'Ube2K', 38, 5)
 
     # Create the Base Reagent Prep table for the donors
-    create_base_reagent_prep_table(ws_prep, ws_comp, 'ubi_ubq_1_K48_ABOC_K63_ABOC', 2, 10)
-    create_base_reagent_prep_table(ws_prep, ws_comp, 'ubi_ubq_1_K48_SMAC_K63_ABOC', 20, 10)
-    create_base_reagent_prep_table(ws_prep, ws_comp, 'ubi_ubq_1_K48_ABOC_K63_SMAC', 38, 10)
-    create_base_reagent_prep_table(ws_prep, ws_comp, 'ubi_ubq_1_K48_SMAC', 56, 10)
-    create_base_reagent_prep_table(ws_prep, ws_comp, 'ubi_ubq_1_K63_SMAC', 74, 10)
-    wb.save(filename)
+    create_base_reagent_prep_table(ws_prep, ws_comp, 'ubi_ubq_1_K48_ABOC_K63_ABOC', 74, 10) 
+    create_base_reagent_prep_table(ws_prep, ws_comp, 'ubi_ubq_1_K48_SMAC_K63_ABOC', 20, 10)  
+    create_base_reagent_prep_table(ws_prep, ws_comp, 'ubi_ubq_1_K48_ABOC_K63_SMAC', 56, 10) 
+    create_base_reagent_prep_table(ws_prep, ws_comp, 'ubi_ubq_1_K48_SMAC', 2, 10) 
+    create_base_reagent_prep_table(ws_prep, ws_comp, 'ubi_ubq_1_K63_SMAC', 38, 10) 
+    
     # Widen the 11th column (column 'K') of the 'Base Reagent Prep' worksheet for better readability
     ws_prep = wb['Base Reagent Prep']
     ws_prep.column_dimensions['K'].width = 28
-    wb.save(filename)
 
     # --- New: Add Acceptor Counts worksheet if acceptors_96_counts is provided ---
     def add_acceptor_counts_sheet(wb, acceptors_96_counts):
@@ -746,6 +837,8 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
         Add a worksheet displaying acceptor counts (acceptors_96_counts dict) to the workbook.
         Also display dimer_encoded_dictionary as a table using pandas, starting at D2.
         """
+
+        # Check if acceptors_96_counts is provided and not empty
         ws_acceptor = wb.create_sheet('Acceptor Counts')
         
         column_start = 2  # Start at column B
@@ -759,58 +852,106 @@ def create_combined_xlsx(mixture_counts, component_counts, filename, all_compone
             for dimer_name, encoded_value in dimer_encoded_dictionary.items():
                 count = acceptors_96_counts.get(encoded_value, 0)
                 merged.append({'Encoded Value': encoded_value, 'Acceptor': dimer_name, 'Count': count})
-            merged_df = pd.DataFrame(merged, columns=['Encoded Value', 'Acceptor', 'Count'])
-            # Write headers
+
+            # Merge acceptor_description_dict into merged based on Encoded Value <-> No.
+            # Build a lookup from number to description dict
+            desc_by_number = {}
+            for desc in acceptor_description_dict:
+                try:
+                    num = int(desc["No."].split()[-1])
+                    desc_by_number[num] = desc
+                except Exception:
+                    continue
+            for row in merged:
+                encoded_val = row['Encoded Value']
+                desc = desc_by_number.get(encoded_val)
+                if desc:
+                    for k, v in desc.items():
+                        if k != "No." and k not in row:
+                            row[k] = v
+
+            merged_df = pd.DataFrame(merged)
+            # Add 'Acceptor No.' column from acceptor_description_dict if possible
+            acceptor_no_map = {int(desc["No."].split()[-1]): desc["No."] for desc in acceptor_description_dict}
+            merged_df.insert(1, 'Acceptor No.', merged_df['Encoded Value'].map(acceptor_no_map))
+            # Remove the 'Acceptor' column if present
+            if 'Acceptor' in merged_df.columns:
+                merged_df = merged_df.drop(columns='Acceptor')
+            # Move 'Count' column to the end
+            if 'Count' in merged_df.columns:
+                count_col = merged_df.pop('Count')
+                merged_df['Count'] = count_col
+            # Add 'nmol / well' and 'Total nmol' columns after 'Count'
+            nmol_per_well_default = 10
+            if 'Count' in merged_df.columns:
+                count_idx = merged_df.columns.get_loc('Count')
+                merged_df.insert(count_idx + 1, 'nmol / well', nmol_per_well_default)
+                merged_df.insert(count_idx + 2, 'Total nmol', '')  # Placeholder for Excel formula
+            # Add 'Stock Conc. (uM)', 'Volume / well', and 'Total Volume needed' columns at the end
+            stock_conc_default = 20
+            merged_df['Stock Conc. (uM)'] = stock_conc_default
+            merged_df['Volume / well'] = ''  # Placeholder for Excel formula
+            merged_df['Total Volume needed'] = ''  # Placeholder for Excel formula
+
+            # Write headers (including new columns)
             for col_idx, col_name in enumerate(merged_df.columns, start=column_start):
                 ws_acceptor.cell(row=2, column=col_idx).value = col_name
                 ws_acceptor.cell(row=2, column=col_idx).font = header_font
                 ws_acceptor.cell(row=2, column=col_idx).alignment = Alignment(horizontal='center', vertical='center')
-            # Write data
+            # Add a bold line (medium border) under the title line
+            from openpyxl.styles import Border, Side
+            for col_idx in range(column_start, column_start + len(merged_df.columns)):
+                cell = ws_acceptor.cell(row=2, column=col_idx)
+                cell.border = Border(
+                    top=cell.border.top,
+                    left=cell.border.left,
+                    right=cell.border.right,
+                    bottom=Side(border_style="medium")
+                )
+            # Write data and set Excel formulas for new columns
             for row_idx, row in enumerate(merged_df.itertuples(index=False), start=3):
                 for col_idx, value in enumerate(row, start=column_start):
-                    ws_acceptor.cell(row=row_idx, column=col_idx).value = value
+                    col_name = merged_df.columns[col_idx - column_start]
+                    if col_name == 'Total nmol':
+                        count_col_letter = ws_acceptor.cell(row=2, column=col_idx-2).column_letter
+                        nmol_col_letter = ws_acceptor.cell(row=2, column=col_idx-1).column_letter
+                        ws_acceptor.cell(row=row_idx, column=col_idx).value = f"={count_col_letter}{row_idx}*{nmol_col_letter}{row_idx}"
+                    elif col_name == 'Volume / well':
+                        nmol_col_letter = ws_acceptor.cell(row=2, column=col_idx-3).column_letter
+                        stock_col_letter = ws_acceptor.cell(row=2, column=col_idx-1).column_letter
+                        ws_acceptor.cell(row=row_idx, column=col_idx).value = f"=ROUND({nmol_col_letter}{row_idx}/{stock_col_letter}{row_idx}*1000,2)"
+                    elif col_name == 'Total Volume needed':
+                        total_nmol_col_letter = ws_acceptor.cell(row=2, column=col_idx-3).column_letter
+                        stock_col_letter = ws_acceptor.cell(row=2, column=col_idx-2).column_letter
+                        ws_acceptor.cell(row=row_idx, column=col_idx).value = f"=ROUND({total_nmol_col_letter}{row_idx}/{stock_col_letter}{row_idx}*1000,2)"
+                    else:
+                        ws_acceptor.cell(row=row_idx, column=col_idx).value = value
                     ws_acceptor.cell(row=row_idx, column=col_idx).alignment = Alignment(horizontal='center', vertical='center')
-
-
-        acceptor_description_dict = [
-            {"No.": "Ub₂ᴬ 9", "linkage": "K48", "proximal Ub K48": "-", "proximal Ub K63": "K", "distal Ub K48": "Smac", "distal Ub K63": "Aboc"},
-            {"No.": "Ub₂ᴬ 10", "linkage": "K48", "proximal Ub K48": "-", "proximal Ub K63": "K", "distal Ub K48": "Aboc", "distal Ub K63": "Smac"},
-            {"No.": "Ub₂ᴬ 11", "linkage": "K48", "proximal Ub K48": "-", "proximal Ub K63": "K", "distal Ub K48": "Aboc", "distal Ub K63": "-"},
-            {"No.": "Ub₂ᴬ 12", "linkage": "K48", "proximal Ub K48": "-", "proximal Ub K63": "Aboc", "distal Ub K48": "Smac", "distal Ub K63": "K"},
-            {"No.": "Ub₂ᴬ 13", "linkage": "K48", "proximal Ub K48": "-", "proximal Ub K63": "Aboc", "distal Ub K48": "Smac", "distal Ub K63": "-"},
-            {"No.": "Ub₂ᴬ 14", "linkage": "K48", "proximal Ub K48": "-", "proximal Ub K63": "Aboc", "distal Ub K48": "Aboc", "distal Ub K63": "-"},
-            {"No.": "Ub₂ᴬ 15", "linkage": "K63", "proximal Ub K48": "K", "proximal Ub K63": "-", "distal Ub K48": "Smac", "distal Ub K63": "Aboc"},
-            {"No.": "Ub₂ᴬ 16", "linkage": "K63", "proximal Ub K48": "K", "proximal Ub K63": "-", "distal Ub K48": "Aboc", "distal Ub K63": "Smac"},
-            {"No.": "Ub₂ᴬ 17", "linkage": "K63", "proximal Ub K48": "K", "proximal Ub K63": "-", "distal Ub K48": "Aboc", "distal Ub K63": "-"},
-            {"No.": "Ub₂ᴬ 18", "linkage": "K63", "proximal Ub K48": "Aboc", "proximal Ub K63": "-", "distal Ub K48": "K", "distal Ub K63": "-"},
-            {"No.": "Ub₂ᴬ 19", "linkage": "K63", "proximal Ub K48": "Aboc", "proximal Ub K63": "-", "distal Ub K48": "Smac", "distal Ub K63": "-"},
-            {"No.": "Ub₂ᴬ 20", "linkage": "K63", "proximal Ub K48": "Aboc", "proximal Ub K63": "-", "distal Ub K48": "Aboc", "distal Ub K63": "Smac"},
-        ]
-
-        # Create a DataFrame for acceptor descriptions
-        acceptor_df = pd.DataFrame(acceptor_description_dict)
-        # Assume ws is your openpyxl worksheet, df is your pandas DataFrame
-        start_row = 2  # Row 2
-        start_col = 6  # Column F
-
-        # Write headers
-        for col_idx, col_name in enumerate(acceptor_df.columns, start=start_col):
-            ws_acceptor.cell(row=start_row, column=col_idx).value = col_name
-
-        # Write data
-        for row_idx, row in enumerate(acceptor_df.itertuples(index=False), start=start_row + 1):
-            for col_idx, value in enumerate(row, start=start_col):
-                ws_acceptor.cell(row=row_idx, column=col_idx).value = value
-
-        print(dimer_encoded_dictionary)
-        print(acceptors_96_counts)
+            # Auto-fit all columns to the width of their header text
+            for col_idx, col_name in enumerate(merged_df.columns, start=column_start):
+                col_letter = ws_acceptor.cell(row=2, column=col_idx).column_letter
+                header_length = len(str(col_name))
+                ws_acceptor.column_dimensions[col_letter].width = header_length + 2
 
     # At the end of create_combined_xlsx, add acceptor counts sheet if provided
     if 'acceptors_96_counts' in globals() and acceptors_96_counts:
         add_acceptor_counts_sheet(wb, acceptors_96_counts)
-    wb.save(filename)
 
-create_combined_xlsx(mixture_counts, component_counts, 'mixture_and_component_counts.xlsx', all_components=components, e_d_encoded_dictionary=e_d_encoded_dictionary)
+    # When done, save back to BytesIO for FastAPI
+    final_output = BytesIO()
+    wb.save(final_output)
+    final_output.seek(0)
+    
+    return final_output
+
+excel_bytes = create_combined_xlsx_bytes(mixture_counts, component_counts, 'mixture_and_component_counts.xlsx', all_components=components, e_d_encoded_dictionary=e_d_encoded_dictionary)
+
+
+# 
+
+# Suppose 'excel_bytes' is your BytesIO object
+with open("mixture_and_component_counts.xlsx", "wb") as f:
+    f.write(excel_bytes.getbuffer())
 
 # ============================================================
 # Close Excel file and open it

@@ -18,14 +18,11 @@ Features;
             DONE # build this all by the end of the day
     DONE - Save reaction summaries based on number of SMACS
     DONE - carry out final tests
-
 Input the series of ubiquitin numbers
 DONE - Build reaction map work....
 DONE - Combine all the files into 1
 DONE - Integrate reaction map work with fast_api
-
 Working in functions_implement_in_fast_api
-
 1.
 - DONE Build inventory from the ubiquitins chosen - LONG
 - DONE Integrate .xlsx generation with fast_api 
@@ -38,15 +35,30 @@ Working in functions_implement_in_fast_api
 - DONE pmol needed 
 - DONE mass needed
 - DONE Total volume
+- DONE Add in acceptors
+- DONE Change Base Reagent to (Enyzme & Donor)
+- DONE Mixed Reagent Counts
+    - DONE Have everything work off initial column/row
+    - DONE Fix Bordering
+    - DONE Add in Acceptor Donor Labels
+- DONE Base Reagent Counts
+    - DONE - Have everything work off initial column/row (some errors)
+    - DONE - Fix Bordering
+    - DONE Add in Acceptor Donor Labels
+- DONE Base Reagent Counts to Base Reagent Prep 
 
-- Add in acceptors
-- Add how they are made
+- Add in how acceptors are made 
+- Connect into HTML interface
+- Try finish today
+
+- Create testing make sure it works well
+
 
 2. 
 - Build OT_flex_file from reaction
 - Integrate OT_flex_file generation with fast_api 
 
-- FINISH by morning..
+- FINISH tomorrow afternoon morning..
 - Connect to the file generation this afternoon
 
 3. 
@@ -75,7 +87,6 @@ WebApp features;
     - xlsx
     - OT_flex_file
     - Reaction sequences
-    - 
 
 - Maybe dockerfile everything
 
