@@ -632,7 +632,7 @@ def create_combined_xlsx_bytes(mixture_counts, component_counts, filename, all_c
             # TODO Here is one of two places where we write the an individual column number
             # In this case it is column 2, which is the second column in the ws_comp sheet
             # This is prone to errors if the column order changes
-            comp_name = ws_comp.cell(row=comp_row, column=2).value
+            comp_name = ws_comp.cell(row=comp_row, column=start_column_index + 1).value
             if comp_name == reagent:
                 # Here is the second place where we write the component name - B, E, G - prone to errors
                 # Write the component name in the first column of the prep table
