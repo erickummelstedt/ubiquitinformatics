@@ -46,6 +46,7 @@ Working in functions_implement_in_fast_api
     - DONE - Fix Bordering
     - DONE Add in Acceptor Donor Labels
 - DONE Base Reagent Counts to Base Reagent Prep 
+- DONE Fix all indexing issues
 
 - Add in how acceptors are made 
 - Connect into HTML interface
