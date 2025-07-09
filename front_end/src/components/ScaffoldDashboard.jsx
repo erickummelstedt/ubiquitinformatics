@@ -224,7 +224,7 @@ const ScaffoldDashboard = () => {
         <div style={{ margin: '32px auto', maxWidth: 1200, display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
           <div style={{width: '100%'}}>
             <button
-              style={{marginBottom: 24, width: 300, background: '#388e3c', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 0', fontWeight: 700, fontSize: 16, cursor: 'pointer', display: 'block', marginLeft: 'auto', marginRight: 'auto'}}
+              style={{marginBottom: 8, width: 300, background: '#388e3c', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 0', fontWeight: 700, fontSize: 16, cursor: 'pointer', display: 'block', marginLeft: 'auto', marginRight: 'auto'}}
               onClick={async () => {
                 const baseName = window.prompt('Enter a base file name for this group of files:', 'ubiquitin_plate');
                 if (!baseName) return;
@@ -250,6 +250,9 @@ const ScaffoldDashboard = () => {
                 }
               }}
             >Save All Files</button>
+            <div style={{textAlign: 'center', color: '#388e3c', fontWeight: 600, fontSize: 15, marginBottom: 16}}>
+              This will also save the Excel file with all reagent calculations (reagent_calculations.xlsx)
+            </div>
           </div>
           <div>
             <div style={{textAlign: 'center', fontWeight: 600, marginBottom: 8}}>Enzyme + Donor Mixes</div>

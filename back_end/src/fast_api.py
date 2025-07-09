@@ -105,7 +105,12 @@ async def submit_selection(request: Request):
     fig2_b64 = fig_to_base64(fig2)
     fig3_b64 = fig_to_base64(fig3)
 
-    # Return as JSON with base64-encoded PNGs
+    # Generate Excel file as base64
+    excel_bytes = plotting.create_xlsx_bytes(output_dict)
+    excel_bytes.seek(0)
+    excel_b64 = base64.b64encode(excel_bytes.read()).decode('utf-8')
+
+    # Return as JSON with base64-encoded PNGs and Excel
     return JSONResponse(content={
         "received_labels": indexes,
         "page": page,
@@ -113,7 +118,8 @@ async def submit_selection(request: Request):
         "figures": {
             "enzymes_donors_96": fig1_b64,
             "deprots_96": fig2_b64,
-            "acceptors_96": fig3_b64
+            "acceptors_96": fig3_b64,
+            "reagent_calculations.xlsx": excel_b64
         }
     })
 
