@@ -27,7 +27,7 @@ const LIGHT_GRAY = '#dddddd';
 const GRAY = '#aaaaaa';
 const BLACK = '#000000';
 
-const FrozenGameScaffoldPanelTest = ({ initialNodes = DEFAULT_NODES, edges = DEFAULT_EDGES, panelWidth, panelHeight, arrows: arrowsProp, frozen = false }) => {
+const FrozenGameScaffoldPanelTest = ({ initialNodes = DEFAULT_NODES, initialSmallNodes = [], edges = DEFAULT_EDGES, panelWidth, panelHeight, arrows: arrowsProp, frozen = false }) => {
   const canvasRef = useRef(null);
   const [nodes, setNodes] = useState(() => {
     const n = initialNodes.map(node => ({ ...node }));
@@ -40,7 +40,8 @@ const FrozenGameScaffoldPanelTest = ({ initialNodes = DEFAULT_NODES, edges = DEF
   const maxClicks = 5;
 
   // Small node state: array of {x, y, state} where state: 0=none, 1=red, 2=blue
-  const [smallNodes, setSmallNodes] = useState([]);
+  const [smallNodes, setSmallNodes] = useState(initialSmallNodes);
+  const [specialSmallNodes] = useState(initialSmallNodes);  // persist SMAC/ABOC nodes
   const smallNodeRadius = RADIUS / 4;
 
   // refs for nodes, arrows, clickedNodes, smallNodes
@@ -103,13 +104,26 @@ const FrozenGameScaffoldPanelTest = ({ initialNodes = DEFAULT_NODES, edges = DEF
         });
       }
     });
-    // Preserve state for existing small nodes
+    // Preserve state for existing small nodes and merge with persistent specialSmallNodes
     setSmallNodes(prev => {
       const stateMap = {};
-      prev.forEach(sn => { stateMap[sn.key] = sn.state || 0; });
-      return smalls.map(sn => ({ ...sn, state: stateMap[sn.key] || 0 }));
+      [...prev, ...specialSmallNodes].forEach(sn => {
+        stateMap[sn.key] = sn.state || 0;
+      });
+
+      const merged = [
+        ...smalls, // dynamically computed
+        ...specialSmallNodes, // persistent SMAC/ABOC
+      ];
+
+      const seen = new Set();
+      return merged.filter(sn => {
+        if (seen.has(sn.key)) return false;
+        seen.add(sn.key);
+        return true;
+      }).map(sn => ({ ...sn, state: stateMap[sn.key] || 0 }));
     });
-  }, [nodes, edges]);
+  }, [nodes, edges, specialSmallNodes]);
 
   // Draw the scaffold
   useEffect(() => {

@@ -8,6 +8,7 @@ function simulateClicksFromJson(json, nodes, edges) {
   let clicked = new Set();
   let arrows = [];
   let mapping = {};
+  let smallNodes = [];
 
   function recurse(ub, parentIdx, used, originIdx = parentIdx) {
     nodes[parentIdx] = { ...nodes[parentIdx], clicks: 1, chain_number: ub.chain_number };
@@ -46,6 +47,22 @@ function simulateClicksFromJson(json, nodes, edges) {
         }
       }
     }
+
+    for (const site of ub.branching_sites || []) {
+      if (site.children === 'SMAC' || site.children === 'ABOC') {
+        const colorState = site.children === 'SMAC' ? 2 : 1;
+        const angle = site.site_name === 'K48' ? -Math.PI / 4 : Math.PI / 4;
+        const dx = Math.sin(angle) * 25;
+        const dy = -Math.cos(angle) * 25;
+        const node = nodes[parentIdx];
+        smallNodes.push({
+          x: node.x + dx,
+          y: node.y + dy,
+          key: `protect-${node.chain_number}-${site.site_name}`,
+          state: colorState
+        });
+      }
+    }
   }
 
 function findNextAllowedNode(parentIdx, used, siteName) {
@@ -71,7 +88,7 @@ function findNextAllowedNode(parentIdx, used, siteName) {
 
   let used = new Set([0]);
   recurse(json, 0, used);
-  return { nodes, arrows, mapping };
+  return { nodes, arrows, mapping, smallNodes };
 }
 
 const DEFAULT_NODES = [
@@ -95,7 +112,7 @@ const DEFAULT_EDGES = [
 ];
 
 const ScaffoldJsonWrapper = () => {
-  const { nodes, arrows } = React.useMemo(
+  const { nodes, arrows, smallNodes } = React.useMemo(
     () => simulateClicksFromJson(k48_dimer_ubiquitin, DEFAULT_NODES.map(n => ({ ...n })), DEFAULT_EDGES),
     []
   );
@@ -107,6 +124,7 @@ const ScaffoldJsonWrapper = () => {
   return (
     <FrozenGameScaffoldPanelTest
       initialNodes={nodes}
+      initialSmallNodes={smallNodes}
       edges={DEFAULT_EDGES}
       arrows={arrows}
       frozen={true}
