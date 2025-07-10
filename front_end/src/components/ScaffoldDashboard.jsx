@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Panel from './Panel';
 import GameScaffoldPanel from './GameScaffoldPanel';
 import FrozenGameScaffoldPanel from './FrozenGameScaffoldPanel';
-import FrozenGameScaffoldPanelTest from './FrozenGameScaffoldPanelTest';
+import ScaffoldJsonWrapper from './ScaffoldJsonWrapper';
 
 const SMALL_PANEL_WIDTH = 140;
 const SMALL_PANEL_HEIGHT = 90;
@@ -112,7 +112,7 @@ const ScaffoldDashboard = () => {
                 {page === 'draw' ? (
                   <GameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
                 ) : page === 'draw_test' ? (
-                  <FrozenGameScaffoldPanelTest panelWidth={panelWidth} panelHeight={panelHeight} />
+                  <ScaffoldJsonWrapper />
                 ) : (
                   <FrozenGameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
                 )}

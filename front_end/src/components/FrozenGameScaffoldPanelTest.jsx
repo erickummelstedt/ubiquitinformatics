@@ -27,14 +27,14 @@ const LIGHT_GRAY = '#dddddd';
 const GRAY = '#aaaaaa';
 const BLACK = '#000000';
 
-const FrozenGameScaffoldPanelTest = ({ initialNodes = DEFAULT_NODES, edges = DEFAULT_EDGES, panelWidth, panelHeight }) => {
+const FrozenGameScaffoldPanelTest = ({ initialNodes = DEFAULT_NODES, edges = DEFAULT_EDGES, panelWidth, panelHeight, arrows: arrowsProp, frozen = false }) => {
   const canvasRef = useRef(null);
   const [nodes, setNodes] = useState(() => {
     const n = initialNodes.map(node => ({ ...node }));
     n[0].clicks = 1;
     return n;
   });
-  const [arrows, setArrows] = useState([]);
+  const [arrows, setArrows] = useState(arrowsProp || []);
   const [clickedNodes, setClickedNodes] = useState(new Set([0]));
   const [lastNodeIndex, setLastNodeIndex] = useState(0);
   const maxClicks = 5;
@@ -225,8 +225,9 @@ const FrozenGameScaffoldPanelTest = ({ initialNodes = DEFAULT_NODES, edges = DEF
     });
   }, [nodes, arrows, panelWidth, panelHeight, smallNodes]);
 
-  // Click handler
+  // Click handler (disable if frozen)
   useEffect(() => {
+    if (frozen) return; // Do not attach click handler if frozen
     const canvas = canvasRef.current;
     if (!canvas) return;
     const handleMouseDown = (e) => {
@@ -287,9 +288,9 @@ const FrozenGameScaffoldPanelTest = ({ initialNodes = DEFAULT_NODES, edges = DEF
     return () => {
       canvas.removeEventListener('mousedown', handleMouseDown);
     };
-  }, [nodes, arrows, clickedNodes, lastNodeIndex, smallNodes]);
+  }, [nodes, arrows, clickedNodes, lastNodeIndex, smallNodes, frozen]);
 
-  return <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />;
+  return <canvas ref={canvasRef} style={{ width: '100%', height: '100%', cursor: frozen ? 'not-allowed' : 'pointer' }} />;
 };
 
 export default FrozenGameScaffoldPanelTest;
