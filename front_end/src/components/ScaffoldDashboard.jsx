@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import Panel from './Panel';
 import GameScaffoldPanel from './GameScaffoldPanel';
 import FrozenGameScaffoldPanel from './FrozenGameScaffoldPanel';
+import FrozenGameScaffoldPanelTest from './FrozenGameScaffoldPanelTest';
 
 const SMALL_PANEL_WIDTH = 140;
 const SMALL_PANEL_HEIGHT = 90;
 
 const PAGE_CONFIG = {
   draw: { count: 1, label: 'Explore Ubiquitin Pathways', panelWidth: 570, panelHeight: 370 },
+  draw_test: { count: 1, label: 'Test Panel', panelWidth: 570, panelHeight: 370 },
   tetramers: { count: 14, label: 'Tetramers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
   pentamers: { count: 42, label: 'Pentamers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
 };
@@ -68,6 +70,7 @@ const ScaffoldDashboard = () => {
           style={{ fontSize: 16, padding: '4px 12px', borderRadius: 6 }}
         >
           <option value="draw">Draw</option>
+          <option value="draw_test">Draw Test</option>
           <option value="tetramers">Tetramers</option>
           <option value="pentamers">Pentamers</option>
         </select>
@@ -108,6 +111,8 @@ const ScaffoldDashboard = () => {
               <div style={{ width: panelWidth, height: panelHeight }}>
                 {page === 'draw' ? (
                   <GameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
+                ) : page === 'draw_test' ? (
+                  <FrozenGameScaffoldPanelTest panelWidth={panelWidth} panelHeight={panelHeight} />
                 ) : (
                   <FrozenGameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
                 )}
@@ -141,7 +146,7 @@ const ScaffoldDashboard = () => {
         })}
       </div>
       {/* Selection tracker for tetramers and pentamers */}
-      {page !== 'draw' && (
+      {(page === 'tetramers' || page === 'pentamers') && (
         <div style={{
           width: '100%',
           maxWidth: 900,
@@ -251,7 +256,9 @@ const ScaffoldDashboard = () => {
               }}
             >Save All Files</button>
             <div style={{textAlign: 'center', color: '#388e3c', fontWeight: 600, fontSize: 15, marginBottom: 16}}>
-              This will also save the Excel file with all reagent calculations (reagent_calculations.xlsx)
+              The following files will also be included:<br/>
+              <span style={{color:'#1976d2'}}>reagent calculations (NAME_reagent_calculations.xlsx)</span><br/>
+              <span style={{color:'#1976d2'}}>opentrons synthesis (NAME_opentrons_synthesis.py)</span>
             </div>
           </div>
           <div>

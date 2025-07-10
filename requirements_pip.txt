@@ -10,3 +10,5 @@ uvicorn==0.35.0
 python-magic
 zipfile36
 openpyxl
+reportlab
+plotly==5.20.0

@@ -45,26 +45,22 @@ Working in functions_implement_in_fast_api
     - DONE - Have everything work off initial column/row (some errors)
     - DONE - Fix Bordering
     - DONE Add in Acceptor Donor Labels
-- DONE Base Reagent Counts to Base Reagent Prep 
+- DONE 1. Base Reagent Counts to Base Reagent Prep 
 - DONE Fix all indexing issues
 
-- Add in how acceptors are made 
-- Connect into HTML interface
-- Try finish today
-
-- Create testing make sure it works well
+- DONE Connect into HTML interface
+- DONE 2. Build OT_flex_file from reaction
+- DONE Integrate OT_flex_file generation with fast_api 
 
 
-2. 
-- Build OT_flex_file from reaction
-- Integrate OT_flex_file generation with fast_api 
-
-- FINISH tomorrow afternoon morning..
-- Connect to the file generation this afternoon
 
 3. 
 - Build Reaction_Sequences list
 - Integrate Reaction_Sequences generation with fast_api 
+- Integrate Reaction_Sequences with Document generation
+- Show the donors and the acceptors
+
+A. Check that opentrons works
 
 4. 
 - Build Protocol_Doc
@@ -73,10 +69,22 @@ Working in functions_implement_in_fast_api
 5. 
 - Draw out all the pentamers and tetramers
 
+6. 
+- Build the 
+
 # have the inheco plate in there and also the deck layout
 
 
+submit_selection prompt;
+"within fast_api.py Include the download of the excel_bytes = 
+create_xlsx_bytes(output_dict) upon submit selection;
+have it store within the webpage so it can be downloaded the 
+same way the pngs are once save all files is clicked
+"
+
 END OF WEEK
+
+- Add in how acceptors are made 
 
 WebApp features;
 - Build out functionality first and then make it more user friendly

@@ -110,7 +110,12 @@ async def submit_selection(request: Request):
     excel_bytes.seek(0)
     excel_b64 = base64.b64encode(excel_bytes.read()).decode('utf-8')
 
-    # Return as JSON with base64-encoded PNGs and Excel
+    # Generate python opentrons file as base64
+    opentrons_bytes = plotting.create_opentrons_file_bytes(output_dict)
+    opentrons_bytes.seek(0)
+    opentrons_b64 = base64.b64encode(opentrons_bytes.read()).decode('utf-8')
+
+    # Return as JSON with base64-encoded PNGs, Excel, and Opentrons Python file
     return JSONResponse(content={
         "received_labels": indexes,
         "page": page,
@@ -119,7 +124,8 @@ async def submit_selection(request: Request):
             "enzymes_donors_96": fig1_b64,
             "deprots_96": fig2_b64,
             "acceptors_96": fig3_b64,
-            "reagent_calculations.xlsx": excel_b64
+            "reagent_calculations.xlsx": excel_b64,
+            "opentrons.py": opentrons_b64
         }
     })
 
