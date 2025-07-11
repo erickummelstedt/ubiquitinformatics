@@ -1,6 +1,5 @@
 import React from 'react';
 import FrozenGameScaffoldPanelTest from './FrozenGameScaffoldPanelTest';
-import k48_dimer_ubiquitin from '../data/k48_dimer_ubiquitin';
 
 // Simulate click logic in preorder traversal, matching adjacency, above, and arrow rules
 // K63 moves rightward and up, K48 moves leftward and up
@@ -111,10 +110,10 @@ const DEFAULT_EDGES = [
   [9, 13], [9, 14]
 ];
 
-const ScaffoldJsonWrapper = () => {
+const ScaffoldJsonWrapper = ({ jsonData }) => {
   const { nodes, arrows, smallNodes } = React.useMemo(
-    () => simulateClicksFromJson(k48_dimer_ubiquitin, DEFAULT_NODES.map(n => ({ ...n })), DEFAULT_EDGES),
-    []
+    () => simulateClicksFromJson(jsonData, DEFAULT_NODES.map(n => ({ ...n })), DEFAULT_EDGES),
+    [jsonData]
   );
   // Debug: log arrows to verify structure and content
   React.useEffect(() => {

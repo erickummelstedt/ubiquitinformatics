@@ -55,10 +55,17 @@ Working in functions_implement_in_fast_api
 
 
 3. 
-- Build Reaction_Sequences list
+DONE - Build Reaction_Sequences list
 - Integrate Reaction_Sequences generation with fast_api 
+- Build image generation software of the JSON files
 - Integrate Reaction_Sequences with Document generation
 - Show the donors and the acceptors
+
+- Before adding into application that works; make sure you have everything there
+- This includes the donors and the labels of everything
+
+
+- Build beautiful reaction schemes with the new functionality
 
 A. Check that opentrons works
 
@@ -67,7 +74,7 @@ A. Check that opentrons works
 - Integrate Protocol_Doc generation with fast_api 
 
 5. 
-- Draw out all the pentamers and tetramers
+- Draw out all the pentamers and tetramers; this will be easier now
 
 6. 
 - Build the 

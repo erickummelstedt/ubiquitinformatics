@@ -3,6 +3,8 @@ import Panel from './Panel';
 import GameScaffoldPanel from './GameScaffoldPanel';
 import FrozenGameScaffoldPanel from './FrozenGameScaffoldPanel';
 import ScaffoldJsonWrapper from './ScaffoldJsonWrapper';
+import Sequences from './Sequences';
+import k48_dimer_ubiquitin from '../data/k48_dimer_ubiquitin';
 
 const SMALL_PANEL_WIDTH = 140;
 const SMALL_PANEL_HEIGHT = 90;
@@ -10,6 +12,7 @@ const SMALL_PANEL_HEIGHT = 90;
 const PAGE_CONFIG = {
   draw: { count: 1, label: 'Explore Ubiquitin Pathways', panelWidth: 570, panelHeight: 370 },
   draw_test: { count: 1, label: 'Test Panel', panelWidth: 570, panelHeight: 370 },
+  sequences: { count: 8, label: 'Sequences', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
   tetramers: { count: 14, label: 'Tetramers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
   pentamers: { count: 42, label: 'Pentamers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
 };
@@ -71,6 +74,7 @@ const ScaffoldDashboard = () => {
         >
           <option value="draw">Draw</option>
           <option value="draw_test">Draw Test</option>
+          <option value="sequences">Sequences</option>
           <option value="tetramers">Tetramers</option>
           <option value="pentamers">Pentamers</option>
         </select>
@@ -84,66 +88,70 @@ const ScaffoldDashboard = () => {
         rowGap: page === 'draw' ? '0' : '8px',
         columnGap: page === 'draw' ? '0' : '8px',
       }}>
-        {[...Array(count)].map((_, i) => {
-          const isSelected = selectedPanels.includes(i);
-          const label = page === 'tetramers' ? `Ub4_${i + 1}` : page === 'pentamers' ? `Ub5_${i + 1}` : '';
-          return (
-            <Panel
-              key={i}
-              style={{
-                width: panelWidth,
-                height: panelHeight + (page === 'draw' ? 0 : 20),
-                minWidth: panelWidth,
-                minHeight: panelHeight + (page === 'draw' ? 0 : 20),
-                padding: 0,
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                margin: page === 'draw' ? '0 auto' : undefined,
-                border: isSelected ? '3px solid #1976d2' : '2px solid transparent',
-                boxShadow: isSelected ? '0 0 12px #1976d2' : undefined,
-                cursor: page !== 'draw' ? 'pointer' : 'default',
-                transition: 'border 0.2s, box-shadow 0.2s',
-              }}
-              onClick={() => handlePanelClick(i)}
-            >
-              <div style={{ width: panelWidth, height: panelHeight }}>
-                {page === 'draw' ? (
-                  <GameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
-                ) : page === 'draw_test' ? (
-                  <ScaffoldJsonWrapper />
-                ) : (
-                  <FrozenGameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
-                )}
-              </div>
-              {page !== 'draw' && (
-                <div
-                  style={{
-                    width: '100%',
-                    textAlign: 'center',
-                    fontSize: 14,
-                    color: 'white',
-                    marginTop: -5,
-                    fontWeight: 600,
-                    textShadow: '0 2px 8px #222',
-                    letterSpacing: 1,
-                    userSelect: 'none',
-                    position: 'relative',
-                    zIndex: 2,
-                  }}
-                >
-                  {label}
-                  {selectionCounts[label] ? (
-                    <span style={{ marginLeft: 8, color: '#ffd600', fontWeight: 700, fontSize: 13 }}>
-                      ×{selectionCounts[label]}
-                    </span>
-                  ) : null}
+        {page === 'sequences' ? (
+          <Sequences />
+        ) : (
+          [...Array(count)].map((_, i) => {
+            const isSelected = selectedPanels.includes(i);
+            const label = page === 'tetramers' ? `Ub4_${i + 1}` : page === 'pentamers' ? `Ub5_${i + 1}` : '';
+            return (
+              <Panel
+                key={i}
+                style={{
+                  width: panelWidth,
+                  height: panelHeight + (page === 'draw' ? 0 : 20),
+                  minWidth: panelWidth,
+                  minHeight: panelHeight + (page === 'draw' ? 0 : 20),
+                  padding: 0,
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  margin: page === 'draw' ? '0 auto' : undefined,
+                  border: isSelected ? '3px solid #1976d2' : '2px solid transparent',
+                  boxShadow: isSelected ? '0 0 12px #1976d2' : undefined,
+                  cursor: page !== 'draw' ? 'pointer' : 'default',
+                  transition: 'border 0.2s, box-shadow 0.2s',
+                }}
+                onClick={() => handlePanelClick(i)}
+              >
+                <div style={{ width: panelWidth, height: panelHeight }}>
+                  {page === 'draw' ? (
+                    <GameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
+                  ) : page === 'draw_test' ? (
+                    <ScaffoldJsonWrapper jsonData={k48_dimer_ubiquitin} />
+                  ) : (
+                    <FrozenGameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
+                  )}
                 </div>
-              )}
-            </Panel>
-          );
-        })}
+                {page !== 'draw' && (
+                  <div
+                    style={{
+                      width: '100%',
+                      textAlign: 'center',
+                      fontSize: 14,
+                      color: 'white',
+                      marginTop: -5,
+                      fontWeight: 600,
+                      textShadow: '0 2px 8px #222',
+                      letterSpacing: 1,
+                      userSelect: 'none',
+                      position: 'relative',
+                      zIndex: 2,
+                    }}
+                  >
+                    {label}
+                    {selectionCounts[label] ? (
+                      <span style={{ marginLeft: 8, color: '#ffd600', fontWeight: 700, fontSize: 13 }}>
+                        ×{selectionCounts[label]}
+                      </span>
+                    ) : null}
+                  </div>
+                )}
+              </Panel>
+            );
+          })
+        )}
       </div>
       {/* Selection tracker for tetramers and pentamers */}
       {(page === 'tetramers' || page === 'pentamers') && (

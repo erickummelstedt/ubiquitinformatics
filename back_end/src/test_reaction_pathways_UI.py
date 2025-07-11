@@ -59,6 +59,65 @@ for id in selected_ids:
 
 idx = indexes[0] 
 
+
+def format_text_with_bold(text):
+    # Unicode superscript/subscript mapping
+    subscript_map = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+    superscript_map = {
+        '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+        '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+        'a': 'ᵃ', 'b': 'ᵇ', 'c': 'ᶜ', 'd': 'ᵈ', 'e': 'ᵉ',
+        'f': 'ᶠ', 'g': 'ᵍ', 'h': 'ʰ', 'i': 'ⁱ', 'j': 'ʲ',
+        'k': 'ᵏ', 'l': 'ˡ', 'm': 'ᵐ', 'n': 'ⁿ', 'o': 'ᵒ',
+        'p': 'ᵖ', 'r': 'ʳ', 's': 'ˢ', 't': 'ᵗ', 'u': 'ᵘ',
+        'v': 'ᵛ', 'w': 'ʷ', 'x': 'ˣ', 'y': 'ʸ', 'z': 'ᶻ',
+        'A': 'ᴬ', 'B': 'ᴮ', 'D': 'ᴰ', 'E': 'ᴱ', 'G': 'ᴳ',
+        'H': 'ᴴ', 'I': 'ᴵ', 'J': 'ᴶ', 'K': 'ᴷ', 'L': 'ᴸ',
+        'M': 'ᴹ', 'N': 'ᴺ', 'O': 'ᴼ', 'P': 'ᴾ', 'R': 'ᴿ',
+        'T': 'ᵀ', 'U': 'ᵁ', 'V': 'ⱽ', 'W': 'ᵂ'
+    }
+
+    # Convert _<digit> to subscript
+    text = re.sub(r'_(\d)', lambda m: m.group(1).translate(subscript_map), text)
+    # Convert ^<char> to superscript
+    text = re.sub(r'\^([A-Za-z0-9])', lambda m: superscript_map.get(m.group(1), m.group(1)), text)
+    # Wrap any number immediately following a superscript with {BOLD} marker
+    superscript_chars = ''.join(superscript_map.values())
+    # Matches a superscript character from your superscript_chars.
+	# Ensures it’s followed by a space and digits.
+	# Only wraps the digits (\2) in {BOLD}, not the superscript or the space.    
+    text = re.sub(r'([' + re.escape(superscript_chars) + r']) (\d+)', r'\1 {BOLD}\2{BOLD}', text)    
+    return text
+
+def format_text(text):
+    # Unicode superscript/subscript mapping
+    subscript_map = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+    superscript_map = {
+        '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+        '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+        'a': 'ᵃ', 'b': 'ᵇ', 'c': 'ᶜ', 'd': 'ᵈ', 'e': 'ᵉ',
+        'f': 'ᶠ', 'g': 'ᵍ', 'h': 'ʰ', 'i': 'ⁱ', 'j': 'ʲ',
+        'k': 'ᵏ', 'l': 'ˡ', 'm': 'ᵐ', 'n': 'ⁿ', 'o': 'ᵒ',
+        'p': 'ᵖ', 'r': 'ʳ', 's': 'ˢ', 't': 'ᵗ', 'u': 'ᵘ',
+        'v': 'ᵛ', 'w': 'ʷ', 'x': 'ˣ', 'y': 'ʸ', 'z': 'ᶻ',
+        'A': 'ᴬ', 'B': 'ᴮ', 'D': 'ᴰ', 'E': 'ᴱ', 'G': 'ᴳ',
+        'H': 'ᴴ', 'I': 'ᴵ', 'J': 'ᴶ', 'K': 'ᴷ', 'L': 'ᴸ',
+        'M': 'ᴹ', 'N': 'ᴺ', 'O': 'ᴼ', 'P': 'ᴾ', 'R': 'ᴿ',
+        'T': 'ᵀ', 'U': 'ᵁ', 'V': 'ⱽ', 'W': 'ᵂ'
+    }
+
+    # Convert _<digit> to subscript
+    text = re.sub(r'_(\d)', lambda m: m.group(1).translate(subscript_map), text)
+    # Convert ^<char> to superscript
+    text = re.sub(r'\^([A-Za-z0-9])', lambda m: superscript_map.get(m.group(1), m.group(1)), text)
+    # Wrap any number immediately following a superscript with {BOLD} marker
+    superscript_chars = ''.join(superscript_map.values())
+    # Matches a superscript character from your superscript_chars.
+	# Ensures it’s followed by a space and digits.
+	# Only wraps the digits (\2) in {BOLD}, not the superscript or the space.    
+    text = re.sub(r'([' + re.escape(superscript_chars) + r']) (\d+)', r'\1 \2', text)    
+    return text
+
 def single_dict_for_reaction_schemes(data_dict, idx, multimer_size):
     
     """ 
@@ -240,6 +299,7 @@ def single_dict_for_reaction_schemes(data_dict, idx, multimer_size):
             return f"Ub_{size}{suffix} {number}"
         return multimer_id
     multimer_id = format_multimer_id(multimer_id)
+    multimer_id = format_text(multimer_id)
 
     # Create a dictionary mapping columns to updated values, with 'Acceptor' as the first key
     steps_dict = {
@@ -274,10 +334,8 @@ def full_dict_df_for_reaction_schemes(data_dict, indexes, multimer_size):
         steps_dict = single_dict_for_reaction_schemes(data_dict, idx, multimer_size)
         steps_full_dict += steps_dict
 
-    print("steps_full_dict:", steps_full_dict)
     # Add reaction numbers to each step in steps_full_dict
     for i, step in enumerate(steps_full_dict, start=1):
-        print("step:", step)
         step['Reaction\nNumber'] = str(i)
 
     # Create DataFrame preserving original column names
@@ -290,35 +348,6 @@ def full_dict_df_for_reaction_schemes(data_dict, indexes, multimer_size):
     return steps_df, steps_full_dict
 # ============================================================
 # ============================================================
-
-def format_text(text):
-    # Unicode superscript/subscript mapping
-    subscript_map = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
-    superscript_map = {
-        '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
-        '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
-        'a': 'ᵃ', 'b': 'ᵇ', 'c': 'ᶜ', 'd': 'ᵈ', 'e': 'ᵉ',
-        'f': 'ᶠ', 'g': 'ᵍ', 'h': 'ʰ', 'i': 'ⁱ', 'j': 'ʲ',
-        'k': 'ᵏ', 'l': 'ˡ', 'm': 'ᵐ', 'n': 'ⁿ', 'o': 'ᵒ',
-        'p': 'ᵖ', 'r': 'ʳ', 's': 'ˢ', 't': 'ᵗ', 'u': 'ᵘ',
-        'v': 'ᵛ', 'w': 'ʷ', 'x': 'ˣ', 'y': 'ʸ', 'z': 'ᶻ',
-        'A': 'ᴬ', 'B': 'ᴮ', 'D': 'ᴰ', 'E': 'ᴱ', 'G': 'ᴳ',
-        'H': 'ᴴ', 'I': 'ᴵ', 'J': 'ᴶ', 'K': 'ᴷ', 'L': 'ᴸ',
-        'M': 'ᴹ', 'N': 'ᴺ', 'O': 'ᴼ', 'P': 'ᴾ', 'R': 'ᴿ',
-        'T': 'ᵀ', 'U': 'ᵁ', 'V': 'ⱽ', 'W': 'ᵂ'
-    }
-
-    # Convert _<digit> to subscript
-    text = re.sub(r'_(\d)', lambda m: m.group(1).translate(subscript_map), text)
-    # Convert ^<char> to superscript
-    text = re.sub(r'\^([A-Za-z0-9])', lambda m: superscript_map.get(m.group(1), m.group(1)), text)
-    # Wrap any number immediately following a superscript with {BOLD} marker
-    superscript_chars = ''.join(superscript_map.values())
-    # Matches a superscript character from your superscript_chars.
-	# Ensures it’s followed by a space and digits.
-	# Only wraps the digits (\2) in {BOLD}, not the superscript or the space.    
-    text = re.sub(r'([' + re.escape(superscript_chars) + r']) (\d+)', r'\1 {BOLD}\2{BOLD}', text)    
-    return text
 
 def create_table_image(df):
     """ Create a table image from a DataFrame with custom formatting. """
@@ -349,7 +378,7 @@ def create_table_image(df):
     for row in range(df.shape[0]):
         for col in range(df.shape[1]):
             text = str(df.iat[row, col])
-            formatted = format_text(text)
+            formatted = format_text_with_bold(text)
             # Check for {BOLD} markers
             bold_parts = re.findall(r'{BOLD}(.*?){BOLD}', formatted)
             clean_text = re.sub(r'{BOLD}(.*?){BOLD}', r'\1', formatted)
@@ -437,18 +466,60 @@ def create_table_image(df):
     c.showPage()
     c.save()
 
-    print(f"Saved table image to: {output_path}")
-    print(f"Saved PDF to: {pdf_path}")
     return img_bytes, pdf_path
 
 
 # ============================================================
 
-steps_df, _ = full_dict_df_for_reaction_schemes(data_dict, indexes, multimer_size)
 
-img_bytes, pdf_path = create_table_image(steps_df)
+# img_bytes, pdf_path = create_table_image(steps_df)
 
-subprocess.run(["open", pdf_path])  # For macOS
+# Create the full dictionary and DataFrame for reaction schemes
+steps_df, steps_full_dict = full_dict_df_for_reaction_schemes(data_dict, indexes, multimer_size)
+
+# Iterate over all indexes and convert corresponding rows to dictionaries
+all_lines_dicts = []
+for idx in indexes:
+    line = ubiquitin_history[ubiquitin_history['index'] == idx]
+    line_dicts = line.to_dict(orient='records')
+    donor_line = donor_history[donor_history['index'] == idx]
+    donor_line_dicts = donor_line.to_dict(orient='records')
+    # Merge the corresponding steps_full_dict entry into each line dictionary
+    for line_dict in line_dicts:
+        steps_dict = next((step for step in steps_full_dict if step['Simulation\nindex'] == idx), {})
+        # Rename keys from ubiquitin_history by prefixing with 'ubi_his_JSON_'
+        line_dict = {f"ubi_his_JSON_{k}": v for k, v in line_dict.items()}
+        overlapping_keys = set(line_dict.keys()) & set(steps_dict.keys())
+        if overlapping_keys:
+            print(f"Overlapping keys for index {idx}: {overlapping_keys}")
+        line_dict.update(steps_dict)
+
+        # Introduce donor line material into line_dict
+        donor_line = donor_history[donor_history['index'] == idx]
+        donor_line_dicts = donor_line.to_dict(orient='records')
+        for donor_line_dict in donor_line_dicts:
+            # Filter keys to only include those with 'formation' in them
+            donor_line_dict = {f"donor_JSON_{k}": v for k, v in donor_line_dict.items() if 'formation' in k}
+            # Update line_dict with donor_line_dict
+            line_dict.update(donor_line_dict)
+
+        # Append the updated line_dict to all_lines_dicts
+        all_lines_dicts.append(line_dict)
+    
+# Save the list of dictionaries as a JSON file in the front_end/public directory
+output_path = project_root / 'front_end' / 'public' / 'reaction_sequence.json'
+with open(output_path, 'w') as json_file:
+    json.dump(all_lines_dicts, json_file, indent=4)
+
+# Add information for donor information 
+# So you have dictionaries with all the information for the image creation
+
+
+
+# Ensure pdf_path is defined before using it
+# pdf_path = "/Users/ekummelstedt/Desktop/table_1.pdf"
+
+# subprocess.run(["open", pdf_path])  # For macOS
 
 
 
