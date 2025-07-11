@@ -138,16 +138,25 @@ const Sequences = () => {
                                         <div style={{ fontSize: '24px', fontWeight: 'bold' }}>+</div>
                                         <div
                                             style={{
-                                                width: '228px',
-                                                height: '148px',
-                                                border: '1px solid #ccc',
-                                                borderRadius: '10px',
-                                                overflow: 'hidden',
-                                                flexShrink: 0,
-                                                marginBottom: '0px',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                margin: '20px',
                                             }}
                                         >
-                                            <ScaffoldJsonWrapper jsonData={JSON.parse(fixQuotes(data[0][donorKeys[(index/2)-1]]))} />
+                                            <div style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: '10px' }}>{"hello2"}</div>
+                                            <div
+                                                style={{
+                                                    width: '228px',
+                                                    height: '148px',
+                                                    border: '1px solid #ccc',
+                                                    borderRadius: '10px',
+                                                    overflow: 'hidden',
+                                                    flexShrink: 0,
+                                                }}
+                                            >
+                                                <ScaffoldJsonWrapper jsonData={JSON.parse(fixQuotes(data[0][donorKeys[(index/2)-1]]))} />
+                                            </div>
                                         </div>
                                     </>
                                 )}
@@ -165,15 +174,25 @@ const Sequences = () => {
                                 </div>
                                 <div
                                     style={{
-                                        width: '228px',
-                                        height: '148px',
-                                        border: '1px solid #ccc',
-                                        borderRadius: '10px',
-                                        overflow: 'hidden',
-                                        flexShrink: 0,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        margin: '20px',
                                     }}
                                 >
-                                    <ScaffoldJsonWrapper jsonData={JSON.parse(fixQuotes(data[0][key]))} />
+                                    <div style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: '10px' }}>{"hello"}</div>
+                                    <div
+                                        style={{
+                                            width: '228px',
+                                            height: '148px',
+                                            border: '1px solid #ccc',
+                                            borderRadius: '10px',
+                                            overflow: 'hidden',
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        <ScaffoldJsonWrapper jsonData={JSON.parse(fixQuotes(data[0][key]))} />
+                                    </div>
                                 </div>
                             </>
                         )}
