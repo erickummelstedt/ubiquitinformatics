@@ -2026,3 +2026,354 @@ def run(ctx):
     # Set a name attribute for FastAPI StreamingResponse compatibility
     opentrons_bytes.name = 'opentrons.py'
     return opentrons_bytes
+
+def build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size):
+
+    import re
+
+    def format_text_with_bold(text):
+        # Unicode superscript/subscript mapping
+        subscript_map = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+        superscript_map = {
+            '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+            '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+            'a': 'ᵃ', 'b': 'ᵇ', 'c': 'ᶜ', 'd': 'ᵈ', 'e': 'ᵉ',
+            'f': 'ᶠ', 'g': 'ᵍ', 'h': 'ʰ', 'i': 'ⁱ', 'j': 'ʲ',
+            'k': 'ᵏ', 'l': 'ˡ', 'm': 'ᵐ', 'n': 'ⁿ', 'o': 'ᵒ',
+            'p': 'ᵖ', 'r': 'ʳ', 's': 'ˢ', 't': 'ᵗ', 'u': 'ᵘ',
+            'v': 'ᵛ', 'w': 'ʷ', 'x': 'ˣ', 'y': 'ʸ', 'z': 'ᶻ',
+            'A': 'ᴬ', 'B': 'ᴮ', 'D': 'ᴰ', 'E': 'ᴱ', 'G': 'ᴳ',
+            'H': 'ᴴ', 'I': 'ᴵ', 'J': 'ᴶ', 'K': 'ᴷ', 'L': 'ᴸ',
+            'M': 'ᴹ', 'N': 'ᴺ', 'O': 'ᴼ', 'P': 'ᴾ', 'R': 'ᴿ',
+            'T': 'ᵀ', 'U': 'ᵁ', 'V': 'ⱽ', 'W': 'ᵂ'
+        }
+
+        # Convert _<digit> to subscript
+        text = re.sub(r'_(\d)', lambda m: m.group(1).translate(subscript_map), text)
+        # Convert ^<char> to superscript
+        text = re.sub(r'\^([A-Za-z0-9])', lambda m: superscript_map.get(m.group(1), m.group(1)), text)
+        # Wrap any number immediately following a superscript with {BOLD} marker
+        superscript_chars = ''.join(superscript_map.values())
+        # Matches a superscript character from your superscript_chars.
+        # Ensures it’s followed by a space and digits.
+        # Only wraps the digits (\2) in {BOLD}, not the superscript or the space.    
+        text = re.sub(r'([' + re.escape(superscript_chars) + r']) (\d+)', r'\1 {BOLD}\2{BOLD}', text)    
+        return text
+
+    def format_text(text):
+        # Unicode superscript/subscript mapping
+        subscript_map = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+        superscript_map = {
+            '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+            '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+            'a': 'ᵃ', 'b': 'ᵇ', 'c': 'ᶜ', 'd': 'ᵈ', 'e': 'ᵉ',
+            'f': 'ᶠ', 'g': 'ᵍ', 'h': 'ʰ', 'i': 'ⁱ', 'j': 'ʲ',
+            'k': 'ᵏ', 'l': 'ˡ', 'm': 'ᵐ', 'n': 'ⁿ', 'o': 'ᵒ',
+            'p': 'ᵖ', 'r': 'ʳ', 's': 'ˢ', 't': 'ᵗ', 'u': 'ᵘ',
+            'v': 'ᵛ', 'w': 'ʷ', 'x': 'ˣ', 'y': 'ʸ', 'z': 'ᶻ',
+            'A': 'ᴬ', 'B': 'ᴮ', 'D': 'ᴰ', 'E': 'ᴱ', 'G': 'ᴳ',
+            'H': 'ᴴ', 'I': 'ᴵ', 'J': 'ᴶ', 'K': 'ᴷ', 'L': 'ᴸ',
+            'M': 'ᴹ', 'N': 'ᴺ', 'O': 'ᴼ', 'P': 'ᴾ', 'R': 'ᴿ',
+            'T': 'ᵀ', 'U': 'ᵁ', 'V': 'ⱽ', 'W': 'ᵂ'
+        }
+
+        # Convert _<digit> to subscript
+        text = re.sub(r'_(\d)', lambda m: m.group(1).translate(subscript_map), text)
+        # Convert ^<char> to superscript
+        text = re.sub(r'\^([A-Za-z0-9])', lambda m: superscript_map.get(m.group(1), m.group(1)), text)
+        # Wrap any number immediately following a superscript with {BOLD} marker
+        superscript_chars = ''.join(superscript_map.values())
+        # Matches a superscript character from your superscript_chars.
+        # Ensures it’s followed by a space and digits.
+        # Only wraps the digits (\2) in {BOLD}, not the superscript or the space.    
+        text = re.sub(r'([' + re.escape(superscript_chars) + r']) (\d+)', r'\1 \2', text)    
+        return text
+
+    def single_dict_for_reaction_schemes(data_dict, idx, multimer_size):
+        
+        """ 
+        Function to create a dictionary for reaction schemes based on the provided index and multimer size.
+        This function retrieves the combined database and context history from the data dictionary,
+        filters the combined database for the specified index, and extracts relevant columns to form a dictionary.
+        
+        Parameters:
+        
+        - data_dict (dict): Dictionary containing the combined database and context history.
+        - idx (int): The index for which the reaction scheme is to be created.  
+        - multimer_size (int): The size of the multimer (e.g., 4 for tetramers, 5 for pentamers).
+        
+        Returns:
+        
+        - steps_dict (list): A list containing a dictionary with the reaction scheme details.
+        The dictionary includes the simulation index, multimer ID, acceptor dimer code, and combined values
+        for the steps in the reaction scheme.
+        The keys in the dictionary are updated to have more readable names for the UI.
+        The values are formatted to include the acceptor dimer code and combined values for each step
+        in the reaction scheme.
+        The function also handles the representation of different steps in the reaction scheme,
+        such as deprotection and formation steps, and updates the values accordingly.   
+        
+        """
+
+        combined_database = data_dict['combined_database']
+        context_history = data_dict['context_history']
+
+        # Get the acceptor dimer name from the context history
+
+        def get_acceptor_dimer_name(context_history, idx):
+            """ Get the acceptor dimer code from the working DataFrame. """
+            
+            # Create a dimer encoded dictionary
+            dimer_encoded_str_dictionary = {
+                # maybe change the code
+                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_SMAC><K63_ABOC>)>)' : "Ub₂ᴬ 9",
+                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_ABOC><K63_SMAC>)>)' : "Ub₂ᴬ 10",
+                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_ABOC><K63_ABOC>)>)' : "Ub₂ᴬ 11",
+                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_SMAC>)><K63_ABOC>)': "Ub₂ᴬ 12",
+                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_SMAC><K63_ABOC>)><K63_ABOC>)': "Ub₂ᴬ 13",
+                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_ABOC><K63_SMAC>)><K63_ABOC>)': "Ub₂ᴬ 14",
+                'his-GG-1ubq-1-(<K63_1ubq-2-(<K48_SMAC><K63_ABOC>)>)': "Ub₂ᴬ 15",
+                'his-GG-1ubq-1-(<K63_1ubq-2-(<K48_ABOC><K63_SMAC>)>)': "Ub₂ᴬ 16",
+                'his-GG-1ubq-1-(<K63_1ubq-2-(<K48_ABOC><K63_ABOC>)>)': "Ub₂ᴬ 17",
+                'his-GG-1ubq-1-(<K48_ABOC><K63_1ubq-2-(<K63_SMAC>)>)': "Ub₂ᴬ 18",
+                'his-GG-1ubq-1-(<K48_ABOC><K63_1ubq-2-(<K48_SMAC><K63_ABOC>)>)': "Ub₂ᴬ 19",
+                'his-GG-1ubq-1-(<K48_ABOC><K63_1ubq-2-(<K48_ABOC><K63_SMAC>)>)': "Ub₂ᴬ 20",
+            }
+
+            working_context_df = context_history[context_history['index'] == idx]
+
+            # Get the value of 'context' in 'dimer_formation' column for the selected index
+            if not working_context_df.empty:
+                context_dict = working_context_df.iloc[0]['dimer_formation']
+                # If the value is a string, try to parse it as a dictionary
+                if isinstance(context_dict, str):
+                    import ast
+                    try:
+                        context_dict = ast.literal_eval(context_dict)
+                    except Exception:
+                        context_dict = {}
+                multimer_name = context_dict.get('multimer_string_name', None)
+                # Map the multimer name to the dimer code using the dictionary
+                dimer_code = dimer_encoded_str_dictionary.get(multimer_name, None)
+                return dimer_code
+            else:
+                ValueError(f"No context row found for index: {idx}")
+                return None
+
+        # Get the acceptor dimer name for the given index
+        multimer_code = get_acceptor_dimer_name(context_history, idx)
+
+        # ============================================================
+
+        # Filter combined_database for rows where index == idx and table_origin is 'Donors' or 'Reactions'
+        filtered_combined_df = combined_database[(combined_database['index'] == idx) & (combined_database['table_origin'].isin(['Donors', 'Reactions']))]
+
+        # Determine the last column name based on multimer size
+        if multimer_size == 4:
+            last_col = 'tetramer_formation'
+        elif multimer_size == 5:
+            last_col = 'pentamer_formation'
+        else:
+            raise ValueError(f"Unsupported multimer_size: {multimer_size}")
+
+        # Get all column names
+        all_cols = list(filtered_combined_df.columns)
+
+        # Find the start and end indices for slicing columns
+        try:
+            start_idx = all_cols.index('dimer_deprotection')
+            end_idx = all_cols.index(last_col)
+        except ValueError as e:
+            raise ValueError(f"Column not found: {e}")
+
+        # Slice the columns between dimer_deprotection and last_col (inclusive)
+        selected_cols = all_cols[start_idx:end_idx+1]
+
+        # Get the relevant part of the DataFrame
+        selected_steps_df = filtered_combined_df[selected_cols]
+
+        # Combine Donors and Reactions rows to form combined_values like "Ub^D 2\ngp78-Ube2g2"
+        combined_values = []
+        if not selected_steps_df.empty and len(selected_steps_df) == 2:
+            # Assume first row is Donors, second is Reactions (order from filter)
+            donors_row = selected_steps_df.iloc[0]
+            reactions_row = selected_steps_df.iloc[1]
+            for donor_val, reaction_val in zip(donors_row, reactions_row):
+                combined = f"{donor_val}\n{reaction_val}"
+                combined_values.append(combined)
+        else:
+            ValueError("selected_steps_df does not have exactly 2 rows (Donors and Reactions). Cannot combine.")
+
+        # This is just syntax for the UI
+        representation_changes = {
+                'Ubc13/Mms2' : 'Ubc13-Mms2',
+                'gp78/Ube2g2' : 'gp78-Ube2g2',
+                'ubi_ubq_1_K48_ABOC_K63_ABOC' : 'Ubᴰ 5',
+                'ubi_ubq_1_K48_SMAC_K63_ABOC' : 'Ubᴰ 2',
+                'ubi_ubq_1_K48_ABOC_K63_SMAC' : 'Ubᴰ 4',
+                'ubi_ubq_1_K48_SMAC' : 'Ubᴰ 1',
+                'ubi_ubq_1_K63_SMAC' : 'Ubᴰ 3',
+                'nan\nSMAC_deprot' : 'Smac',
+                'nan\nFAKE_deprot' : 'Fake', 
+                'dimer_deprotection' : 'Dimer\ndeprotection',
+                'trimer_deprotection' : 'Trimer\ndeprotection',
+                'tetramer_deprotection' : 'Tetramer\ndeprotection',
+                'pentamer_deprotection' : 'Pentamer\ndeprotection',
+                'trimer_formation' : 'Trimer\nformation',
+                'tetramer_formation' : 'Tetramer\nformation',
+                'pentamer_formation' : 'Pentamer\nformation',
+            }
+
+        def update_values(values, representation_changes):
+            """
+            Updates a list of values by replacing exact matches or substrings
+            based on a given mapping.
+
+            Parameters:
+            - values (list of str): The original values.
+            - representation_changes (dict): Mapping of old -> new representations.
+
+            Returns:
+            - list of str: Updated values.
+            """
+            updated_values = []
+
+            for val in values:
+                if val in representation_changes:
+                    updated_val = representation_changes[val]
+                else:
+                    updated_val = val
+                    for old, new in representation_changes.items():
+                        if old in updated_val:
+                            updated_val = updated_val.replace(old, new)
+                updated_values.append(updated_val)
+
+            return updated_values
+
+
+        updated_values = update_values(combined_values, representation_changes)
+        headers_for_dict = update_values(selected_steps_df.columns, representation_changes)
+
+
+        # Get the unique multimer_id value from filtered_combined_df
+        multimer_id = filtered_combined_df['multimer_id'].unique()[0]
+
+        def format_multimer_id(multimer_id):
+            """
+            Reformat multimer_id string from 'UbX_Y' to 'Ub_X Y', with suffixes for certain sizes.
+            For size 4: add ^T as superscript. For size 5: add ^P as superscript.
+            """
+            match = re.match(r'^Ub(\d+)_(\d+)$', multimer_id)
+            if match:
+                size, number = match.group(1), match.group(2)
+                suffix = '^T' if size == '4' else '^P' if size == '5' else ''
+                return f"Ub_{size}{suffix} {number}"
+            return multimer_id
+        multimer_id = format_multimer_id(multimer_id)
+        multimer_id = format_text(multimer_id)
+
+        # Create a dictionary mapping columns to updated values, with 'Acceptor' as the first key
+        steps_dict = {
+            'Simulation\nindex': idx, 
+            'Multimer Id': multimer_id,
+            'Acceptor': multimer_code
+            }
+
+        # Update the steps_dict with the combined values
+        steps_dict.update(dict(zip(headers_for_dict, updated_values)))
+        
+        # List the steps_dict to be returned
+        steps_dict = [steps_dict]
+        # Ensure 'Reaction Number' is always the first key in each dictionary before converting to DataFrame
+        steps_dict[0] = {"Reaction\nNumber": None, **steps_dict[0]}
+
+        return steps_dict
+
+    def full_dict_df_for_reaction_schemes(data_dict, indexes, multimer_size):
+        """
+        Function to create a dictionary for reaction schemes based on the provided index and multimer size.
+        This function retrieves the combined database and context history from the data dictionary,
+        filters the combined_database for the specified index, and extracts relevant columns to form a dictionary.
+        """
+
+        steps_full_dict = []
+        for i in range(len(indexes)):
+            idx = indexes[i]
+            # Call the placeholder function to get the steps_dict for each index
+            # This is just a placeholder function to avoid syntax errors
+            # In practice, this would be replaced with the actual function that processes the data
+            steps_dict = single_dict_for_reaction_schemes(data_dict, idx, multimer_size)
+            steps_full_dict += steps_dict
+
+        # Add reaction numbers to each step in steps_full_dict
+        for i, step in enumerate(steps_full_dict, start=1):
+            step['Reaction\nNumber'] = str(i)
+
+        # Create DataFrame preserving original column names
+        steps_df = pd.DataFrame(steps_full_dict)
+
+        # Insert headers as the first row
+        header_row = {col: col for col in steps_df.columns}
+        steps_df = pd.concat([pd.DataFrame([header_row]), steps_df], ignore_index=True)
+
+        return steps_df, steps_full_dict
+
+    def generate_all_lines_dicts(data_dict, indexes, multimer_size):
+        all_lines_dicts = []
+        ubiquitin_history = data_dict['ubiquitin_history']
+        donor_history = data_dict['donor_history']
+
+        for idx in indexes:
+            line = ubiquitin_history[ubiquitin_history['index'] == idx]
+            line_dicts = line.to_dict(orient='records')
+            donor_line = donor_history[donor_history['index'] == idx]
+            donor_line_dicts = donor_line.to_dict(orient='records')
+
+            for line_dict in line_dicts:
+                steps_dict = next((step for step in steps_full_dict if step['Simulation\nindex'] == idx), {})
+                line_dict = {f"ubi_his_JSON_{k}": v for k, v in line_dict.items()}
+                overlapping_keys = set(line_dict.keys()) & set(steps_dict.keys())
+                if overlapping_keys:
+                    print(f"Overlapping keys for index {idx}: {overlapping_keys}")
+                line_dict.update(steps_dict)
+
+                for donor_line_dict in donor_line_dicts:
+                    donor_line_dict = {f"donor_JSON_{k}": v for k, v in donor_line_dict.items() if 'formation' in k}
+                    line_dict.update(donor_line_dict)
+
+                all_lines_dicts.append(line_dict)
+
+        return all_lines_dicts
+
+    def compress_duplicates(all_lines_dicts):
+        compressed_dicts = []
+        seen_items = {}
+
+        for index, item in enumerate(all_lines_dicts):
+            item_str = json.dumps(item, sort_keys=True)
+            if item_str in seen_items:
+                seen_items[item_str]['end'] = index + 1
+            else:
+                seen_items[item_str] = {'start': index + 1, 'end': index + 1}
+                compressed_dicts.append(item)
+
+        for item in compressed_dicts:
+            item_str = json.dumps(item, sort_keys=True)
+            range_info = seen_items[item_str]
+            if range_info['start'] != range_info['end']:
+                item['Reaction\nNumber'] = f"{range_info['start']} - {range_info['end']}"
+
+        return compressed_dicts
+
+    # Create the full dictionary and DataFrame for reaction schemes
+    steps_df, steps_full_dict = full_dict_df_for_reaction_schemes(data_dict, indexes, multimer_size)
+
+    # Call the function
+    reaction_schemes_dicts = generate_all_lines_dicts(data_dict, indexes, multimer_size)
+
+    # Compress duplicates in all_lines_dicts
+    reaction_schemes_dicts = compress_duplicates(reaction_schemes_dicts)
+
+    return reaction_schemes_dicts
+
+

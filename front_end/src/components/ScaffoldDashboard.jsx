@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Panel from './Panel';
 import GameScaffoldPanel from './GameScaffoldPanel';
 import FrozenGameScaffoldPanel from './FrozenGameScaffoldPanel';
@@ -12,7 +12,6 @@ const SMALL_PANEL_HEIGHT = 90;
 const PAGE_CONFIG = {
   draw: { count: 1, label: 'Explore Ubiquitin Pathways', panelWidth: 570, panelHeight: 370 },
   draw_test: { count: 1, label: 'Test Panel', panelWidth: 570, panelHeight: 370 },
-  sequences: { count: 8, label: 'Sequences', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
   tetramers: { count: 14, label: 'Tetramers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
   pentamers: { count: 42, label: 'Pentamers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
 };
@@ -21,7 +20,20 @@ const ScaffoldDashboard = () => {
   const [page, setPage] = useState('draw');
   const [selectedPanels, setSelectedPanels] = useState([]); // Track selected panel indices
   const [figures, setFigures] = useState(null); // Store backend images
+  const [reactionSequence, setReactionSequence] = useState(null); // Store reaction sequences
+
   const { count, panelWidth, panelHeight } = PAGE_CONFIG[page];
+
+  // Fetch reaction_sequence.json on component mount
+  useEffect(() => {
+    fetch('/reaction_sequence.json')
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to load reaction_sequence.json');
+        return response.json();
+      })
+      .then(data => setReactionSequence(data))
+      .catch(err => console.error(err));
+  }, []);
 
   // Reset selection and images when page changes
   React.useEffect(() => {
@@ -74,7 +86,6 @@ const ScaffoldDashboard = () => {
         >
           <option value="draw">Draw</option>
           <option value="draw_test">Draw Test</option>
-          <option value="sequences">Sequences</option>
           <option value="tetramers">Tetramers</option>
           <option value="pentamers">Pentamers</option>
         </select>
@@ -88,70 +99,66 @@ const ScaffoldDashboard = () => {
         rowGap: page === 'draw' ? '0' : '8px',
         columnGap: page === 'draw' ? '0' : '8px',
       }}>
-        {page === 'sequences' ? (
-          <Sequences />
-        ) : (
-          [...Array(count)].map((_, i) => {
-            const isSelected = selectedPanels.includes(i);
-            const label = page === 'tetramers' ? `Ub4_${i + 1}` : page === 'pentamers' ? `Ub5_${i + 1}` : '';
-            return (
-              <Panel
-                key={i}
-                style={{
-                  width: panelWidth,
-                  height: panelHeight + (page === 'draw' ? 0 : 20),
-                  minWidth: panelWidth,
-                  minHeight: panelHeight + (page === 'draw' ? 0 : 20),
-                  padding: 0,
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  margin: page === 'draw' ? '0 auto' : undefined,
-                  border: isSelected ? '3px solid #1976d2' : '2px solid transparent',
-                  boxShadow: isSelected ? '0 0 12px #1976d2' : undefined,
-                  cursor: page !== 'draw' ? 'pointer' : 'default',
-                  transition: 'border 0.2s, box-shadow 0.2s',
-                }}
-                onClick={() => handlePanelClick(i)}
-              >
-                <div style={{ width: panelWidth, height: panelHeight }}>
-                  {page === 'draw' ? (
-                    <GameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
-                  ) : page === 'draw_test' ? (
-                    <ScaffoldJsonWrapper jsonData={k48_dimer_ubiquitin} />
-                  ) : (
-                    <FrozenGameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
-                  )}
-                </div>
-                {page !== 'draw' && (
-                  <div
-                    style={{
-                      width: '100%',
-                      textAlign: 'center',
-                      fontSize: 14,
-                      color: 'white',
-                      marginTop: -5,
-                      fontWeight: 600,
-                      textShadow: '0 2px 8px #222',
-                      letterSpacing: 1,
-                      userSelect: 'none',
-                      position: 'relative',
-                      zIndex: 2,
-                    }}
-                  >
-                    {label}
-                    {selectionCounts[label] ? (
-                      <span style={{ marginLeft: 8, color: '#ffd600', fontWeight: 700, fontSize: 13 }}>
-                        ×{selectionCounts[label]}
-                      </span>
-                    ) : null}
-                  </div>
+        {[...Array(count)].map((_, i) => {
+          const isSelected = selectedPanels.includes(i);
+          const label = page === 'tetramers' ? `Ub4_${i + 1}` : page === 'pentamers' ? `Ub5_${i + 1}` : '';
+          return (
+            <Panel
+              key={i}
+              style={{
+                width: panelWidth,
+                height: panelHeight + (page === 'draw' ? 0 : 20),
+                minWidth: panelWidth,
+                minHeight: panelHeight + (page === 'draw' ? 0 : 20),
+                padding: 0,
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                margin: page === 'draw' ? '0 auto' : undefined,
+                border: isSelected ? '3px solid #1976d2' : '2px solid transparent',
+                boxShadow: isSelected ? '0 0 12px #1976d2' : undefined,
+                cursor: page !== 'draw' ? 'pointer' : 'default',
+                transition: 'border 0.2s, box-shadow 0.2s',
+              }}
+              onClick={() => handlePanelClick(i)}
+            >
+              <div style={{ width: panelWidth, height: panelHeight }}>
+                {page === 'draw' ? (
+                  <GameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
+                ) : page === 'draw_test' ? (
+                  <ScaffoldJsonWrapper jsonData={k48_dimer_ubiquitin} />
+                ) : (
+                  <FrozenGameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
                 )}
-              </Panel>
-            );
-          })
-        )}
+              </div>
+              {page !== 'draw' && (
+                <div
+                  style={{
+                    width: '100%',
+                    textAlign: 'center',
+                    fontSize: 14,
+                    color: 'white',
+                    marginTop: -5,
+                    fontWeight: 600,
+                    textShadow: '0 2px 8px #222',
+                    letterSpacing: 1,
+                    userSelect: 'none',
+                    position: 'relative',
+                    zIndex: 2,
+                  }}
+                >
+                  {label}
+                  {selectionCounts[label] ? (
+                    <span style={{ marginLeft: 8, color: '#ffd600', fontWeight: 700, fontSize: 13 }}>
+                      ×{selectionCounts[label]}
+                    </span>
+                  ) : null}
+                </div>
+              )}
+            </Panel>
+          );
+        })}
       </div>
       {/* Selection tracker for tetramers and pentamers */}
       {(page === 'tetramers' || page === 'pentamers') && (
@@ -235,24 +242,49 @@ const ScaffoldDashboard = () => {
       {/* Render backend images if available */}
       {figures && (
         <div style={{ margin: '32px auto', maxWidth: 1200, display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <div style={{width: '100%'}}>
+          <div style={{ width: '100%' }}>
             <button
-              style={{marginBottom: 8, width: 300, background: '#388e3c', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 0', fontWeight: 700, fontSize: 16, cursor: 'pointer', display: 'block', marginLeft: 'auto', marginRight: 'auto'}}
+              style={{
+                marginBottom: 8,
+                width: 300,
+                background: '#388e3c',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                padding: '10px 0',
+                fontWeight: 700,
+                fontSize: 16,
+                cursor: 'pointer',
+                display: 'block',
+                marginLeft: 'auto',
+                marginRight: 'auto',
+              }}
               onClick={async () => {
                 const baseName = window.prompt('Enter a base file name for this group of files:', 'ubiquitin_plate');
                 if (!baseName) return;
-                // Save all keys in figures as files
                 for (const key of Object.keys(figures)) {
-                  // Determine file extension and MIME type
                   let ext = 'png';
                   let mime = 'image/png';
-                  if (key.endsWith('.xlsx')) { ext = 'xlsx'; mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'; }
-                  else if (key.endsWith('.csv')) { ext = 'csv'; mime = 'text/csv'; }
-                  else if (key.endsWith('.py')) { ext = 'py'; mime = 'text/x-python'; }
-                  else if (key.endsWith('.doc') || key.endsWith('.docx')) { ext = key.endsWith('.docx') ? 'docx' : 'doc'; mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'; }
-                  else if (key.endsWith('.txt')) { ext = 'txt'; mime = 'text/plain'; }
-                  // If key has a known extension, remove it from the base name
-                  let cleanKey = key.replace(/\.(png|xlsx|csv|py|docx?|txt)$/i, '');
+                  if (key.endsWith('.xlsx')) {
+                    ext = 'xlsx';
+                    mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+                  } else if (key.endsWith('.csv')) {
+                    ext = 'csv';
+                    mime = 'text/csv';
+                  } else if (key.endsWith('.py')) {
+                    ext = 'py';
+                    mime = 'text/x-python';
+                  } else if (key.endsWith('.doc') || key.endsWith('.docx')) {
+                    ext = key.endsWith('.docx') ? 'docx' : 'doc';
+                    mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                  } else if (key.endsWith('.txt')) {
+                    ext = 'txt';
+                    mime = 'text/plain';
+                  } else if (key.endsWith('.json')) {
+                    ext = 'json';
+                    mime = 'application/json';
+                  }
+                  let cleanKey = key.replace(/\.(png|xlsx|csv|py|docx?|txt|json)$/i, '');
                   await new Promise(resolve => setTimeout(resolve, 200));
                   const link = document.createElement('a');
                   link.href = `data:${mime};base64,${figures[key]}`;
@@ -262,24 +294,49 @@ const ScaffoldDashboard = () => {
                   document.body.removeChild(link);
                 }
               }}
-            >Save All Files</button>
-            <div style={{textAlign: 'center', color: '#388e3c', fontWeight: 600, fontSize: 15, marginBottom: 16}}>
-              The following files will also be included:<br/>
-              <span style={{color:'#1976d2'}}>reagent calculations (NAME_reagent_calculations.xlsx)</span><br/>
-              <span style={{color:'#1976d2'}}>opentrons synthesis (NAME_opentrons_synthesis.py)</span>
+            >
+              Save All Files
+            </button>
+            <div style={{ textAlign: 'center', color: '#388e3c', fontWeight: 600, fontSize: 15, marginBottom: 16 }}>
+              The following files will also be included:<br />
+              <span style={{ color: '#1976d2' }}>reagent calculations (NAME_reagent_calculations.xlsx)</span><br />
+              <span style={{ color: '#1976d2' }}>opentrons synthesis (NAME_opentrons_synthesis.py)</span><br />
+              <span style={{ color: '#1976d2' }}>reaction schemes (NAME_reaction_schemes_json.json)</span>
             </div>
           </div>
           <div>
-            <div style={{textAlign: 'center', fontWeight: 600, marginBottom: 8}}>Enzyme + Donor Mixes</div>
-            <img src={`data:image/png;base64,${figures.enzymes_donors_96}`} alt="Enzyme + Donor Plate" style={{maxWidth: 350, borderRadius: 8, boxShadow: '0 2px 12px #0003'}} />
+            <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: 8 }}>Enzyme + Donor Mixes</div>
+            <img
+              src={`data:image/png;base64,${figures.enzymes_donors_96}`}
+              alt="Enzyme + Donor Plate"
+              style={{ maxWidth: 350, borderRadius: 8, boxShadow: '0 2px 12px #0003' }}
+            />
           </div>
           <div>
-            <div style={{textAlign: 'center', fontWeight: 600, marginBottom: 8}}>Deprotections</div>
-            <img src={`data:image/png;base64,${figures.deprots_96}`} alt="Deprotections Plate" style={{maxWidth: 350, borderRadius: 8, boxShadow: '0 2px 12px #0003'}} />
+            <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: 8 }}>Deprotections</div>
+            <img
+              src={`data:image/png;base64,${figures.deprots_96}`}
+              alt="Deprotections Plate"
+              style={{ maxWidth: 350, borderRadius: 8, boxShadow: '0 2px 12px #0003' }}
+            />
           </div>
           <div>
-            <div style={{textAlign: 'center', fontWeight: 600, marginBottom: 8}}>Acceptors</div>
-            <img src={`data:image/png;base64,${figures.acceptors_96}`} alt="Acceptors Plate" style={{maxWidth: 350, borderRadius: 8, boxShadow: '0 2px 12px #0003'}} />
+            <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: 8 }}>Acceptors</div>
+            <img
+              src={`data:image/png;base64,${figures.acceptors_96}`}
+              alt="Acceptors Plate"
+              style={{ maxWidth: 350, borderRadius: 8, boxShadow: '0 2px 12px #0003' }}
+            />
+          </div>
+          <div style={{
+              maxHeight: '100%',
+              overflowY: 'auto',
+              border: '1px solid #ccc',
+              borderRadius: '8px',
+              padding: '16px',
+              boxSizing: 'border-box',
+            }}>
+            <Sequences reactionSequence={reactionSequence} />
           </div>
         </div>
       )}

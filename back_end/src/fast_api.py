@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import base64
 import io
+import json
 
 app = FastAPI()
 
@@ -115,7 +116,15 @@ async def submit_selection(request: Request):
     opentrons_bytes.seek(0)
     opentrons_b64 = base64.b64encode(opentrons_bytes.read()).decode('utf-8')
 
-    # Return as JSON with base64-encoded PNGs, Excel, and Opentrons Python file
+
+    # Convert reaction_sequences_dicts to bytes
+    reaction_sequences_dicts = plotting.build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size)
+    reaction_sequences_bytes = io.BytesIO()
+    reaction_sequences_bytes.write(json.dumps(reaction_sequences_dicts).encode('utf-8'))
+    reaction_sequences_bytes.seek(0)
+    reaction_sequences_b64 = base64.b64encode(reaction_sequences_bytes.read()).decode('utf-8')
+
+    # Return as JSON with base64-encoded PNGs, Excel, Opentrons Python file, and reaction sequences
     return JSONResponse(content={
         "received_labels": indexes,
         "page": page,
@@ -125,7 +134,8 @@ async def submit_selection(request: Request):
             "deprots_96": fig2_b64,
             "acceptors_96": fig3_b64,
             "reagent_calculations.xlsx": excel_b64,
-            "opentrons.py": opentrons_b64
+            "opentrons.py": opentrons_b64,
+            "reaction_sequences.json": reaction_sequences_b64
         }
     })
 

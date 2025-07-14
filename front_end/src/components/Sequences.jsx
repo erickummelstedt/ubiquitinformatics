@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import ScaffoldJsonWrapper from './ScaffoldJsonWrapper';
-import reactionSequence from '/reaction_sequence.json?url';
 import k48_dimer_ubiquitin from '../data/k48_dimer_ubiquitin';
 
 
@@ -315,20 +314,15 @@ const renderBox = (item) => {
     );
 };
 
-const Sequences = () => {
+const Sequences = ({ reactionSequence }) => {
     const [boxes, setBoxes] = useState([]);
 
     useEffect(() => {
-        fetch(reactionSequence)
-            .then((response) => response.json())
-            .then((data) => {
-                const renderedBoxes = data.map((item) => renderBox(item));
-                setBoxes(renderedBoxes);
-            })
-            .catch((error) => {
-                console.error('Error fetching or parsing data:', error); // Debugging errors
-            });
-    }, []);
+        if (reactionSequence) {
+            const renderedBoxes = reactionSequence.map((item) => renderBox(item));
+            setBoxes(renderedBoxes);
+        }
+    }, [reactionSequence]);
 
     return (
         <div
