@@ -336,7 +336,7 @@ const ScaffoldDashboard = () => {
               padding: '16px',
               boxSizing: 'border-box',
             }}>
-            <Sequences reactionSequence={reactionSequence} />
+            <Sequences reactionSequence={figures && figures["reaction_sequences.json"] ? JSON.parse(atob(figures["reaction_sequences.json"])) : null} />
           </div>
         </div>
       )}
