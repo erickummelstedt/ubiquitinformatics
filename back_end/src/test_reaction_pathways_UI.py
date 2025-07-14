@@ -5,6 +5,7 @@ from matplotlib.font_manager import FontProperties
 import re
 import subprocess
 import sys
+import json
 
 # Dynamically get the backend path relative to this script location
 script_path = Path(__file__).resolve()
@@ -18,6 +19,7 @@ from main import *
 from plotting import *
 
 multimer_size = 4
+multimer_size = 5
 
 # download CSV files
 def download_data_dict(multimer_size):
@@ -48,6 +50,8 @@ ubiquitin_history = data_dict['ubiquitin_history']
 # Create the plate dataframes for the selected indexes
 # Select the indexes of the multimer_ids that are used in synthesis
 selected_ids = ["Ub4_5","Ub4_10","Ub4_2","Ub4_2","Ub4_2","Ub4_2","Ub4_2","Ub4_2","Ub4_2","Ub4_2","Ub4_8", "Ub4_11","Ub4_7"]
+selected_ids = ["Ub5_5","Ub5_10","Ub5_2","Ub5_2","Ub5_2","Ub5_2","Ub5_2","Ub5_2","Ub5_2","Ub5_2","Ub5_8", "Ub5_11","Ub5_7"]
+
 indexes = list()
 
 # Get the indexes of the selected multimer_ids that are used in synthesis
@@ -506,6 +510,32 @@ for idx in indexes:
         # Append the updated line_dict to all_lines_dicts
         all_lines_dicts.append(line_dict)
     
+
+def compress_duplicates(all_lines_dicts):
+    compressed_dicts = []
+    seen_items = {}
+
+    for index, item in enumerate(all_lines_dicts):
+        item_str = json.dumps(item, sort_keys=True)
+        if item_str in seen_items:
+            seen_items[item_str]['end'] = index + 1
+        else:
+            seen_items[item_str] = {'start': index + 1, 'end': index + 1}
+            compressed_dicts.append(item)
+
+    for item in compressed_dicts:
+        item_str = json.dumps(item, sort_keys=True)
+        range_info = seen_items[item_str]
+        if range_info['start'] != range_info['end']:
+            item['Reaction\nNumber'] = f"{range_info['start']} - {range_info['end']}"
+
+    return compressed_dicts
+
+# Compress duplicates in all_lines_dicts
+all_lines_dicts = compress_duplicates(all_lines_dicts)
+
+
+
 # Save the list of dictionaries as a JSON file in the front_end/public directory
 output_path = project_root / 'front_end' / 'public' / 'reaction_sequence.json'
 with open(output_path, 'w') as json_file:

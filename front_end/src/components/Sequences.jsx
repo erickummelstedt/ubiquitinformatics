@@ -142,7 +142,7 @@ const renderBox = (item) => {
                                 flexShrink: 0,
                             }}
                         >
-                            <ScaffoldJsonWrapper jsonData={JSON.parse(fixQuotes(item[key]))} />
+                            <ScaffoldJsonWrapper jsonData={JSON.parse(fixQuotes(item["ubi_his_JSON_final_multimer"]))} />
                         </div>
                     </div>
                 </>
@@ -247,7 +247,7 @@ const renderBox = (item) => {
                     marginBottom: '10px',
                 }}
             >
-                Reaction #: {item["Reaction\nNumber"]}
+                Reaction Well #: {item["Reaction\nNumber"]}
             </div>
             <div
                 style={{
@@ -261,6 +261,54 @@ const renderBox = (item) => {
                 }}
             >
                 Simulation Index: {item["Simulation\nindex"]}
+            </div>
+            <div
+                style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    marginBottom: '10px',
+                }}
+            >
+                Multimer Synthesised: {item["Multimer Id"]}
+            </div>
+                <div
+                style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        margin: '20px',
+                    }}
+                >
+                <div
+                    style={{
+                        width: '228px',
+                        height: '148px',
+                        border: '1px solid #ccc',
+                        borderRadius: '10px',
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                        marginBottom: '10px'
+                    }}
+                >
+                    <ScaffoldJsonWrapper jsonData={JSON.parse(fixQuotes(item['ubi_his_JSON_final_multimer']))} />
+                </div>
+            </div>
+            <div
+                style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    marginBottom: '10px',
+                }}
+            >
+               Reaction Pathway: 
             </div>
             {panels}
         </div>
