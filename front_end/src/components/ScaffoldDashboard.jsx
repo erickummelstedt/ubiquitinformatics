@@ -11,7 +11,6 @@ const SMALL_PANEL_HEIGHT = 90;
 
 const PAGE_CONFIG = {
   draw: { count: 1, label: 'Explore Ubiquitin Pathways', panelWidth: 570, panelHeight: 370 },
-  draw_test: { count: 1, label: 'Test Panel', panelWidth: 570, panelHeight: 370 },
   tetramers: { count: 14, label: 'Tetramers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
   pentamers: { count: 42, label: 'Pentamers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
 };
@@ -74,7 +73,6 @@ const ScaffoldDashboard = () => {
           style={{ fontSize: 16, padding: '4px 12px', borderRadius: 6 }}
         >
           <option value="draw">Draw</option>
-          <option value="draw_test">Draw Test</option>
           <option value="tetramers">Tetramers</option>
           <option value="pentamers">Pentamers</option>
         </select>
@@ -115,8 +113,6 @@ const ScaffoldDashboard = () => {
               <div style={{ width: panelWidth, height: panelHeight }}>
                 {page === 'draw' ? (
                   <GameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
-                ) : page === 'draw_test' ? (
-                  <ScaffoldJsonWrapper jsonData={k48_dimer_ubiquitin} />
                 ) : (
                   <FrozenGameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
                 )}
@@ -171,21 +167,28 @@ const ScaffoldDashboard = () => {
           {Object.keys(selectionCounts).length === 0 ? (
             <span style={{ color: '#aaa' }}>None</span>
           ) : (
-            Object.entries(selectionCounts).map(([label, count], idx) => (
-              <span key={label} style={{
-                display: 'inline-block',
-                background: '#1976d2',
-                color: '#fff',
-                borderRadius: 6,
-                padding: '2px 10px',
-                marginRight: 8,
-                fontWeight: 700,
-                fontSize: 15,
-                boxShadow: '0 1px 4px #0004',
-              }}>
-                {label}{count > 1 ? ` ×${count}` : ''}
-              </span>
-            ))
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              maxWidth: '100%',
+            }}>
+              {Object.entries(selectionCounts).map(([label, count], idx) => (
+                <span key={label} style={{
+                  display: 'inline-block',
+                  background: '#1976d2',
+                  color: '#fff',
+                  borderRadius: 6,
+                  padding: '2px 10px',
+                  marginRight: 8,
+                  fontWeight: 700,
+                  fontSize: 15,
+                  boxShadow: '0 1px 4px #0004',
+                }}>
+                  {label}{count > 1 ? ` ×${count}` : ''}
+                </span>
+              ))}
+            </div>
           )}
           <button
             onClick={() => setSelectedPanels([])}
