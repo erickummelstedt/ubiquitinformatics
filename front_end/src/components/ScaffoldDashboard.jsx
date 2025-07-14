@@ -24,17 +24,6 @@ const ScaffoldDashboard = () => {
 
   const { count, panelWidth, panelHeight } = PAGE_CONFIG[page];
 
-  // Fetch reaction_sequence.json on component mount
-  useEffect(() => {
-    fetch('/reaction_sequence.json')
-      .then(response => {
-        if (!response.ok) throw new Error('Failed to load reaction_sequence.json');
-        return response.json();
-      })
-      .then(data => setReactionSequence(data))
-      .catch(err => console.error(err));
-  }, []);
-
   // Reset selection and images when page changes
   React.useEffect(() => {
     setSelectedPanels([]);
