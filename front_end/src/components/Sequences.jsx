@@ -3,7 +3,7 @@ import ScaffoldJsonWrapper from './ScaffoldJsonWrapper';
 import k48_dimer_ubiquitin from '../data/k48_dimer_ubiquitin';
 
 
-const renderBox = (item) => {
+const renderBox = (item, showReactionWell) => {
     const fixQuotes = (str) => str.replace(/'/g, '"'); // Replace single quotes with double quotes
 
     const isPentamer = item.ubi_his_JSON_pentamer_formation; // Check if pentamer pathway exists
@@ -235,19 +235,21 @@ const renderBox = (item) => {
                 marginBottom: '20px',
             }}
         >
-            <div
-                style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    marginBottom: '10px',
-                }}
-            >
-                Reaction Well #: {item["Reaction\nNumber"]}
-            </div>
+            {showReactionWell && (
+                <div
+                    style={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        marginBottom: '10px',
+                    }}
+                >
+                    Reaction Well #: {item["Reaction\nNumber"]}
+                </div>
+            )}
             <div
                 style={{
                     backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -314,15 +316,15 @@ const renderBox = (item) => {
     );
 };
 
-const Sequences = ({ reactionSequence }) => {
+const Sequences = ({ reactionSequence, showReactionWell = true }) => {
     const [boxes, setBoxes] = useState([]);
 
     useEffect(() => {
         if (reactionSequence) {
-            const renderedBoxes = reactionSequence.map((item) => renderBox(item));
+            const renderedBoxes = reactionSequence.map((item) => renderBox(item, showReactionWell));
             setBoxes(renderedBoxes);
         }
-    }, [reactionSequence]);
+    }, [reactionSequence, showReactionWell]);
 
     return (
         <div

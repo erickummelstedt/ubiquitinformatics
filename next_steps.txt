@@ -57,12 +57,11 @@ DONE - Build beautiful reaction schemes with the new functionality
 DONE UI - go to sequences page and fix 'hello': trimer tetramer etc and 'hello1': UbD1,2,3,4,5
 DONE - Integrate Reaction_Sequences generation with fast_api 
 DONE - Integrate Reaction_Sequences with Document generation
+DONE - Draw out all the pentamers and tetramers; this will be easier now
 
 
 
-
-- Before adding into application that works; make sure you have everything there
-- This includes the donors and the labels of everything
+- How to make acceptors is also included
 
 
 
@@ -73,12 +72,11 @@ A. Check that opentrons works
 - Integrate Protocol_Doc generation with fast_api 
 
 5. 
-- Draw out all the pentamers and tetramers; this will be easier now
 
 6. 
-- Build the 
 
-# have the inheco plate in there and also the deck layout
+# have the inheco plate in there
+
 
 
 submit_selection prompt;

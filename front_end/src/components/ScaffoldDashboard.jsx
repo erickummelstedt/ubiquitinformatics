@@ -152,7 +152,7 @@ const ScaffoldDashboard = () => {
                         maxWidth: '1200px', // Keep the width tight
                         margin: '0 auto',
                       }}>
-                        <Sequences reactionSequence={reactionSequence} />
+                        <Sequences reactionSequence={reactionSequence} showReactionWell={false} />
                       </div>
                     )}
                   </div>
