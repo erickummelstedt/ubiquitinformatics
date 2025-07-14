@@ -290,7 +290,7 @@ const ScaffoldDashboard = () => {
               The following files will also be included:<br />
               <span style={{ color: '#1976d2' }}>reagent calculations (NAME_reagent_calculations.xlsx)</span><br />
               <span style={{ color: '#1976d2' }}>opentrons synthesis (NAME_opentrons_synthesis.py)</span><br />
-              <span style={{ color: '#1976d2' }}>reaction schemes (NAME_reaction_schemes_json.json)</span>
+              <span style={{ color: '#1976d2' }}>reaction schemes (NAME_reaction_schemes.png)</span>
             </div>
           </div>
           <div>
@@ -325,7 +325,9 @@ const ScaffoldDashboard = () => {
               padding: '16px',
               boxSizing: 'border-box',
             }}>
-            <Sequences reactionSequence={figures && figures["reaction_sequences.json"] ? JSON.parse(atob(figures["reaction_sequences.json"])) : null} />
+            <div id="reaction-sequences">
+              <Sequences reactionSequence={figures && figures["reaction_sequences.json"] ? JSON.parse(atob(figures["reaction_sequences.json"])) : null} />
+            </div>          
           </div>
         </div>
       )}
