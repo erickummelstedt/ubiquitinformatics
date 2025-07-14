@@ -107,14 +107,15 @@ const ScaffoldDashboard = () => {
                               body: JSON.stringify({ ubxy: value }),
                             });
                             if (!response.ok) {
-                              console.error('Submission failed:', response.status, response.statusText);
-                              throw new Error('Submission failed');
+                              console.error('Failed to fetch reaction sequences:', response.status, response.statusText);
+                              throw new Error('Failed to fetch reaction sequences');
                             }
                             const result = await response.json();
-                            alert('Submission successful!\n' + JSON.stringify(result));
+                            const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
+                            setReactionSequence(decodedSequence); // Store the fetched sequence
                           } catch (err) {
                             console.error('Error details:', err);
-                            alert('Submission failed: ' + err.message);
+                            alert('Failed to fetch reaction sequences: ' + err.message);
                           }
                         }
                       }
@@ -137,6 +138,23 @@ const ScaffoldDashboard = () => {
                     margin: '0 auto',
                   }}>
                     <GameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
+                  </div>
+                  <div style={{ marginTop: '24px' }}> {/* Add space between GameScaffoldPanel and Sequences */}
+                    {reactionSequence && (
+                      <div style={{
+                        maxHeight: '100%', // Set a fixed height for scrollability
+                        overflowY: 'auto',
+                        border: '1px solid #ccc',
+                        borderRadius: '8px',
+                        padding: '16px',
+                        boxSizing: 'border-box',
+                        width: '100%',
+                        maxWidth: '1200px', // Keep the width tight
+                        margin: '0 auto',
+                      }}>
+                        <Sequences reactionSequence={reactionSequence} />
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
