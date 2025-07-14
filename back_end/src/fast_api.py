@@ -139,4 +139,18 @@ async def submit_selection(request: Request):
         }
     })
 
+# New endpoint to handle UbX_Y submission
+@app.post("/api/submit-ubxy")
+async def submit_ubxy(request: Request):
+    try:
+        data = await request.json()
+        ubxy_value = data.get("ubxy", None)
+        if not ubxy_value:
+            return JSONResponse(content={"status": "error", "message": "No UbX_Y value provided"}, status_code=400)
+
+        # Return the entered UbX_Y value
+        return JSONResponse(content={"status": "ok", "ubxy": ubxy_value})
+    except Exception as e:
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
+
 

@@ -90,58 +90,103 @@ const ScaffoldDashboard = () => {
           const isSelected = selectedPanels.includes(i);
           const label = page === 'tetramers' ? `Ub4_${i + 1}` : page === 'pentamers' ? `Ub5_${i + 1}` : '';
           return (
-            <Panel
-              key={i}
-              style={{
-                width: panelWidth,
-                height: panelHeight + (page === 'draw' ? 0 : 20),
-                minWidth: panelWidth,
-                minHeight: panelHeight + (page === 'draw' ? 0 : 20),
-                padding: 0,
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                margin: page === 'draw' ? '0 auto' : undefined,
-                border: isSelected ? '3px solid #1976d2' : '2px solid transparent',
-                boxShadow: isSelected ? '0 0 12px #1976d2' : undefined,
-                cursor: page !== 'draw' ? 'pointer' : 'default',
-                transition: 'border 0.2s, box-shadow 0.2s',
-              }}
-              onClick={() => handlePanelClick(i)}
-            >
-              <div style={{ width: panelWidth, height: panelHeight }}>
-                {page === 'draw' ? (
-                  <GameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
-                ) : (
-                  <FrozenGameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
-                )}
-              </div>
-              {page !== 'draw' && (
-                <div
-                  style={{
-                    width: '100%',
-                    textAlign: 'center',
-                    fontSize: 14,
-                    color: 'white',
-                    marginTop: -5,
-                    fontWeight: 600,
-                    textShadow: '0 2px 8px #222',
-                    letterSpacing: 1,
-                    userSelect: 'none',
-                    position: 'relative',
-                    zIndex: 2,
-                  }}
-                >
-                  {label}
-                  {selectionCounts[label] ? (
-                    <span style={{ marginLeft: 8, color: '#ffd600', fontWeight: 700, fontSize: 13 }}>
-                      ×{selectionCounts[label]}
-                    </span>
-                  ) : null}
+            <>
+              {page === 'draw' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
+                  <input
+                    type="text"
+                    placeholder="Enter UbX_Y"
+                    onKeyDown={async (e) => {
+                      if (e.key === 'Enter') {
+                        const value = e.target.value;
+                        if (value) {
+                          try {
+                            const response = await fetch('/api/submit-ubxy', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ ubxy: value }),
+                            });
+                            if (!response.ok) {
+                              console.error('Submission failed:', response.status, response.statusText);
+                              throw new Error('Submission failed');
+                            }
+                            const result = await response.json();
+                            alert('Submission successful!\n' + JSON.stringify(result));
+                          } catch (err) {
+                            console.error('Error details:', err);
+                            alert('Submission failed: ' + err.message);
+                          }
+                        }
+                      }
+                    }}
+                    style={{
+                      width: '300px',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      border: '1px solid #ccc',
+                      fontSize: '16px',
+                      marginBottom: '12px',
+                    }}
+                  />
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    width: panelWidth,
+                    height: panelHeight,
+                    margin: '0 auto',
+                  }}>
+                    <GameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
+                  </div>
                 </div>
+              ) : (
+                <Panel
+                  key={i}
+                  style={{
+                    width: panelWidth,
+                    height: panelHeight + 20,
+                    minWidth: panelWidth,
+                    minHeight: panelHeight + 20,
+                    padding: 0,
+                    position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    border: isSelected ? '3px solid #1976d2' : '2px solid transparent',
+                    boxShadow: isSelected ? '0 0 12px #1976d2' : undefined,
+                    cursor: 'pointer',
+                    transition: 'border 0.2s, box-shadow 0.2s',
+                  }}
+                  onClick={() => handlePanelClick(i)}
+                >
+                  <FrozenGameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
+                  {label && (
+                    <div
+                      style={{
+                        width: '100%',
+                        textAlign: 'center',
+                        fontSize: 14,
+                        color: 'white',
+                        marginTop: -5,
+                        fontWeight: 600,
+                        textShadow: '0 2px 8px #222',
+                        letterSpacing: 1,
+                        userSelect: 'none',
+                        position: 'relative',
+                        zIndex: 2,
+                      }}
+                    >
+                      {label}
+                      {selectionCounts[label] ? (
+                        <span style={{ marginLeft: 8, color: '#ffd600', fontWeight: 700, fontSize: 13 }}>
+                          ×{selectionCounts[label]}
+                        </span>
+                      ) : null}
+                    </div>
+                  )}
+                </Panel>
               )}
-            </Panel>
+            </>
           );
         })}
       </div>
