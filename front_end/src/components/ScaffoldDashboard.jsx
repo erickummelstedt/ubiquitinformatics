@@ -186,10 +186,10 @@ const ScaffoldDashboard = () => {
                 <Panel
                   key={i}
                   style={{
-                    width: panelWidth,
-                    height: panelHeight + 20,
-                    minWidth: panelWidth,
-                    minHeight: panelHeight + 20,
+                    width: SMALL_PANEL_WIDTH,
+                    height: SMALL_PANEL_HEIGHT+35,
+                    minWidth: SMALL_PANEL_WIDTH,
+                    minHeight: SMALL_PANEL_HEIGHT+35,
                     padding: 0,
                     position: 'relative',
                     display: 'flex',
@@ -202,7 +202,19 @@ const ScaffoldDashboard = () => {
                   }}
                   onClick={() => handlePanelClick(i)}
                 >
-                  <FrozenGameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
+                  <div
+                    style={{
+                        width: SMALL_PANEL_WIDTH-5,
+                        height: SMALL_PANEL_HEIGHT-2,
+                        border: '1px solid #ccc',
+                        borderRadius: '10px',
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                        marginBottom: '10px'
+                    }}
+                  >
+                      <ScaffoldJsonWrapper jsonData={k48_dimer_ubiquitin} />
+                  </div>
                   {label && (
                     <div
                       style={{
