@@ -20,6 +20,7 @@ const ScaffoldDashboard = () => {
   const [selectedPanels, setSelectedPanels] = useState([]); // Track selected panel indices
   const [figures, setFigures] = useState(null); // Store backend images
   const [reactionSequence, setReactionSequence] = useState(null); // Store reaction sequences
+  const [jsonOutput, setJsonOutput] = useState(null);
 
   const { count, panelWidth, panelHeight } = PAGE_CONFIG[page];
 
@@ -137,7 +138,30 @@ const ScaffoldDashboard = () => {
                     height: panelHeight,
                     margin: '0 auto',
                   }}>
-                    <GameScaffoldPanel panelWidth={panelWidth} panelHeight={panelHeight} />
+                    <GameScaffoldPanel
+                      panelWidth={panelWidth}
+                      panelHeight={panelHeight}
+                      onSubmit={async (jsonOutput) => {
+                        console.log('Linkages created:', jsonOutput);
+                        setJsonOutput(jsonOutput);
+                        try {
+                          const response = await fetch('/api/submit-json-output', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ jsonOutput }),
+                          });
+                          if (!response.ok) {
+                            console.error('Failed to fetch reaction sequences:', response.status, response.statusText);
+                            throw new Error('Failed to fetch reaction sequences');
+                          }
+                          const result = await response.json();
+                          const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
+                          setReactionSequence(decodedSequence); // Store the fetched sequence
+                        } catch (err) {
+                          console.error('Error submitting jsonOutput:', err);
+                        }
+                      }}
+                    />
                   </div>
                   <div style={{ marginTop: '24px' }}> {/* Add space between GameScaffoldPanel and Sequences */}
                     {reactionSequence && (
@@ -149,6 +173,7 @@ const ScaffoldDashboard = () => {
                         padding: '16px',
                         boxSizing: 'border-box',
                         width: '100%',
+                        minWidth: '300px', // Keep the width tight
                         maxWidth: '1200px', // Keep the width tight
                         margin: '0 auto',
                       }}>

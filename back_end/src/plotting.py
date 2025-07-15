@@ -2377,3 +2377,189 @@ def build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size):
     return reaction_schemes_dicts
 
 
+def ubiquitin_building_wo_iterate(
+    parent_dictionary: dict | str,
+    ubi_molecule_to_add: dict | str,
+    bonding_ubiquitin_number: int,
+    new_ubiquitin_number: int,
+    lysine_residue: str
+) -> dict:
+    """
+    Entry point for building a ubiquitin chain by attaching a molecule or protecting group.
+
+    Args:
+        parent_dictionary (dict or str): Input protein structure.
+        ubi_molecule_to_add (dict or str): Ubiquitin or protecting group (SMAC/ABOC).
+        bonding_ubiquitin_number (int): The chain number to which the molecule is added.
+        lysine_residue (str): The specific lysine site for conjugation.
+
+    Returns:
+        dict: The updated protein dictionary with changes applied.
+    """
+
+    import src.main as main
+    import src.utils.utils as utils
+    import src.utils.logging_utils as logging_utils
+    from src.utils.utils import convert_json_to_dict
+    from src.utils.logging_utils import log_end_of_branching, log_end_of_protein, log_protein_details, log_branching_details
+    import copy
+    import logging
+
+    # Initialize context for chain numbering and length tracking
+    context = {
+        "chain_number_list": [1],
+        "chain_length_list": [],
+    }
+
+    # Normalize input to dicts
+    parent_dictionary = convert_json_to_dict(parent_dictionary)
+
+    # Only convert to dict if not a protecting group
+    if ubi_molecule_to_add not in ('SMAC', 'ABOC'):
+        ubi_molecule_to_add = convert_json_to_dict(ubi_molecule_to_add)
+
+    new_ubi_molecule_to_add = copy.deepcopy(ubi_molecule_to_add)
+    new_ubi_molecule_to_add['chain_number'] = new_ubiquitin_number
+
+     # Error handling fop invalid ubi_molecule_to_add
+    if ubi_molecule_to_add not in ('SMAC', 'ABOC'):
+        if not isinstance(ubi_molecule_to_add, dict):
+            raise TypeError("ubi_molecule_to_add must be a dictionary or 'SMAC'/'ABOC' string")
+
+    def inner_wrapper_ubiquitin_building_wo_iterate(
+        input_dictionary: dict | str,
+        ubi_molecule_to_add: dict | str,
+        bonding_ubiquitin_number: int,
+        new_ubiquitin_number: int,
+        lysine_residue: str,
+        context: dict
+    ) -> tuple:
+        """
+        Recursively traverse and modify the ubiquitin structure to add new branches
+        or protecting groups to a given lysine site.
+
+        Args:
+            input_dictionary (dict or str): The protein or ubiquitin structure.
+            ubi_molecule_to_add (dict or str): Ubiquitin or protecting group.
+            bonding_ubiquitin_number (int): The specific chain number to modify.
+            lysine_residue (str): Lysine site to target.
+            context (dict): Tracks chain numbering and lengths.
+
+        Returns:
+            tuple: Updated working dictionary and context.
+        """
+        # Deep copy to avoid mutating input
+        working_dictionary = copy.deepcopy(input_dictionary)
+        working_dictionary = convert_json_to_dict(working_dictionary)
+
+        # Set the current chain number from context
+        # working_dictionary['chain_number'] = context['chain_number_list'][-1]
+        # Set and record chain length
+        working_dictionary['chain_length'] = len(working_dictionary['FASTA_sequence'])
+        context['chain_length_list'].append(working_dictionary['chain_length'])
+
+        # Log protein details for debugging and traceability
+        log_protein_details(working_dictionary, context)
+
+        # Increment chain_number for future recursive calls
+        context['chain_number_list'].append(context['chain_number_list'][-1] + 1)
+
+        for bra in working_dictionary['branching_sites']:
+            log_branching_details(bra, working_dictionary, context)
+
+            # Apply modification logic to the lysine site
+            bra, working_dictionary = main.handle_lysine_modification(
+                bra, working_dictionary, ubi_molecule_to_add, bonding_ubiquitin_number, lysine_residue
+            )
+
+            # Log the state of the current branch
+            if bra['children'] in ('SMAC', 'ABOC'):
+                logging.info(f"Protecting Group: {bra['children']}")
+            elif bra['children'] == "":
+                logging.info(f"There is no Protecting Group on: {bra['site_name']}")
+            elif isinstance(bra['children'], dict):
+                logging.info(f"NEXT CHAIN: {bra['children']}")
+                # Recursively process the next ubiquitin chain
+                bra['children'], context = inner_wrapper_ubiquitin_building_wo_iterate(
+                    bra['children'], ubi_molecule_to_add, bonding_ubiquitin_number, new_ubiquitin_number, lysine_residue, context
+                )
+            log_end_of_branching()
+
+        log_end_of_protein(working_dictionary)
+
+        return working_dictionary, context
+
+    # Build structure recursively
+    output_dictionary, output_context = inner_wrapper_ubiquitin_building_wo_iterate(
+        parent_dictionary, new_ubi_molecule_to_add, bonding_ubiquitin_number, new_ubiquitin_number, lysine_residue, context
+    )
+    
+    return output_dictionary, output_context
+
+def get_indexes_for_final_multimer(json_output, ubiquitin_history):
+    """
+    Match the final multimer from JSON output to the ubiquitin history and return unique indices.
+    Args:
+        json_output (list): List of dictionaries containing 'from', 'to', and 'linkage'.
+        ubiquitin_history (DataFrame): DataFrame containing the history of ubiquitin structures.    
+    Returns:
+        list: Unique indices corresponding to the final multimer.
+    """
+    
+    import src.main as main
+
+    ubiquitin_monomer = {
+        "protein": "1ubq",
+        "chain_number": 1,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+        "chain_length": 76,
+        "branching_sites": [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+        ]
+    }
+
+    histag_ubiquitin_monomer = {
+        "protein": "1ubq",
+        "chain_number": 0,
+        "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH",
+        "chain_length": 83,
+        "branching_sites": [
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+        ]
+    }
+
+    for index, json_dict in enumerate(json_output):
+        if index == 0:
+            growing_ubiquitin, growing_context = ubiquitin_building_wo_iterate(
+                histag_ubiquitin_monomer,
+                ubiquitin_monomer,
+                json_dict['from'],
+                json_dict['to'],
+                json_dict['linkage']
+            )
+        else:
+            growing_ubiquitin, growing_context = ubiquitin_building_wo_iterate(
+                growing_ubiquitin,
+                ubiquitin_monomer,
+                json_dict['from'],
+                json_dict['to'],
+                json_dict['linkage']
+            )
+
+    final_ubiquitin, final_context = main.iterate_through_ubiquitin(growing_ubiquitin)
+    indexes = ubiquitin_history.loc[ubiquitin_history["final_multimer"] == str(final_ubiquitin), "index"].dropna().unique()
+    return [int(i) for i in indexes]

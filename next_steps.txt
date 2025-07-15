@@ -111,6 +111,9 @@ DONE - user interface for opening up ubiquitin - use fastAPI template
 DONE - build the histag with a DHHHHHH at the moment its only HHHHHH in 3D simualation
 DONE - build reaction maps and inventory checks 
 DONE - connect to automated python
+DONE 1.  Connect the drawing in 'Draw' to the back_end
+    - Draw out the multimer with the numbers, maybe use ubiquitin builder without resetting the numbers
+    - Take it through iterate_through_ubiquitin, to give it correct numbering
 
 
 
@@ -119,13 +122,13 @@ DONE - connect to automated python
 
 Big things;
 
-1.  Connect the drawing in 'Draw' to the back_end
-    - Draw out the multimer with the numbers, maybe use ubiquitin builder without resetting the numbers
-    - Take it through iterate_through_ubiquitin, to give it correct numbering
-
 2.  Connect all the images that are frozen to the respective Ub4_X and Ub5_X, use FrozenGameScaffoldPanelTest
 
-3.  Perhaps do the thing that Jeff wanted.... that silly scheme
+3.  BIG BIG - Fix validation against confirmation data
+
+4.  Perhaps do the thing that Jeff wanted.... that silly scheme
+
+
 
 
 Tinkerings; 

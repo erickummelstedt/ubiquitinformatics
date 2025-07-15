@@ -212,4 +212,75 @@ async def submit_ubxy(request: Request):
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
+# New endpoint to handle jsonOutput submission
+@app.post("/api/submit-json-output")
+async def submit_json_output(request: Request):
+    import sys
+    from pathlib import Path
+    import pandas as pd
+
+    # Dynamically get the backend path relative to this file's location
+    current_path = Path(__file__).resolve()
+    project_root = current_path.parents[2]  # Go up to project root
+    sys.path.insert(0, str(project_root))
+    local_path = project_root / 'back_end'
+    sys.path.insert(0, str(local_path))
+
+    # Import project modules
+    import src.utils.utils
+    import src.utils.logging_utils
+    import src.main as main
+    import src.plotting as plotting
+    
+    try:
+        data = await request.json()
+        json_output = data.get("jsonOutput", None)
+        if not json_output:
+            return JSONResponse(content={"status": "error", "message": "No jsonOutput provided"}, status_code=400)
+
+        # Assuming jsonOutput is a list of dictionaries, determine multimer_size
+        multimer_size = len(json_output) + 1
+
+        # Function to load data
+        def download_data_dict(multimer_size):
+            input_dir = project_root / 'back_end' / 'data' / 'filtered_reaction_database' / f'multimer_size_{multimer_size}'
+            combined_database = pd.read_csv(input_dir / 'combined_database.csv', index_col=0)
+            context_history = pd.read_csv(input_dir / 'context_history.csv', index_col=0)
+            donor_history = pd.read_csv(input_dir / 'donor_history.csv', index_col=0)
+            reaction_history = pd.read_csv(input_dir / 'reaction_history.csv', index_col=0)
+            ubiquitin_history = pd.read_csv(input_dir / 'ubiquitin_history.csv', index_col=0)
+            return {
+                'combined_database': combined_database,
+                'context_history': context_history,
+                'donor_history': donor_history,
+                'reaction_history': reaction_history,
+                'ubiquitin_history': ubiquitin_history
+            }
+
+        # Load the data
+        data_dict = download_data_dict(multimer_size)
+        combined_database = data_dict['combined_database']
+        context_history = data_dict['context_history']
+        donor_history = data_dict['donor_history']
+        reaction_history = data_dict['reaction_history']
+        ubiquitin_history = data_dict['ubiquitin_history']
+
+        # Get indexes for the final multimer from jsonOutput
+        indexes = plotting.get_indexes_for_final_multimer(json_output, ubiquitin_history)
+
+        # Convert reaction_sequences_dicts to bytes
+        reaction_sequences_dicts = plotting.build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size)
+        reaction_sequences_bytes = io.BytesIO()
+        reaction_sequences_bytes.write(json.dumps(reaction_sequences_dicts).encode('utf-8'))
+        reaction_sequences_bytes.seek(0)
+        reaction_sequences_b64 = base64.b64encode(reaction_sequences_bytes.read()).decode('utf-8')
+
+        # Return the entered UbX_Y value
+        return JSONResponse(content={
+            "status": "ok", "json_output": json_output, 
+            "reaction_sequences_b64": reaction_sequences_b64
+            })
+    except Exception as e:
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
+
 

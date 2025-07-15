@@ -27,7 +27,7 @@ const LIGHT_GRAY = '#dddddd';
 const GRAY = '#aaaaaa';
 const BLACK = '#000000';
 
-const GameScaffoldPanel = ({ initialNodes = DEFAULT_NODES, edges = DEFAULT_EDGES, showRefresh = true, panelWidth, panelHeight }) => {
+const GameScaffoldPanel = ({ initialNodes = DEFAULT_NODES, edges = DEFAULT_EDGES, showRefresh = true, panelWidth, panelHeight, onSubmit }) => {
   const canvasRef = useRef(null);
   const [nodes, setNodes] = useState(() => {
     const n = initialNodes.map(node => ({ ...node }));
@@ -39,6 +39,8 @@ const GameScaffoldPanel = ({ initialNodes = DEFAULT_NODES, edges = DEFAULT_EDGES
   const [lastNodeIndex, setLastNodeIndex] = useState(0);
   const maxClicks = 5;
   const [refreshBtnRect, setRefreshBtnRect] = useState(null);
+  const [showFastAPIBox, setShowFastAPIBox] = useState(false);
+  const [jsonOutput, setJsonOutput] = useState(null);
 
   // refs for nodes, arrows, and clickedNodes
   const nodesRef = useRef(nodes);
@@ -74,9 +76,9 @@ const GameScaffoldPanel = ({ initialNodes = DEFAULT_NODES, edges = DEFAULT_EDGES
     ctx.closePath();
     ctx.fill();
     if (showRefresh) {
-      // Draw refresh button (bottom right)
+      // Draw refresh button (bottom left)
       const refreshBtn = {
-        x: boxX + boxW - 100,
+        x: boxX + 20,
         y: boxY + boxH - 50,
         w: 80,
         h: 30,
@@ -98,6 +100,30 @@ const GameScaffoldPanel = ({ initialNodes = DEFAULT_NODES, edges = DEFAULT_EDGES
       ctx.font = `16px 'Helvetica Neue', sans-serif`;
       ctx.fillText('Refresh', refreshBtn.x + 10, refreshBtn.y + 20);
       setRefreshBtnRect(refreshBtn);
+
+      // Draw submit button (bottom right)
+      const submitBtn = {
+        x: boxX + boxW - 100,
+        y: boxY + boxH - 50,
+        w: 80,
+        h: 30,
+        r: 10
+      };
+      ctx.fillStyle = '#222';
+      ctx.beginPath();
+      ctx.moveTo(submitBtn.x + submitBtn.r, submitBtn.y);
+      ctx.arcTo(submitBtn.x + submitBtn.w, submitBtn.y, submitBtn.x + submitBtn.w, submitBtn.y + submitBtn.h, submitBtn.r);
+      ctx.arcTo(submitBtn.x + submitBtn.w, submitBtn.y + submitBtn.h, submitBtn.x, submitBtn.y + submitBtn.h, submitBtn.r);
+      ctx.arcTo(submitBtn.x, submitBtn.y + submitBtn.h, submitBtn.x, submitBtn.y, submitBtn.r);
+      ctx.arcTo(submitBtn.x, submitBtn.y, submitBtn.x + submitBtn.w, submitBtn.y, submitBtn.r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#555';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.font = `16px 'Helvetica Neue', sans-serif`;
+      ctx.fillText('Submit', submitBtn.x + 10, submitBtn.y + 20);
     } else {
       setRefreshBtnRect(null);
     }
@@ -183,21 +209,35 @@ const GameScaffoldPanel = ({ initialNodes = DEFAULT_NODES, edges = DEFAULT_EDGES
       const rect = canvas.getBoundingClientRect();
       const x = (e.clientX - rect.left);
       const y = (e.clientY - rect.top);
+
       // Check refresh button
       if (showRefresh && refreshBtnRect) {
         const { x: bx, y: by, w: bw, h: bh } = refreshBtnRect;
         if (x >= bx && x <= bx + bw && y >= by && y <= by + bh) {
-          setNodes(() => {
-            const n = initialNodes.map(node => ({ ...node }));
-            n[0].clicks = 1;
-            return n;
-          });
-          setArrows([]);
-          setClickedNodes(new Set([0]));
-          setLastNodeIndex(0);
+          window.location.reload(); // Refresh the entire page
           return;
         }
       }
+
+      // Check submit button
+      const submitBtn = {
+        x: panelWidth - 100,
+        y: panelHeight - 50,
+        w: 80,
+        h: 30
+      };
+      if (x >= submitBtn.x && x <= submitBtn.x + submitBtn.w && y >= submitBtn.y && y <= submitBtn.y + submitBtn.h) {
+        const linkages = arrows.map(({ from, to, color }) => ({
+          from,
+          to,
+          linkage: color === 'blue' ? 'K63' : 'K48' // Rename linkage based on color
+        }));
+        if (onSubmit) {
+          onSubmit(linkages);
+        }
+        return;
+      }
+
       for (let i = 0; i < nodesRef.current.length; i++) {
         const node = nodesRef.current[i];
         const drawX = node.x;
@@ -232,21 +272,20 @@ const GameScaffoldPanel = ({ initialNodes = DEFAULT_NODES, edges = DEFAULT_EDGES
             const color = newNode.x < prevNode.x ? 'red' : 'blue';
             setArrows(prev => [...prev, { from: prevIdx, to: i, color }]);
           }
-          setLastNodeIndex(i);
-          return;
         }
       }
     };
+
     canvas.addEventListener('mousedown', handleMouseDown);
     return () => {
       canvas.removeEventListener('mousedown', handleMouseDown);
     };
-  }, [nodes, arrows, clickedNodes, initialNodes, edges, refreshBtnRect, showRefresh]);
+  }, [showRefresh, refreshBtnRect, edges, nodes, arrows, panelWidth, panelHeight, onSubmit]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <>
       <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
-    </div>
+    </>
   );
 };
 
