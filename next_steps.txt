@@ -114,15 +114,12 @@ DONE - connect to automated python
 DONE 1.  Connect the drawing in 'Draw' to the back_end
     - Draw out the multimer with the numbers, maybe use ubiquitin builder without resetting the numbers
     - Take it through iterate_through_ubiquitin, to give it correct numbering
-
-
-
+DONE 2.  Connect all the images that are frozen to the respective Ub4_X and Ub5_X, use FrozenGameScaffoldPanelTest
 
 
 
 Big things;
 
-2.  Connect all the images that are frozen to the respective Ub4_X and Ub5_X, use FrozenGameScaffoldPanelTest
 
 3.  BIG BIG - Fix validation against confirmation data
 

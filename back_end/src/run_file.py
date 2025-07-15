@@ -160,6 +160,30 @@ if pentamer_validation_errors:
         f"Validation errors found for pentamers: {pentamer_validation_errors}"
     )
 
+# =========================================================
+# Build multimer_id_to_json mapping file
+# This section creates a mapping file that maps multimer IDs to their corresponding JSON files.
+# =========================================================
+
+def generate_final_multimer_map(multimer_size: int, project_root: str):
+    input_path = project_root / 'back_end' / 'data' / 'filtered_reaction_database' / f'multimer_size_{multimer_size}' / 'ubiquitin_history.csv'
+    output_path = project_root / 'front_end' / 'src' / 'data' / f'multimer_id_to_json{multimer_size}.json'
+
+    # Load the ubiquitin_history DataFrame
+    df = pd.read_csv(input_path, index_col=0)
+
+    # Create a dictionary mapping from multimer_id to final_multimer
+    mapping = df.set_index('multimer_id')['final_multimer'].to_dict()
+
+    # Save to JSON
+    with open(output_path, 'w') as f:
+        json.dump(mapping, f, indent=2)
+
+    print(f"Mapping file saved to: {output_path}")
+
+generate_final_multimer_map(4, project_root)
+generate_final_multimer_map(5, project_root)
+
 # ==========================================================
 # Check that all the data cleaning, validation and labeling went well
 # This section checks that the data cleaning, validation, and labeling processes were successful.

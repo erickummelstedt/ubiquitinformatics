@@ -5,6 +5,8 @@ import FrozenGameScaffoldPanel from './FrozenGameScaffoldPanel';
 import ScaffoldJsonWrapper from './ScaffoldJsonWrapper';
 import Sequences from './Sequences';
 import k48_dimer_ubiquitin from '../data/k48_dimer_ubiquitin';
+import multimerDataTetramers from '../data/multimer_id_to_json4.json';
+import multimerDataPentamers from '../data/multimer_id_to_json5.json';
 
 const SMALL_PANEL_WIDTH = 140;
 const SMALL_PANEL_HEIGHT = 90;
@@ -63,6 +65,18 @@ const ScaffoldDashboard = () => {
     }
   };
 
+  const fixQuotes = (str) => str.replace(/'/g, '"'); // Replace single quotes with double quotes
+
+  const getMultimerData = (label) => {
+    let data;
+    if (page === 'tetramers') {
+      data = multimerDataTetramers[label];
+    } else if (page === 'pentamers') {
+      data = multimerDataPentamers[label];
+    }
+    return data ? JSON.parse(fixQuotes(data)) : null;
+  };
+
   return (
     <div style={{ width: '100vw', minHeight: '100vh', boxSizing: 'border-box', overflow: 'auto', padding: '16px 0' }}>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
@@ -90,6 +104,8 @@ const ScaffoldDashboard = () => {
         {[...Array(count)].map((_, i) => {
           const isSelected = selectedPanels.includes(i);
           const label = page === 'tetramers' ? `Ub4_${i + 1}` : page === 'pentamers' ? `Ub5_${i + 1}` : '';
+          const jsonData = getMultimerData(label);
+
           return (
             <>
               {page === 'draw' ? (
@@ -213,7 +229,7 @@ const ScaffoldDashboard = () => {
                         marginBottom: '10px'
                     }}
                   >
-                      <ScaffoldJsonWrapper jsonData={k48_dimer_ubiquitin} />
+                      <ScaffoldJsonWrapper jsonData={jsonData} />
                   </div>
                   {label && (
                     <div
