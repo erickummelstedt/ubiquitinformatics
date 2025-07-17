@@ -2520,8 +2520,8 @@ def get_indexes_for_final_multimer(json_output, ubiquitin_history):
             {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
             {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
             {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
-            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
-            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""}
         ]
     }
 
@@ -2537,8 +2537,8 @@ def get_indexes_for_final_multimer(json_output, ubiquitin_history):
             {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
             {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
             {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
-            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
-            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""},
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""}
         ]
     }
 

@@ -124,9 +124,12 @@ Big things;
 - Dont over react 
 - MASSIVE MASSIVE change is the c-terminus to n-terminus K63 first then K48.
     - to represent biological existence 
+    - change the code base so it is all correct
+    
     - change is big in the user interface
-    - big for determining the E2 enzyme used
-    - Need to revert the Ub4_15 numbers, but maybe not... because they are based on synthesis number.. which is based on synthesis...
+    
+    DONE - big for determining the E2 enzyme used
+    DONE - Need to revert the Ub4_15 numbers, but maybe not... because they are based on synthesis number.. which is based on synthesis...
 - Branch to fix this..
 
 
