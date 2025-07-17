@@ -120,6 +120,18 @@ DONE 2.  Connect all the images that are frozen to the respective Ub4_X and Ub5_
 
 Big things;
 
+- Congratulate yourself on finding this...
+- Dont over react 
+- MASSIVE MASSIVE change is the c-terminus to n-terminus K63 first then K48.
+    - to represent biological existence 
+    - change is big in the user interface
+    - big for determining the E2 enzyme used
+    - Need to revert the Ub4_15 numbers, but maybe not... because they are based on synthesis number.. which is based on synthesis...
+- Branch to fix this..
+
+
+
+- Build website for ubiquitin topology with all linkages 
 
 3.  BIG BIG - Fix validation against confirmation data
 
