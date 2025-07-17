@@ -90,7 +90,6 @@ const ScaffoldDashboard = () => {
           <option value="draw">Draw</option>
           <option value="tetramers">Tetramers</option>
           <option value="pentamers">Pentamers</option>
-          <option value="draw_test">Draw Test</option>
         </select>
       </div>
       <div style={{
@@ -449,11 +448,6 @@ const ScaffoldDashboard = () => {
               <Sequences reactionSequence={figures && figures["reaction_sequences.json"] ? JSON.parse(atob(figures["reaction_sequences.json"])) : null} />
             </div>          
           </div>
-        </div>
-      )}
-      {page === 'draw_test' && (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '20px' }}>
-          <ScaffoldJsonWrapper jsonData={k48_dimer_ubiquitin} />
         </div>
       )}
     </div>
