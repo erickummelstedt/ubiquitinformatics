@@ -125,13 +125,25 @@ Big things;
 - MASSIVE MASSIVE change is the c-terminus to n-terminus K63 first then K48.
     - to represent biological existence 
     - change the code base so it is all correct
-    
-    - change is big in the user interface
-    
+    DONE - change is big in the user interface
+    DONE     - fetch isnt working correctly
+    DONE     - so ScaffoldJsonWrapper works great, the fetch works as well
     DONE - big for determining the E2 enzyme used
     DONE - Need to revert the Ub4_15 numbers, but maybe not... because they are based on synthesis number.. which is based on synthesis...
 - Branch to fix this..
 
+'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_ABOC><K48_SMAC>)>)'
+'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_SMAC><K48_ABOC>)>)' 
+'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_ABOC><K48_ABOC>)>)' 
+'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K48_SMAC>)>)' 
+'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K63_ABOC><K48_SMAC>)>)'
+'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K63_SMAC><K48_ABOC>)>)'
+'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_SMAC>)>)' 
+'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC><K48_ABOC>)>)' 
+'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_ABOC>)>)' 
+'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC>)><K48_ABOC>)' 
+'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_SMAC>)><K48_ABOC>)' 
+'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC><K48_ABOC>)><K48_ABOC>)' 
 
 
 - Build website for ubiquitin topology with all linkages 

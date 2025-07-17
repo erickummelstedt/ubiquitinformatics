@@ -453,21 +453,18 @@ def inner_create_plate_dfs(data_dict, indexed_values, multimer_size=4):
 
     # Create a dimer encoded dictionary
     dimer_encoded_dictionary = {
-        'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_SMAC><K63_ABOC>)>)' : 9,
-        'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_ABOC><K63_SMAC>)>)' : 10,
-        'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_ABOC><K63_ABOC>)>)' : 11,
-
-        'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_SMAC>)><K63_ABOC>)': 12,
-        'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_SMAC><K63_ABOC>)><K63_ABOC>)': 13,
-        'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_ABOC><K63_SMAC>)><K63_ABOC>)': 14,
-
-        'his-GG-1ubq-1-(<K63_1ubq-2-(<K48_SMAC><K63_ABOC>)>)': 15,
-        'his-GG-1ubq-1-(<K63_1ubq-2-(<K48_ABOC><K63_SMAC>)>)': 16,
-        'his-GG-1ubq-1-(<K63_1ubq-2-(<K48_ABOC><K63_ABOC>)>)': 17,
-
-        'his-GG-1ubq-1-(<K48_ABOC><K63_1ubq-2-(<K63_SMAC>)>)': 18,
-        'his-GG-1ubq-1-(<K48_ABOC><K63_1ubq-2-(<K48_SMAC><K63_ABOC>)>)': 19,
-        'his-GG-1ubq-1-(<K48_ABOC><K63_1ubq-2-(<K48_ABOC><K63_SMAC>)>)': 20
+        'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_ABOC><K48_SMAC>)>)' : 9,
+        'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_SMAC><K48_ABOC>)>)' : 10,
+        'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_ABOC><K48_ABOC>)>)' : 11,
+        'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K48_SMAC>)>)': 12,
+        'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K63_ABOC><K48_SMAC>)>)': 13,
+        'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K63_SMAC><K48_ABOC>)>)': 14,
+        'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_SMAC>)>)': 15,
+        'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC><K48_ABOC>)>)': 16,
+        'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_ABOC>)>)': 17,
+        'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC>)><K48_ABOC>)': 18,
+        'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_SMAC>)><K48_ABOC>)': 19,
+        'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC><K48_ABOC>)><K48_ABOC>)': 20
     }
 
     # Filter the combined database for reactions and donors based on indexed values
@@ -2126,18 +2123,18 @@ def build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size):
             # Create a dimer encoded dictionary
             dimer_encoded_str_dictionary = {
                 # maybe change the code
-                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_SMAC><K63_ABOC>)>)' : "Ub₂ᴬ 9",
-                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_ABOC><K63_SMAC>)>)' : "Ub₂ᴬ 10",
-                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_ABOC><K63_ABOC>)>)' : "Ub₂ᴬ 11",
-                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_SMAC>)><K63_ABOC>)': "Ub₂ᴬ 12",
-                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_SMAC><K63_ABOC>)><K63_ABOC>)': "Ub₂ᴬ 13",
-                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_ABOC><K63_SMAC>)><K63_ABOC>)': "Ub₂ᴬ 14",
-                'his-GG-1ubq-1-(<K63_1ubq-2-(<K48_SMAC><K63_ABOC>)>)': "Ub₂ᴬ 15",
-                'his-GG-1ubq-1-(<K63_1ubq-2-(<K48_ABOC><K63_SMAC>)>)': "Ub₂ᴬ 16",
-                'his-GG-1ubq-1-(<K63_1ubq-2-(<K48_ABOC><K63_ABOC>)>)': "Ub₂ᴬ 17",
-                'his-GG-1ubq-1-(<K48_ABOC><K63_1ubq-2-(<K63_SMAC>)>)': "Ub₂ᴬ 18",
-                'his-GG-1ubq-1-(<K48_ABOC><K63_1ubq-2-(<K48_SMAC><K63_ABOC>)>)': "Ub₂ᴬ 19",
-                'his-GG-1ubq-1-(<K48_ABOC><K63_1ubq-2-(<K48_ABOC><K63_SMAC>)>)': "Ub₂ᴬ 20",
+                'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_ABOC><K48_SMAC>)>)' : "Ub₂ᴬ 9",
+                'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_SMAC><K48_ABOC>)>)' : "Ub₂ᴬ 10",
+                'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_ABOC><K48_ABOC>)>)' : "Ub₂ᴬ 11",
+                'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K48_SMAC>)>)' : "Ub₂ᴬ 12",
+                'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K63_ABOC><K48_SMAC>)>)': "Ub₂ᴬ 13",
+                'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K63_SMAC><K48_ABOC>)>)': "Ub₂ᴬ 14",
+                'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_SMAC>)>)' : "Ub₂ᴬ 15",
+                'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC><K48_ABOC>)>)' : "Ub₂ᴬ 16",
+                'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_ABOC>)>)' : "Ub₂ᴬ 17",
+                'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC>)><K48_ABOC>)' : "Ub₂ᴬ 18",
+                'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_SMAC>)><K48_ABOC>)' : "Ub₂ᴬ 19",
+                'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC><K48_ABOC>)><K48_ABOC>)' : "Ub₂ᴬ 20",
             }
 
             working_context_df = context_history[context_history['index'] == idx]
@@ -2514,14 +2511,14 @@ def get_indexes_for_final_multimer(json_output, ubiquitin_history):
         "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
         "chain_length": 76,
         "branching_sites": [
-            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
-            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
-            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
-            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
-            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
-            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
             {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""},
-            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""}
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""}            
         ]
     }
 
@@ -2531,14 +2528,14 @@ def get_indexes_for_final_multimer(json_output, ubiquitin_history):
         "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH",
         "chain_length": 83,
         "branching_sites": [
-            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
-            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
-            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
-            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
-            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
-            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
             {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""},
-            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""}
+            {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""} 
         ]
     }
 

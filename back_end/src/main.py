@@ -642,6 +642,7 @@ def ubiquitin_building(
     context = {
         "chain_number_list": [1],
         "chain_length_list": [],
+        "ubiquitin_added": False,  # Track if a ubiquitin has been added
     }
 
     # Normalize input to dicts
@@ -655,7 +656,71 @@ def ubiquitin_building(
     if ubi_molecule_to_add not in ('SMAC', 'ABOC'):
         if not isinstance(ubi_molecule_to_add, dict):
             raise TypeError("ubi_molecule_to_add must be a dictionary or 'SMAC'/'ABOC' string")
+        
+    def inner_wrapper_ubiquitin_building(
+        input_dictionary: dict | str,
+        ubi_molecule_to_add: dict | str,
+        ubiquitin_number: int,
+        lysine_residue: str,
+        context: dict
+    ) -> tuple:
+        """
+        Recursively traverse and modify the ubiquitin structure to add new branches
+        or protecting groups to a given lysine site.
 
+        Args:
+            input_dictionary (dict or str): The protein or ubiquitin structure.
+            ubi_molecule_to_add (dict or str): Ubiquitin or protecting group.
+            ubiquitin_number (int): The specific chain number to modify.
+            lysine_residue (str): Lysine site to target.
+            context (dict): Tracks chain numbering and lengths.
+
+        Returns:
+            tuple: Updated working dictionary and context.
+        """
+        # Deep copy to avoid mutating input
+        working_dictionary = copy.deepcopy(input_dictionary)
+        working_dictionary = convert_json_to_dict(working_dictionary)
+
+        # Set the current chain number from context
+        working_dictionary['chain_number'] = context['chain_number_list'][-1]
+        # Set and record chain length
+        working_dictionary['chain_length'] = len(working_dictionary['FASTA_sequence'])
+        context['chain_length_list'].append(working_dictionary['chain_length'])
+
+        # Log protein details for debugging and traceability
+        log_protein_details(working_dictionary, context)
+
+        # Increment chain_number for future recursive calls
+        context['chain_number_list'].append(context['chain_number_list'][-1] + 1)
+
+        for bra in working_dictionary['branching_sites']:
+            log_branching_details(bra, working_dictionary, context)
+
+            if (bra['site_name'] == lysine_residue) & (working_dictionary['chain_number'] == ubiquitin_number) & (context['ubiquitin_added'] == False):
+                # Apply modification logic to the lysine site
+                bra, working_dictionary = handle_lysine_modification(
+                    bra, working_dictionary, ubi_molecule_to_add, ubiquitin_number, lysine_residue
+                )
+                context['ubiquitin_added'] = True  # Mark that a ubiquitin has been added so no more are further added
+
+            # Log the state of the current branch
+            if bra['children'] in ('SMAC', 'ABOC'):
+                logging.info(f"Protecting Group: {bra['children']}")
+            elif bra['children'] == "":
+                logging.info(f"There is no Protecting Group on: {bra['site_name']}")
+            elif isinstance(bra['children'], dict):
+                logging.info(f"NEXT CHAIN: {bra['children']}")
+                # Recursively process the next ubiquitin chain
+                bra['children'], context = inner_wrapper_ubiquitin_building(
+                    bra['children'], ubi_molecule_to_add, ubiquitin_number, lysine_residue, context
+                )
+            log_end_of_branching()
+
+        log_end_of_protein(working_dictionary)
+
+        return working_dictionary, context
+    
     # Build structure recursively
     output_dictionary, context = inner_wrapper_ubiquitin_building(
         parent_dictionary, ubi_molecule_to_add, ubiquitin_number, lysine_residue, context
@@ -664,68 +729,6 @@ def ubiquitin_building(
     output_dictionary, output_context = iterate_through_ubiquitin(output_dictionary)
 
     return output_dictionary, output_context
-
-def inner_wrapper_ubiquitin_building(
-    input_dictionary: dict | str,
-    ubi_molecule_to_add: dict | str,
-    ubiquitin_number: int,
-    lysine_residue: str,
-    context: dict
-) -> tuple:
-    """
-    Recursively traverse and modify the ubiquitin structure to add new branches
-    or protecting groups to a given lysine site.
-
-    Args:
-        input_dictionary (dict or str): The protein or ubiquitin structure.
-        ubi_molecule_to_add (dict or str): Ubiquitin or protecting group.
-        ubiquitin_number (int): The specific chain number to modify.
-        lysine_residue (str): Lysine site to target.
-        context (dict): Tracks chain numbering and lengths.
-
-    Returns:
-        tuple: Updated working dictionary and context.
-    """
-    # Deep copy to avoid mutating input
-    working_dictionary = copy.deepcopy(input_dictionary)
-    working_dictionary = convert_json_to_dict(working_dictionary)
-
-    # Set the current chain number from context
-    working_dictionary['chain_number'] = context['chain_number_list'][-1]
-    # Set and record chain length
-    working_dictionary['chain_length'] = len(working_dictionary['FASTA_sequence'])
-    context['chain_length_list'].append(working_dictionary['chain_length'])
-
-    # Log protein details for debugging and traceability
-    log_protein_details(working_dictionary, context)
-
-    # Increment chain_number for future recursive calls
-    context['chain_number_list'].append(context['chain_number_list'][-1] + 1)
-
-    for bra in working_dictionary['branching_sites']:
-        log_branching_details(bra, working_dictionary, context)
-
-        # Apply modification logic to the lysine site
-        bra, working_dictionary = handle_lysine_modification(
-            bra, working_dictionary, ubi_molecule_to_add, ubiquitin_number, lysine_residue
-        )
-
-        # Log the state of the current branch
-        if bra['children'] in ('SMAC', 'ABOC'):
-            logging.info(f"Protecting Group: {bra['children']}")
-        elif bra['children'] == "":
-            logging.info(f"There is no Protecting Group on: {bra['site_name']}")
-        elif isinstance(bra['children'], dict):
-            logging.info(f"NEXT CHAIN: {bra['children']}")
-            # Recursively process the next ubiquitin chain
-            bra['children'], context = inner_wrapper_ubiquitin_building(
-                bra['children'], ubi_molecule_to_add, ubiquitin_number, lysine_residue, context
-            )
-        log_end_of_branching()
-
-    log_end_of_protein(working_dictionary)
-
-    return working_dictionary, context
 
 def handle_lysine_modification(
     bra: dict,
