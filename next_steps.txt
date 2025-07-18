@@ -116,35 +116,19 @@ DONE 1.  Connect the drawing in 'Draw' to the back_end
     - Take it through iterate_through_ubiquitin, to give it correct numbering
 DONE 2.  Connect all the images that are frozen to the respective Ub4_X and Ub5_X, use FrozenGameScaffoldPanelTest
 
-
-
 Big things;
 
-- Congratulate yourself on finding this...
-- Dont over react 
-- MASSIVE MASSIVE change is the c-terminus to n-terminus K63 first then K48.
-    - to represent biological existence 
-    - change the code base so it is all correct
+- DONE Congratulate yourself on finding this...
+- DONE Dont over react 
+- DONE MASSIVE MASSIVE change is the c-terminus to n-terminus K63 first then K48.
+    DONE - to represent biological existence 
+    DONE - change the code base so it is all correct
     DONE - change is big in the user interface
     DONE     - fetch isnt working correctly
     DONE     - so ScaffoldJsonWrapper works great, the fetch works as well
     DONE - big for determining the E2 enzyme used
     DONE - Need to revert the Ub4_15 numbers, but maybe not... because they are based on synthesis number.. which is based on synthesis...
-- Branch to fix this..
-
-'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_ABOC><K48_SMAC>)>)'
-'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_SMAC><K48_ABOC>)>)' 
-'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_ABOC><K48_ABOC>)>)' 
-'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K48_SMAC>)>)' 
-'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K63_ABOC><K48_SMAC>)>)'
-'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K63_SMAC><K48_ABOC>)>)'
-'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_SMAC>)>)' 
-'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC><K48_ABOC>)>)' 
-'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_ABOC>)>)' 
-'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC>)><K48_ABOC>)' 
-'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_SMAC>)><K48_ABOC>)' 
-'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC><K48_ABOC>)><K48_ABOC>)' 
-
+    - fix test_simulation!
 
 - Build website for ubiquitin topology with all linkages 
 
