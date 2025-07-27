@@ -273,7 +273,7 @@ def process_branch(branch, working_dictionary, context):
     # this can change later
     # Handle free lysines
     elif (branch['children'] == "") & (branch['site_name'] in ['M1','K6','K11','K27','K29','K33']): 
-        print('')
+        logging.info(branch['site_name'] + " is a free lysine, no ubiquitin will be added here")
 
     # Handle K48 & K63 lysines
     elif (branch['children'] == "") & (branch['site_name'] in ['K48', 'K63']): 
