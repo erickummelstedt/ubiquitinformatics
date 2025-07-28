@@ -3,6 +3,7 @@ import logging
 import copy
 import sys
 import ast
+import string
 import numpy as np
 from pathlib import Path
 import pandas as pd
@@ -11,6 +12,7 @@ import ast
 
 import matplotlib.pyplot as plt
 from matplotlib import font_manager
+from matplotlib.colors import ListedColormap, Normalize
 
 # Dynamically get the backend path relative to this file
 current_file = Path(__file__).resolve()
@@ -95,7 +97,75 @@ def plot_96wells(figure=1, figure_name = 'Test',colorbar_type= 'PuRd', cdata=Non
     kwargs.setdefault('c', 'white')
     kwargs.setdefault('edgecolor', ['black', ] * len(kwargs['y']))
     kwargs.setdefault('linewidths', 1.5)
-    kwargs.setdefault('cmap', colorbar_type)
+    
+    # Create custom colormap for PuRd with fixed color mapping
+    if colorbar_type == 'enzymes_donors':
+        # Define colors: 0 = white, 1 = #EBE7F1, 12 = #CD3878 or #9B214A
+        colors = ['white', '#EBE7F1', '#CD3878']
+        n_bins = 13  # 0 to 12
+        # Create color array with interpolation between the defined colors
+        color_array = []
+        for i in range(n_bins):
+            if i == 0:
+                color_array.append(colors[0])  # white for 0
+            elif i == 1:
+                color_array.append(colors[1])  # #EBE7F1 for 1
+            elif i == 12:
+                color_array.append(colors[2])  # #9B214A for 12
+            else:
+                # Interpolate between #EBE7F1 and #9B214A for values 2-11
+                ratio = (i - 1) / 11  # normalize to 0-1 for interpolation
+                # Convert hex to RGB for interpolation
+                color1_rgb = tuple(int(colors[1][j:j+2], 16) for j in (1, 3, 5))
+                color2_rgb = tuple(int(colors[2][j:j+2], 16) for j in (1, 3, 5))
+                # Interpolate
+                interp_rgb = tuple(int(color1_rgb[k] + ratio * (color2_rgb[k] - color1_rgb[k])) for k in range(3))
+                # Convert back to hex
+                interp_hex = '#{:02x}{:02x}{:02x}'.format(*interp_rgb)
+                color_array.append(interp_hex)
+        
+        custom_cmap = ListedColormap(color_array)
+        # CRITICAL: Always set vmin=0 and vmax=12 to ensure consistent color mapping
+        # This means value 2 will always map to the same color regardless of data range
+        kwargs['cmap'] = custom_cmap
+        kwargs['vmin'] = 0
+        kwargs['vmax'] = 12
+    elif colorbar_type == 'deprots':
+        # Define colors: 0 = white, 1 = mustard yellow, 2 = light beige
+        colors = ['white', '#DAA520', '#F5F5DC']  # white, mustard yellow, light beige
+        custom_cmap = ListedColormap(colors)
+        kwargs['cmap'] = custom_cmap
+        kwargs['vmin'] = 0
+        kwargs['vmax'] = 2
+    elif colorbar_type == 'acceptors':
+        # Define colors: 0 = white, 9 = #BED4E8, 20 = #447BB6
+        # Create color array with interpolation between the defined colors
+        color_array = ['white']  # Start with white for 0
+        # Add intermediate colors from 1-8 (all white since we want 0 to be white)
+        for i in range(1, 9):
+            color_array.append('white')
+        # Add color 9
+        color_array.append('#BED4E8')
+        # Interpolate colors 10-19 between #BED4E8 and #447BB6
+        for i in range(10, 20):
+            ratio = (i - 9) / 11  # normalize to 0-1 for interpolation from 9 to 20
+            # Convert hex to RGB for interpolation
+            color1_rgb = tuple(int('#BED4E8'[j:j+2], 16) for j in (1, 3, 5))
+            color2_rgb = tuple(int('#447BB6'[j:j+2], 16) for j in (1, 3, 5))
+            # Interpolate
+            interp_rgb = tuple(int(color1_rgb[k] + ratio * (color2_rgb[k] - color1_rgb[k])) for k in range(3))
+            # Convert back to hex
+            interp_hex = '#{:02x}{:02x}{:02x}'.format(*interp_rgb)
+            color_array.append(interp_hex)
+        # Add color 20
+        color_array.append('#447BB6')
+        
+        custom_cmap = ListedColormap(color_array)
+        kwargs['cmap'] = custom_cmap
+        kwargs['vmin'] = 0
+        kwargs['vmax'] = 20
+    else:
+        kwargs.setdefault('cmap', colorbar_type)
 
     # Color Data
     if cdata is not None:
@@ -143,7 +213,7 @@ def plot_96wells(figure=1, figure_name = 'Test',colorbar_type= 'PuRd', cdata=Non
     ax.set_xticks(range(1, 13))
     ax.xaxis.tick_top()
     ax.set_yticks(range(1, 9))
-#    ax.set_yticklabels(string.ascii_uppercase[0:9])
+    ax.set_yticklabels(string.ascii_uppercase[0:8])
     ax.set_ylim((8.5, 0.48))
     ax.set_aspect(1)
     ax.tick_params(axis='both', which='both', length=0)
@@ -591,15 +661,15 @@ def create_xlsx_bytes(output_dict):
     acceptor_description_dict = [
         {"No.": "Ub₂ᴬ 9", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "K", "Distal Ub K48": "Smac", "Distal Ub K63": "Aboc", "MW (Da)": 18372},
         {"No.": "Ub₂ᴬ 10", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "K", "Distal Ub K48": "Aboc", "Distal Ub K63": "Smac", "MW (Da)": 18372},
-        {"No.": "Ub₂ᴬ 11", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "K", "Distal Ub K48": "Aboc", "Distal Ub K63": "-", "MW (Da)": 18360},
+        {"No.": "Ub₂ᴬ 11", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "K", "Distal Ub K48": "Aboc", "Distal Ub K63": "Aboc", "MW (Da)": 18360},
         {"No.": "Ub₂ᴬ 12", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "Aboc", "Distal Ub K48": "Smac", "Distal Ub K63": "K", "MW (Da)": 18372},
-        {"No.": "Ub₂ᴬ 13", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "Aboc", "Distal Ub K48": "Smac", "Distal Ub K63": "-", "MW (Da)": 18504},
-        {"No.": "Ub₂ᴬ 14", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "Aboc", "Distal Ub K48": "Aboc", "Distal Ub K63": "-", "MW (Da)": 18504},
+        {"No.": "Ub₂ᴬ 13", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "Aboc", "Distal Ub K48": "Smac", "Distal Ub K63": "Aboc", "MW (Da)": 18504},
+        {"No.": "Ub₂ᴬ 14", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "Aboc", "Distal Ub K48": "Aboc", "Distal Ub K63": "Smac", "MW (Da)": 18504},
         {"No.": "Ub₂ᴬ 15", "Dimer Linkage": "K63", "Proximal Ub K48": "K", "Proximal Ub K63": "-", "Distal Ub K48": "Smac", "Distal Ub K63": "Aboc", "MW (Da)": 18372},
         {"No.": "Ub₂ᴬ 16", "Dimer Linkage": "K63", "Proximal Ub K48": "K", "Proximal Ub K63": "-", "Distal Ub K48": "Aboc", "Distal Ub K63": "Smac", "MW (Da)": 18372},
-        {"No.": "Ub₂ᴬ 17", "Dimer Linkage": "K63", "Proximal Ub K48": "K", "Proximal Ub K63": "-", "Distal Ub K48": "Aboc", "Distal Ub K63": "-", "MW (Da)": 18360},
-        {"No.": "Ub₂ᴬ 18", "Dimer Linkage": "K63", "Proximal Ub K48": "Aboc", "Proximal Ub K63": "-", "Distal Ub K48": "K", "Distal Ub K63": "-", "MW (Da)": 18372},
-        {"No.": "Ub₂ᴬ 19", "Dimer Linkage": "K63", "Proximal Ub K48": "Aboc", "Proximal Ub K63": "-", "Distal Ub K48": "Smac", "Distal Ub K63": "-", "MW (Da)": 18504},
+        {"No.": "Ub₂ᴬ 17", "Dimer Linkage": "K63", "Proximal Ub K48": "K", "Proximal Ub K63": "-", "Distal Ub K48": "Aboc", "Distal Ub K63": "Aboc", "MW (Da)": 18360},
+        {"No.": "Ub₂ᴬ 18", "Dimer Linkage": "K63", "Proximal Ub K48": "Aboc", "Proximal Ub K63": "-", "Distal Ub K48": "K", "Distal Ub K63": "Smac", "MW (Da)": 18372},
+        {"No.": "Ub₂ᴬ 19", "Dimer Linkage": "K63", "Proximal Ub K48": "Aboc", "Proximal Ub K63": "-", "Distal Ub K48": "Smac", "Distal Ub K63": "Aboc", "MW (Da)": 18504},
         {"No.": "Ub₂ᴬ 20", "Dimer Linkage": "K63", "Proximal Ub K48": "Aboc", "Proximal Ub K63": "-", "Distal Ub K48": "Aboc", "Distal Ub K63": "Smac", "MW (Da)": 18504},
     ]
 
