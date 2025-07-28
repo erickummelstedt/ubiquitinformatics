@@ -240,6 +240,221 @@ def plot_96wells(figure=1, figure_name = 'Test',colorbar_type= 'PuRd', cdata=Non
     return fig, ax
 
 
+def plot_deprotection_cycles(figure=2, figure_name='Deprotection Cycles', cdata=None, colorbar_type='deprots', **kwargs):
+    """
+    Plot deprotection cycles using the same approach as plot_96wells,
+    but with empty columns between each cycle (every 2 columns).
+    
+    Parameters:
+        figure (int): Figure number
+        figure_name (str): Title for the figure
+        cdata (pd.DataFrame): Data for the 96-well plate (8 rows x 12 columns)
+        colorbar_type (str): Type of colorbar to use
+        **kwargs: Additional arguments for scatter plot
+    
+    Returns:
+        tuple: (fig, ax) matplotlib figure and axes objects
+    """
+    if cdata is None:
+        raise ValueError("cdata is required for deprotection cycle plotting")
+    
+    if not isinstance(cdata, pd.DataFrame):
+        raise ValueError('Wrong data type - cdata must be a DataFrame')
+    if cdata.shape != (8, 12):
+        raise ValueError('Wrong data shape - cdata must be 8x12')
+    
+    # Determine how many active cycles there are for the title
+    active_cycles = []
+    for cycle in range(6):  # Check up to 6 possible cycles
+        cycle_start = cycle * 2
+        cycle_end = cycle_start + 2
+        if cycle_end <= cdata.shape[1]:  # Within bounds
+            cycle_data = cdata.iloc[:, cycle_start:cycle_end]
+            if cycle_data.values.sum() > 0:  # Has non-zero values
+                active_cycles.append(cycle + 1)  # Store 1-indexed cycle numbers
+    
+    # Update figure name based on number of active cycles
+    if len(active_cycles) == 1:
+        figure_name = f"Deprotection Cycles ({active_cycles[0]})"
+    elif len(active_cycles) > 1:
+        figure_name = f"Deprotection Cycles ({active_cycles[0]}-{active_cycles[-1]})"
+    # If no active cycles, keep original name
+    
+    # Use the exact same setup as plot_96wells
+    fig = plt.figure(figure, figsize=(15, 7))
+    fig.suptitle(figure_name, fontsize=16)
+    ax = plt.subplot2grid((1, 1), (0, 0), fig=fig)
+    top = 2000
+    bot = 50
+    sizeOfFont = 15
+    ticks_font = font_manager.FontProperties(style='normal', size=sizeOfFont, weight='normal')
+
+    # Create modified positions and data with empty columns between cycles
+    modified_x = []
+    modified_y = []
+    modified_colors = []
+    modified_edge_colors = []
+    
+    # Create a full 12-column grid with empty columns between cycles
+    for col in range(1, 13):  # Columns 1-12
+        for row in range(1, 9):  # Rows 1-8 (A-H)
+            modified_x.append(col)
+            modified_y.append(row)
+            
+            # Determine which cycle this column belongs to and if it should have data
+            if col % 3 == 0:  # Every 3rd column is empty (3, 6, 9, 12)
+                modified_colors.append(0)  # Empty column
+                modified_edge_colors.append('white')  # Make circles invisible
+            else:
+                # Determine cycle and column within cycle
+                cycle_group = (col - 1) // 3  # 0, 1, 2, 3 for groups
+                col_in_group = (col - 1) % 3  # 0 or 1 for data columns
+                
+                # Map back to original data columns
+                original_col = cycle_group * 2 + col_in_group
+                
+                if original_col < 12:  # Within bounds of original data
+                    # Check if this cycle has non-zero values
+                    cycle_start = (original_col // 2) * 2
+                    cycle_end = cycle_start + 2
+                    cycle_data = cdata.iloc[:, cycle_start:cycle_end]
+                    
+                    if cycle_data.values.sum() > 0:
+                        modified_colors.append(cdata.iloc[row - 1, original_col])
+                        modified_edge_colors.append('black')  # Normal edge color
+                    else:
+                        modified_colors.append(0)  # Cycle has no data
+                        modified_edge_colors.append('white')  # Make invisible like separator columns
+                else:
+                    modified_colors.append(0)  # Beyond original data
+                    modified_edge_colors.append('white')  # Make invisible
+
+    # Fixed: THIS CANNOT CHANGE!
+    kwargs['x'] = modified_x
+    kwargs['y'] = modified_y
+
+    # Modified by the input data.
+    kwargs.setdefault('s', [top, ] * len(modified_y))
+    kwargs.setdefault('c', 'white')
+    kwargs.setdefault('edgecolor', modified_edge_colors)  # Use custom edge colors
+    kwargs.setdefault('linewidths', 1.5)
+    
+    # Apply custom colormap based on colorbar_type (same as plot_96wells)
+    if colorbar_type == 'deprots':
+        colors_map = ['white', '#DAA520', '#F5F5DC']  # white, mustard yellow, light beige
+        custom_cmap = ListedColormap(colors_map)
+        kwargs['cmap'] = custom_cmap
+        kwargs['vmin'] = 0
+        kwargs['vmax'] = 2
+    else:
+        kwargs.setdefault('cmap', colorbar_type)
+
+    # Color Data
+    kwargs['c'] = modified_colors
+
+    # PLOT (same as plot_96wells)
+    mesh = ax.scatter(**kwargs)
+
+    # Image aspects (same as plot_96wells with full 12 columns)
+    ax.grid(False)
+    ax.set_xticks(range(1, 13))
+    # Create x-axis labels, hiding labels for separator columns and empty cycles
+    x_labels = []
+    for col in range(1, 13):
+        if col % 3 == 0:  # Separator columns
+            x_labels.append('')
+        else:
+            # Check if this cycle has data
+            cycle_group = (col - 1) // 3
+            cycle_start = cycle_group * 2
+            cycle_end = cycle_start + 2
+            
+            # Check if cycle is within data bounds and has non-zero values
+            if cycle_end <= cdata.shape[1]:  # Within bounds of original data
+                cycle_data = cdata.iloc[:, cycle_start:cycle_end]
+                if cycle_data.values.sum() > 0:
+                    # Show label for cycles with data
+                    col_in_group = (col - 1) % 3
+                    x_labels.append(str(col_in_group + 1))  # 1 or 2
+                else:
+                    # Hide label for empty cycles
+                    x_labels.append('')
+            else:
+                # Hide label for cycles beyond data bounds
+                x_labels.append('')
+    
+    ax.set_xticklabels(x_labels)
+    ax.xaxis.tick_top()
+    ax.set_yticks(range(1, 9))
+    ax.set_yticklabels(string.ascii_uppercase[0:8])
+    ax.set_ylim((8.5, 0.48))
+    ax.set_aspect(1)
+    ax.tick_params(axis='both', which='both', length=0)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+    for label in ax.get_xticklabels():
+        label.set_fontproperties(ticks_font)
+
+    for label in ax.get_yticklabels():
+        label.set_fontproperties(ticks_font)
+    
+    # Adding text to plate, hiding text in separator columns and empty cycles
+    for text, x, y in zip(modified_colors, modified_x, modified_y):
+        if text == 0: 
+            new_text = ''
+        else:
+            new_text = text
+        
+        # Hide text in separator columns (columns 3, 6, 9, 12) or empty cycles
+        if x % 3 == 0:  # Separator columns
+            text_color = 'white'  # Make text invisible by matching background
+        else:
+            # Check if this cycle has data and is within bounds
+            cycle_group = (x - 1) // 3
+            cycle_start = cycle_group * 2
+            cycle_end = cycle_start + 2
+            
+            # Check if cycle is within data bounds and has non-zero values
+            if cycle_end <= cdata.shape[1]:  # Within bounds of original data
+                cycle_data = cdata.iloc[:, cycle_start:cycle_end]
+                if cycle_data.values.sum() > 0:
+                    text_color = 'black'  # Normal text color for cycles with data
+                else:
+                    text_color = 'white'  # Hide text for empty cycles
+            else:
+                text_color = 'white'  # Hide text for cycles beyond data bounds
+        
+        if text < 10:
+            plt.text(x-0.175, y+0.15, str(new_text), fontsize=23, color=text_color)
+        else:
+            plt.text(x-0.275, y+0.15, str(new_text), fontsize=23, color=text_color)
+
+    # Add A-H row labels at the start of each active column set
+    cycle_positions = [1, 4, 7, 10]  # Start positions of each cycle (columns 1, 4, 7, 10)
+    
+    for i, cycle_pos in enumerate(cycle_positions):
+        # Check if this cycle has data before adding labels
+        cycle_start = i * 2
+        cycle_end = cycle_start + 2
+        
+        if i == 0:  # First cycle (columns 1-2)
+            continue  # Skip first cycle since it has no previous cycle to label
+        else:
+            # Check if cycle is within data bounds and has non-zero values
+            if cycle_end <= cdata.shape[1]:  # Within bounds of original data
+                cycle_data = cdata.iloc[:, cycle_start:cycle_end]
+                if cycle_data.values.sum() > 0:  # Only add labels if cycle has data
+                    # Add A-H labels for each row at the start of this cycle
+                    for row in range(1, 9):
+                        row_label = string.ascii_uppercase[row - 1]  # A, B, C, D, E, F, G, H
+                        # Position labels to the left of the cycle start
+                        plt.text(cycle_pos - 0.71, row + 0.055, row_label, fontsize=15, fontweight='normal', 
+                                ha='center', va='center', color='black')
+
+    return fig, ax
+
+
 # ============================================
 # Functions 
 # ============================================

@@ -90,7 +90,7 @@ async def submit_selection(request: Request):
 
     # Generate plots
     fig1, ax1 = plotting.plot_96wells(cdata=enzymes_donors_96, figure=1, figure_name='Plate map: Enzyme + Donor Mixes', colorbar_type='enzymes_donors')
-    fig2, ax2 = plotting.plot_96wells(cdata=deprots_96, figure=2, figure_name='Plate map: Deprotections', colorbar_type='deprots')
+    fig2, ax2 = plotting.plot_deprotection_cycles(cdata=deprots_96, figure=2, figure_name='Deprotection Cycles', colorbar_type='deprots')
     fig3, ax3 = plotting.plot_96wells(cdata=acceptors_96, figure=3, figure_name='Plate map: Acceptors', colorbar_type='acceptors')
 
     # Helper to convert figure to base64
