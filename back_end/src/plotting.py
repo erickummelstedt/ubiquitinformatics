@@ -79,6 +79,9 @@ def plot_96wells(figure=1, figure_name = 'Test',colorbar_type= 'PuRd', cdata=Non
         In [3]: plt.close()
     """
 
+    # Reset/clear any existing figure before creating a new one
+    plt.close(figure) if plt.fignum_exists(figure) else None
+    
     # Changes in one of this parameters should change others to ensure size fit.
     fig = plt.figure(figure, figsize=(15, 7))
     fig.suptitle(figure_name, fontsize=16)
@@ -279,6 +282,9 @@ def plot_deprotection_cycles(figure=2, figure_name='Deprotection Cycles', cdata=
     elif len(active_cycles) > 1:
         figure_name = f"Deprotection Cycles ({active_cycles[0]}-{active_cycles[-1]})"
     # If no active cycles, keep original name
+    
+    # Reset/clear any existing figure before creating a new one
+    plt.close(figure) if plt.fignum_exists(figure) else None
     
     # Use the exact same setup as plot_96wells
     fig = plt.figure(figure, figsize=(15, 7))
