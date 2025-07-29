@@ -213,7 +213,7 @@ const ScaffoldDashboard = () => {
                   </div>
                 ) : (
                   <Panel
-                    key={i}
+                    key={`${page}-${i}`}
                     style={{
                       width: SMALL_PANEL_WIDTH,
                       height: SMALL_PANEL_HEIGHT+35,
@@ -242,7 +242,7 @@ const ScaffoldDashboard = () => {
                           marginBottom: '10px'
                       }}
                     >
-                        <ScaffoldJsonWrapper jsonData={jsonData} />
+                        <ScaffoldJsonWrapper key={`${page}-${label}`} jsonData={jsonData} />
                     </div>
                     {label && (
                       <div
