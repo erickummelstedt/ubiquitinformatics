@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 import base64
 import io
 import json
+import asyncio
 
 app = FastAPI()
 
@@ -283,4 +284,271 @@ async def submit_json_output(request: Request):
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
+
+# New endpoint for subgraph analysis with streaming
+@app.post("/api/analyze-subgraphs-stream")
+async def analyze_subgraphs_stream(request: Request):
+    """
+    Streaming subgraph containment analysis with real-time timing information
+    """
+    import sys
+    from pathlib import Path
+    
+    # Dynamically get the backend path relative to this file's location
+    current_path = Path(__file__).resolve()
+    project_root = current_path.parents[2]  # Go up to project root
+    sys.path.insert(0, str(project_root))
+    local_path = project_root / 'back_end'
+    sys.path.insert(0, str(local_path))
+
+    # Import project modules
+    import src.main as main
+    import src.all_linkages as linkages
+    
+    try:
+        import pandas as pd
+        import base64
+        import time
+        
+        data = await request.json()
+        higher_level_size = data.get("higher_level_size", 5)  # Default to pentamers
+        n_level_size = data.get("n_level_size", 4)  # Default to tetramers
+        higher_level_lysine_ids = set(data.get("higher_level_lysine_ids", ["K48", "K63"]))  # Default to K48/K63
+        n_level_lysine_ids = set(data.get("n_level_lysine_ids", ["K48", "K63"]))  # Default to K48/K63
+
+        # Load the data
+        higher_level_data = linkages.load_multimer_contexts(project_root, higher_level_size)
+        n_level_data = linkages.load_multimer_contexts(project_root, n_level_size)
+
+        # Filter by lysine types
+        higher_level_dict = linkages.get_multimer_edges_by_lysines(higher_level_data, higher_level_lysine_ids)
+        n_level_dict = linkages.get_multimer_edges_by_lysines(n_level_data, n_level_lysine_ids)
+
+        async def stream_analysis():
+            """Generator function for streaming analysis results"""
+            results = None
+            
+            # Send initial status
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Starting analysis...'})}\n\n"
+            
+            # Run the analysis with progress callback
+            analysis_start_time = time.time()
+            
+            # We need to run the analysis in a way that allows async streaming
+            import threading
+            import queue
+            
+            result_queue = queue.Queue()
+            update_queue = queue.Queue()
+            
+            def run_analysis():
+                def streaming_callback(progress_data):
+                    # Put all progress updates into the queue for streaming
+                    update_queue.put(progress_data)
+                
+                try:
+                    results = linkages.analyze_subgraph_containment(higher_level_dict, n_level_dict, streaming_callback)
+                    result_queue.put(("success", results))
+                except Exception as e:
+                    result_queue.put(("error", str(e)))
+            
+            # Start analysis in separate thread
+            analysis_thread = threading.Thread(target=run_analysis)
+            analysis_thread.start()
+            
+            # Stream updates while analysis runs
+            while analysis_thread.is_alive():
+                try:
+                    # Check for any updates (timing or progress)
+                    while not update_queue.empty():
+                        progress_data = update_queue.get_nowait()
+                        
+                        if progress_data.get("type") == "timing_analysis":
+                            # This is the key timing update after 10 iterations!
+                            timing_event = {
+                                "type": "timing_update",
+                                "data": {
+                                    "completed_iterations": progress_data.get("completed_iterations"),
+                                    "elapsed_time": progress_data.get("elapsed_time"),
+                                    "avg_time_per_iteration": progress_data.get("avg_time_per_iteration"),
+                                    "estimated_total_time": progress_data.get("estimated_total_time"),
+                                    "estimated_remaining_time": progress_data.get("estimated_remaining_time"),
+                                    "estimated_total_seconds": progress_data.get("estimated_total_seconds"),
+                                    "estimated_remaining_seconds": progress_data.get("estimated_remaining_seconds")
+                                }
+                            }
+                            # Ensure proper JSON encoding
+                            try:
+                                json_str = json.dumps(timing_event, ensure_ascii=True)
+                                yield f"data: {json_str}\n\n"
+                            except Exception as json_error:
+                                print(f"JSON encoding error: {json_error}")
+                                yield f"data: {json.dumps({'type': 'error', 'message': 'JSON encoding error'})}\n\n"
+                        
+                        elif progress_data.get("type") == "progress":
+                            # Regular progress updates
+                            progress_event = {
+                                "type": "progress_update",
+                                "data": {
+                                    "current": progress_data.get("current"),
+                                    "total": progress_data.get("total"),
+                                    "message": progress_data.get("message", "")
+                                }
+                            }
+                            # Ensure proper JSON encoding
+                            try:
+                                json_str = json.dumps(progress_event, ensure_ascii=True)
+                                yield f"data: {json_str}\n\n"
+                            except Exception as json_error:
+                                print(f"JSON encoding error: {json_error}")
+                                yield f"data: {json.dumps({'type': 'error', 'message': 'JSON encoding error'})}\n\n"
+                    
+                    await asyncio.sleep(0.1)  # Small delay to prevent busy waiting
+                except queue.Empty:
+                    pass
+            
+            # Get final results
+            try:
+                result_type, result_data = result_queue.get_nowait()
+                if result_type == "error":
+                    yield f"data: {json.dumps({'type': 'error', 'message': result_data})}\n\n"
+                    return
+                else:
+                    results = result_data
+            except queue.Empty:
+                yield f"data: {json.dumps({'type': 'error', 'message': 'Analysis completed but no results received'})}\n\n"
+                return
+            
+            total_analysis_time = time.time() - analysis_start_time
+
+            # Convert results to CSV
+            df = pd.DataFrame.from_dict(results, orient='index').fillna(0).astype(int)
+            csv_bytes = df.to_csv().encode('utf-8')
+            csv_b64 = base64.b64encode(csv_bytes).decode('utf-8')
+
+            # Send final results
+            final_result = {
+                "type": "final_results",
+                "data": {
+                    "status": "ok",
+                    "results": results,
+                    "csv_b64": csv_b64,
+                    "analysis_metadata": {
+                        "total_analysis_time": total_analysis_time,
+                        "higher_level_count": len(higher_level_dict),
+                        "n_level_count": len(n_level_dict),
+                        "total_comparisons": len(higher_level_dict) * len(n_level_dict)
+                    }
+                }
+            }
+
+            # Ensure proper JSON encoding for final results
+            try:
+                json_str = json.dumps(final_result, ensure_ascii=True)
+                yield f"data: {json_str}\n\n"
+            except Exception as json_error:
+                print(f"JSON encoding error for final results: {json_error}")
+                yield f"data: {json.dumps({'type': 'error', 'message': 'JSON encoding error for final results'})}\n\n"
+
+        return StreamingResponse(
+            stream_analysis(),
+            media_type="text/plain",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Content-Type": "text/event-stream",
+            }
+        )
+        
+    except Exception as e:
+        # For streaming errors, we need to return a regular JSON response
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
+
+# New endpoint for subgraph analysis (simplified)
+@app.post("/api/analyze-subgraphs")
+async def analyze_subgraphs(request: Request):
+    """
+    Simple subgraph containment analysis with timing information
+    """
+    import sys
+    from pathlib import Path
+    
+    # Dynamically get the backend path relative to this file's location
+    current_path = Path(__file__).resolve()
+    project_root = current_path.parents[2]  # Go up to project root
+    sys.path.insert(0, str(project_root))
+    local_path = project_root / 'back_end'
+    sys.path.insert(0, str(local_path))
+
+    # Import project modules
+    import src.main as main
+    import src.all_linkages as linkages
+
+    
+    try:
+        import pandas as pd
+        import base64
+        import time
+        
+        data = await request.json()
+        higher_level_size = data.get("higher_level_size", 5)  # Default to pentamers
+        n_level_size = data.get("n_level_size", 4)  # Default to tetramers
+        higher_level_lysine_ids = set(data.get("higher_level_lysine_ids", ["K48", "K63"]))  # Default to K48/K63
+        n_level_lysine_ids = set(data.get("n_level_lysine_ids", ["K48", "K63"]))  # Default to K48/K63
+
+        # Load the data
+        higher_level_data = linkages.load_multimer_contexts(project_root, higher_level_size)
+        n_level_data = linkages.load_multimer_contexts(project_root, n_level_size)
+
+        # Filter by lysine types
+        higher_level_dict = linkages.get_multimer_edges_by_lysines(higher_level_data, higher_level_lysine_ids)
+        n_level_dict = linkages.get_multimer_edges_by_lysines(n_level_data, n_level_lysine_ids)
+
+        # Store timing information for response
+        timing_info = {}
+        
+        def progress_callback(progress_data):
+            """Callback to capture timing information"""
+            if progress_data.get("type") == "timing_analysis":
+                nonlocal timing_info
+                timing_info = {
+                    "completed_iterations": progress_data.get("completed_iterations"),
+                    "elapsed_time": progress_data.get("elapsed_time"),
+                    "avg_time_per_iteration": progress_data.get("avg_time_per_iteration"),
+                    "estimated_total_time": progress_data.get("estimated_total_time"),
+                    "estimated_remaining_time": progress_data.get("estimated_remaining_time"),
+                    "estimated_total_seconds": progress_data.get("estimated_total_seconds"),
+                    "estimated_remaining_seconds": progress_data.get("estimated_remaining_seconds")
+                }
+
+        # Run the analysis with progress callback
+        analysis_start_time = time.time()
+        results = linkages.analyze_subgraph_containment(higher_level_dict, n_level_dict, progress_callback)
+        total_analysis_time = time.time() - analysis_start_time
+
+        # Convert results to CSV bytes
+        df = pd.DataFrame.from_dict(results, orient='index').fillna(0).astype(int)
+        csv_bytes = df.to_csv().encode('utf-8')
+        csv_b64 = base64.b64encode(csv_bytes).decode('utf-8')
+
+        response_content = {
+            "status": "ok",
+            "results": results,
+            "csv_b64": csv_b64,
+            "analysis_metadata": {
+                "total_analysis_time": total_analysis_time,
+                "higher_level_count": len(higher_level_dict),
+                "n_level_count": len(n_level_dict),
+                "total_comparisons": len(higher_level_dict) * len(n_level_dict)
+            }
+        }
+        
+        # Add timing information if available
+        if timing_info:
+            response_content["timing_analysis"] = timing_info
+
+        return JSONResponse(content=response_content)
+        
+    except Exception as e:
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
