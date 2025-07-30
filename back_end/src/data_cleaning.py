@@ -16,7 +16,7 @@ sys.path.insert(0, str(local_path))
 
 from src.utils.utils import *
 from src.utils.logging_utils import *
-from main import *
+from src.main import *
 
 # =========================================
 # Functions for DataFrame Manipulation

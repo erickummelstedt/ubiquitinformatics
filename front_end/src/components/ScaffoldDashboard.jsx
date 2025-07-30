@@ -5,6 +5,7 @@ import FrozenGameScaffoldPanel from './FrozenGameScaffoldPanel';
 import ScaffoldJsonWrapper from './ScaffoldJsonWrapper';
 import Sequences from './Sequences';
 import SubgraphAnalysisPage from './SubgraphAnalysisPage';
+import ReactionPathStatisticsPage from './ReactionPathStatisticsPage';
 import k48_dimer_ubiquitin from '../data/k48_dimer_ubiquitin';
 import multimerDataTetramers from '../data/multimer_id_to_json4.json';
 import multimerDataPentamers from '../data/multimer_id_to_json5.json';
@@ -17,6 +18,7 @@ const PAGE_CONFIG = {
   tetramers: { count: 14, label: 'Tetramers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
   pentamers: { count: 42, label: 'Pentamers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
   subgraph: { count: 1, label: 'Subgraph Analysis', panelWidth: 570, panelHeight: 500 },
+  reactionStats: { count: 1, label: 'Reaction Path Statistics', panelWidth: 570, panelHeight: 500 },
 };
 
 const ScaffoldDashboard = () => {
@@ -93,6 +95,7 @@ const ScaffoldDashboard = () => {
           <option value="tetramers">Tetramers</option>
           <option value="pentamers">Pentamers</option>
           <option value="subgraph">Subgraph</option>
+          <option value="reactionStats">Reaction Path Statistics</option>
         </select>
       </div>
       <div style={{
@@ -112,6 +115,15 @@ const ScaffoldDashboard = () => {
             maxWidth: '1400px'
           }}>
             <SubgraphAnalysisPage />
+          </div>
+        ) : page === 'reactionStats' ? (
+          <div style={{ 
+            width: '100%', 
+            padding: '0 32px', 
+            boxSizing: 'border-box',
+            maxWidth: '1400px'
+          }}>
+            <ReactionPathStatisticsPage />
           </div>
         ) : (
           [...Array(count)].map((_, i) => {

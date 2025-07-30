@@ -9,7 +9,6 @@ from pathlib import Path
 import pandas as pd
 import ast 
 
-
 import matplotlib.pyplot as plt
 from matplotlib import font_manager
 from matplotlib.colors import ListedColormap, Normalize
@@ -20,7 +19,6 @@ project_root = current_file.parents[2]  # Go up to project root
 sys.path.insert(0, str(project_root))
 local_path = project_root / 'back_end'
 sys.path.insert(0, str(local_path))
-
 
 def plot_96wells(figure=1, figure_name = 'Test',colorbar_type= 'PuRd', cdata=None, sdata=None, bdata=None, bcolors=None, bmeans=None, **kwargs):
     # from https://github.com/jaumebonet/RosettaSilentToolbox/blob/master/rstoolbox/plot/experimental.py
@@ -2851,3 +2849,113 @@ def get_indexes_for_final_multimer(json_output, ubiquitin_history):
     final_ubiquitin, final_context = main.iterate_through_ubiquitin(growing_ubiquitin)
     indexes = ubiquitin_history.loc[ubiquitin_history["final_multimer"] == str(final_ubiquitin), "index"].dropna().unique()
     return [int(i) for i in indexes]
+
+
+def reaction_path_statistics(_ubiquitin_history_, _context_history_, multimers, project_root, multimer_size):
+    
+    import src.main as main
+    import src.data_cleaning as data_cleaning
+    import src.all_linkages as linkages
+    
+    # Reveal all the edges for trimers 
+    def reveal_edges(context_):
+        """
+        Gives the ID of the linkages from the context.
+        """
+        edges = context_['conjugated_lysines']
+        return edges
+
+
+    # Reset index if needed
+    _ubiquitin_history_ = _ubiquitin_history_.reset_index()
+    _context_history_ = _context_history_.reset_index()
+
+    # This should be a separate function in run_file.pyxs
+    multimered_ubiquitin_history, multimered_context_history = data_cleaning.global_deprotection_dual(_ubiquitin_history_, _context_history_)
+
+    json_counting = {}
+
+    for i in range(len(multimers.keys())):
+        num_of_reactions = len(multimered_ubiquitin_history[multimered_ubiquitin_history['final_multimer'] == multimers[f'Ub{multimer_size}_{i+1}']])
+        ubi_DAG, ubi_context = main.iterate_through_ubiquitin(multimers[f'Ub{multimer_size}_{i+1}'])
+        json_counting[f'Ub{multimer_size}_{i+1}'] = {
+            num_of_reactions: 'num_of_reactions', 
+            'ubiDAG_edges': str(reveal_edges(ubi_context))
+            }
+
+    # Load the data
+    higher_level_data = linkages.load_multimer_contexts(project_root, multimer_size)
+    n_level_data = linkages.load_multimer_contexts(project_root, 3)
+
+    # Filter by lysine types
+    higher_level_dict = linkages.get_multimer_edges_by_lysines(higher_level_data, {"K48", "K63"})
+    n_level_dict = linkages.get_multimer_edges_by_lysines(n_level_data, {"K48", "K63"})
+
+    # Analyze subgraph containment, with K48 and K63 linkages
+    results = linkages.analyze_subgraph_containment(higher_level_dict, n_level_dict)
+
+
+    def simplify_linkage_dict(nested_dict):
+        """
+        Simplifies the nested dictionary by removing specific keys and counting heterotypic and branching linkages.
+        Only works with K48 and K63 linkages when n_level_data = linkages.load_multimer_contexts(project_root, 3) is set to 3.
+
+        Args:
+            nested_dict (dict): The nested dictionary to simplify.
+        Returns:
+            dict: A simplified dictionary with counts of heterotypic and branching linkages.
+        """
+        
+        result = {}
+
+        # Keys to be removed
+        keys_to_remove = [
+            "[[1, 'K63', 2], [2, 'K63', 3]]",
+            "[[1, 'K48', 2], [2, 'K48', 3]]"
+        ]
+
+        # Keys to count for heterotypic and branching
+        heterotypic_keys = [
+            "[[1, 'K63', 2], [2, 'K48', 3]]",
+            "[[1, 'K48', 2], [2, 'K63', 3]]"
+        ]
+        branching_key = "[[1, 'K63', 2], [1, 'K48', 3]]"
+
+        for outer_key, inner_dict in nested_dict.items():
+            heterotypic_total = 0
+            branching_total = 0
+            simplified_inner = {}
+
+            for k, v in inner_dict.items():
+                if k in keys_to_remove:
+                    continue
+                elif k in heterotypic_keys:
+                    heterotypic_total += v
+                elif k == branching_key:
+                    branching_total += v
+                else:
+                    simplified_inner[k] = v
+
+            # Always include the linkage counts, even if they are 0
+            simplified_inner['heterotypic_linkage'] = heterotypic_total
+            simplified_inner['branching_linkage'] = branching_total
+
+            result[outer_key] = simplified_inner
+
+        return result
+
+    # Simplify the linkage dictionary
+    simplified_example = simplify_linkage_dict(results)
+
+    # Convert the nested dictionary into a flat structure suitable for a DataFrame
+    json_with_reaction_information = {}
+    for key, value in json_counting.items():
+        json_with_reaction_information[f'{key}'] = {
+            'UbID': key,
+            'num_of_reactions': list(value.keys())[0],
+            'ubiDAG_edges': value['ubiDAG_edges'],
+            'heterotypic_linkage': simplified_example.get(value['ubiDAG_edges'])['heterotypic_linkage'],
+            'branching_linkage': simplified_example.get(value['ubiDAG_edges'])['branching_linkage']
+            }
+
+    return json_with_reaction_information

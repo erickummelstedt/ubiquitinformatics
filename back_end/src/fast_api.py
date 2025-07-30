@@ -552,3 +552,97 @@ async def analyze_subgraphs(request: Request):
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
+
+@app.post("/api/reaction-path-statistics")
+async def reaction_path_statistics_endpoint(request: Request):
+    """
+    FastAPI endpoint that uses reaction_path_statistics from plotting module.
+    Analyzes reaction pathways and linkage patterns for multimers.
+    """
+    try:
+        data = await request.json()
+        multimer_size = data.get("multimer_size", 5)
+        
+        import sys
+        from pathlib import Path
+        import pandas as pd
+
+        # Dynamically get the backend path relative to this file's location
+        current_path = Path(__file__).resolve()
+        project_root = current_path.parents[2]  # Go up to project root
+        sys.path.insert(0, str(project_root))
+        local_path = project_root / 'back_end'
+        sys.path.insert(0, str(local_path))
+
+        # Import project modules (with error handling)
+        try:
+            import src.main as main
+            import src.plotting as plotting
+            import src.all_linkages as linkages
+            import src.data_cleaning as data_cleaning
+        except ImportError as e:
+            return JSONResponse(content={"status": "error", "message": f"Import error: {str(e)}"}, status_code=500)
+
+        # Function to load filtered data
+        def download_data_dict(multimer_size):
+            input_dir = project_root / 'back_end' / 'data' / 'filtered_reaction_database' / f'multimer_size_{multimer_size}'
+            combined_database = pd.read_csv(input_dir / 'combined_database.csv', index_col=0)
+            context_history = pd.read_csv(input_dir / 'context_history.csv', index_col=0)
+            donor_history = pd.read_csv(input_dir / 'donor_history.csv', index_col=0)
+            reaction_history = pd.read_csv(input_dir / 'reaction_history.csv', index_col=0)
+            ubiquitin_history = pd.read_csv(input_dir / 'ubiquitin_history.csv', index_col=0)
+            return {
+                'combined_database': combined_database,
+                'context_history': context_history,
+                'donor_history': donor_history,
+                'reaction_history': reaction_history,
+                'ubiquitin_history': ubiquitin_history
+            }
+
+        # Load the filtered data
+        data_dict = download_data_dict(multimer_size)
+        combined_database = data_dict['combined_database']
+        context_history = data_dict['context_history']
+        donor_history = data_dict['donor_history']
+        reaction_history = data_dict['reaction_history']
+        ubiquitin_history = data_dict['ubiquitin_history']
+
+        # Function to load all data (unfiltered)
+        def download_all_data_dict(multimer_size):
+            input_dir = project_root / 'back_end' / 'data' / 'reaction_database' / f'multimer_size_{multimer_size}'
+            context_history = pd.read_csv(input_dir / 'context_history.csv', index_col=0)
+            donor_history = pd.read_csv(input_dir / 'donor_history.csv', index_col=0)
+            reaction_history = pd.read_csv(input_dir / 'reaction_history.csv', index_col=0)
+            ubiquitin_history = pd.read_csv(input_dir / 'ubiquitin_history.csv', index_col=0)
+            return {
+                'context_history': context_history,
+                'donor_history': donor_history,
+                'reaction_history': reaction_history,
+                'ubiquitin_history': ubiquitin_history
+            }
+
+        # Load the all data
+        all_data_dict = download_all_data_dict(multimer_size)
+        all_context_history = all_data_dict['context_history']
+        all_donor_history = all_data_dict['donor_history']
+        all_reaction_history = all_data_dict['reaction_history']
+        all_ubiquitin_history = all_data_dict['ubiquitin_history']
+
+        # Load multimers JSON file
+        file_path = project_root / 'front_end' / 'src' / 'data' / f'multimer_id_to_json{multimer_size}.json'
+        with open(file_path, 'r') as f:
+            multimers = json.load(f)
+
+        # Call the reaction_path_statistics function
+        json_with_reaction_information = plotting.reaction_path_statistics(ubiquitin_history, context_history, multimers, project_root, multimer_size)
+        
+        return JSONResponse(content={
+            "status": "ok",
+            "data": json_with_reaction_information,
+            "multimer_size": multimer_size,
+            "message": f"Successfully analyzed reaction path statistics for {len(json_with_reaction_information)} multimers of size {multimer_size}"
+        })
+        
+    except Exception as e:
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
+
