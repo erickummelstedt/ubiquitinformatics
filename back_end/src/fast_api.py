@@ -562,7 +562,8 @@ async def reaction_path_statistics_endpoint(request: Request):
     try:
         data = await request.json()
         multimer_size = data.get("multimer_size", 5)
-        
+        pathway_type = data.get("pathway_type", "all")
+
         import sys
         from pathlib import Path
         import pandas as pd
@@ -583,15 +584,16 @@ async def reaction_path_statistics_endpoint(request: Request):
         except ImportError as e:
             return JSONResponse(content={"status": "error", "message": f"Import error: {str(e)}"}, status_code=500)
 
-        # Function to load filtered data
-        def download_data_dict(multimer_size):
-            input_dir = project_root / 'back_end' / 'data' / 'filtered_reaction_database' / f'multimer_size_{multimer_size}'
-            combined_database = pd.read_csv(input_dir / 'combined_database.csv', index_col=0)
-            context_history = pd.read_csv(input_dir / 'context_history.csv', index_col=0)
-            donor_history = pd.read_csv(input_dir / 'donor_history.csv', index_col=0)
-            reaction_history = pd.read_csv(input_dir / 'reaction_history.csv', index_col=0)
-            ubiquitin_history = pd.read_csv(input_dir / 'ubiquitin_history.csv', index_col=0)
-            return {
+        if pathway_type == 'aboc':# Function to load filtered data
+            
+            def download_data_dict(multimer_size):
+                input_dir = project_root / 'back_end' / 'data' / 'filtered_reaction_database' / f'multimer_size_{multimer_size}'
+                combined_database = pd.read_csv(input_dir / 'combined_database.csv', index_col=0)
+                context_history = pd.read_csv(input_dir / 'context_history.csv', index_col=0)
+                donor_history = pd.read_csv(input_dir / 'donor_history.csv', index_col=0)
+                reaction_history = pd.read_csv(input_dir / 'reaction_history.csv', index_col=0)
+                ubiquitin_history = pd.read_csv(input_dir / 'ubiquitin_history.csv', index_col=0)
+                return {
                 'combined_database': combined_database,
                 'context_history': context_history,
                 'donor_history': donor_history,
@@ -599,34 +601,30 @@ async def reaction_path_statistics_endpoint(request: Request):
                 'ubiquitin_history': ubiquitin_history
             }
 
-        # Load the filtered data
-        data_dict = download_data_dict(multimer_size)
-        combined_database = data_dict['combined_database']
-        context_history = data_dict['context_history']
-        donor_history = data_dict['donor_history']
-        reaction_history = data_dict['reaction_history']
-        ubiquitin_history = data_dict['ubiquitin_history']
+            # Load the filtered data
+            data_dict = download_data_dict(multimer_size)
+            context_history = data_dict['context_history']
+            ubiquitin_history = data_dict['ubiquitin_history']
+        
+        elif pathway_type == 'all':
+            # Function to load all data (unfiltered)
+            def download_all_data_dict(multimer_size):
+                input_dir = project_root / 'back_end' / 'data' / 'reaction_database' / f'multimer_size_{multimer_size}'
+                context_history = pd.read_csv(input_dir / 'context_history.csv', index_col=0)
+                donor_history = pd.read_csv(input_dir / 'donor_history.csv', index_col=0)
+                reaction_history = pd.read_csv(input_dir / 'reaction_history.csv', index_col=0)
+                ubiquitin_history = pd.read_csv(input_dir / 'ubiquitin_history.csv', index_col=0)
+                return {
+                    'context_history': context_history,
+                    'donor_history': donor_history,
+                    'reaction_history': reaction_history,
+                    'ubiquitin_history': ubiquitin_history
+                }
 
-        # Function to load all data (unfiltered)
-        def download_all_data_dict(multimer_size):
-            input_dir = project_root / 'back_end' / 'data' / 'reaction_database' / f'multimer_size_{multimer_size}'
-            context_history = pd.read_csv(input_dir / 'context_history.csv', index_col=0)
-            donor_history = pd.read_csv(input_dir / 'donor_history.csv', index_col=0)
-            reaction_history = pd.read_csv(input_dir / 'reaction_history.csv', index_col=0)
-            ubiquitin_history = pd.read_csv(input_dir / 'ubiquitin_history.csv', index_col=0)
-            return {
-                'context_history': context_history,
-                'donor_history': donor_history,
-                'reaction_history': reaction_history,
-                'ubiquitin_history': ubiquitin_history
-            }
-
-        # Load the all data
-        all_data_dict = download_all_data_dict(multimer_size)
-        all_context_history = all_data_dict['context_history']
-        all_donor_history = all_data_dict['donor_history']
-        all_reaction_history = all_data_dict['reaction_history']
-        all_ubiquitin_history = all_data_dict['ubiquitin_history']
+            # Load the all data
+            data_dict = download_all_data_dict(multimer_size)
+            context_history = data_dict['context_history']
+            ubiquitin_history = data_dict['ubiquitin_history']
 
         # Load multimers JSON file
         file_path = project_root / 'front_end' / 'src' / 'data' / f'multimer_id_to_json{multimer_size}.json'
@@ -640,7 +638,7 @@ async def reaction_path_statistics_endpoint(request: Request):
             "status": "ok",
             "data": json_with_reaction_information,
             "multimer_size": multimer_size,
-            "message": f"Successfully analyzed reaction path statistics for {len(json_with_reaction_information)} multimers of size {multimer_size}"
+            "message": f"Successfully analyzed reaction path statistics for {len(json_with_reaction_information)} multimers of size {multimer_size} ({'Aboc-saturated' if pathway_type == 'aboc' else 'all'} pathways)"
         })
         
     except Exception as e:

@@ -3,15 +3,17 @@ import React, { useState } from 'react';
 const ReactionPathStatisticsPage = () => {
   const [reactionStatsData, setReactionStatsData] = useState(null);
   const [reactionStatsLoading, setReactionStatsLoading] = useState(false);
+  const [multimerSize, setMultimerSize] = useState(4);
+  const [pathwayType, setPathwayType] = useState('aboc');
 
   // Function to fetch reaction path statistics
-  const fetchReactionPathStats = async (multimerSize) => {
+  const fetchReactionPathStats = async (size, type) => {
     setReactionStatsLoading(true);
     try {
       const response = await fetch('/api/reaction-path-statistics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ multimer_size: multimerSize }),
+        body: JSON.stringify({ multimer_size: size, pathway_type: type }),
       });
       
       if (!response.ok) {
@@ -49,25 +51,43 @@ const ReactionPathStatisticsPage = () => {
           Analyze reaction pathways and linkage patterns for multimers
         </p>
         
-        <div style={{ marginBottom: '24px' }}>
-          <label style={{ marginRight: '12px', fontWeight: '600' }}>Multimer Size:</label>
-          <select 
-            defaultValue="5"
-            onChange={(e) => fetchReactionPathStats(parseInt(e.target.value))}
-            style={{ 
-              padding: '8px 12px', 
-              borderRadius: '6px', 
-              border: '1px solid #ccc',
-              fontSize: '16px',
-              marginRight: '12px'
-            }}
-          >
-            <option value="4">Tetramers (4)</option>
-            <option value="5">Pentamers (5)</option>
-          </select>
-          
+        <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+          <div>
+            <label style={{ marginRight: '8px', fontWeight: '600' }}>Multimer Size:</label>
+            <select
+              value={multimerSize}
+              onChange={e => setMultimerSize(parseInt(e.target.value))}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #ccc',
+                fontSize: '16px',
+                marginRight: '12px'
+              }}
+            >
+              <option value={4}>Tetramers (4)</option>
+              <option value={5}>Pentamers (5)</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ marginRight: '8px', fontWeight: '600' }}>Pathway Type:</label>
+            <select
+              value={pathwayType}
+              onChange={e => setPathwayType(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #ccc',
+                fontSize: '16px',
+                marginRight: '12px'
+              }}
+            >
+              <option value="aboc">Aboc-saturated reaction pathways</option>
+              <option value="all">All reaction pathways</option>
+            </select>
+          </div>
           <button
-            onClick={() => fetchReactionPathStats(5)}
+            onClick={() => fetchReactionPathStats(multimerSize, pathwayType)}
             disabled={reactionStatsLoading}
             style={{
               padding: '8px 16px',
