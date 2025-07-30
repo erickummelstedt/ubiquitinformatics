@@ -57,7 +57,7 @@ const ReactionPathStatisticsPage = () => {
   return (
     <div>
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <h2 style={{ margin: '0 0 16px 0', color: '#333' }}>Reaction Path Statistics</h2>
+        <h2 style={{ margin: '0 0 16px 0', color: '#333' }}>Reaction Path Metrics</h2>
         <p style={{ margin: '0 0 24px 0', color: '#666' }}>
           Analyze reaction pathways and linkage patterns for multimers
         </p>
@@ -161,16 +161,29 @@ const ReactionPathStatisticsPage = () => {
                   plugins: {
                     legend: { display: false },
                     title: { display: false },
+                    tooltip: {
+                      callbacks: {
+                        title: function(context) {
+                          const dataIndex = context[0].dataIndex;
+                          const row = Object.values(reactionStatsData.data)[dataIndex];
+                          return row.UbID;
+                        },
+                        label: function(context) {
+                          const dataIndex = context.dataIndex;
+                          const row = Object.values(reactionStatsData.data)[dataIndex];
+                          return [
+                            `No. of reactions: ${row.num_of_reactions}`,
+                            `ubiDAG: ${row.ubiDAG_edges}`,
+                            `No. Heterotypic Linkages: ${row.heterotypic_linkage}`,
+                            `No. Branching Sites: ${row.branching_linkage}`
+                          ];
+                        }
+                      }
+                    }
                   },
                   scales: {
                     x: { 
                       title: { display: true, text: 'UbID' },
-                      ticks: { 
-                        autoSkip: false, 
-                        maxRotation: 90, 
-                        minRotation: 90,
-                        font: { size: 10 }
-                      },
                       grid: {
                         display: false
                       },
@@ -355,7 +368,7 @@ const ReactionPathStatisticsPage = () => {
                             title: function(context) {
                               if (context[0].dataset.label === 'Individual Species') {
                                 const point = scatterData[context[0].dataIndex];
-                                return `${point.linkageType} - ${point.ubID}`;
+                                return `${point.ubID}`;
                               } else {
                                 // For average lines, find which group this belongs to
                                 const datasetIndex = context[0].datasetIndex;
@@ -368,7 +381,14 @@ const ReactionPathStatisticsPage = () => {
                             label: function(context) {
                               if (context.dataset.label === 'Individual Species') {
                                 const point = scatterData[context.dataIndex];
-                                return `Species: ${point.ubID}, Reactions: ${point.y}`;
+                                // Find the original data row to get all fields
+                                const originalRow = Object.values(reactionStatsData.data).find(row => row.UbID === point.ubID);
+                                return [
+                                  `No. of reactions: ${point.y}`,
+                                  `ubiDAG: ${originalRow ? originalRow.ubiDAG_edges : 'N/A'}`,
+                                  `No. Heterotypic Linkages: ${originalRow ? originalRow.heterotypic_linkage : 'N/A'}`,
+                                  `No. Branching Sites: ${originalRow ? originalRow.branching_linkage : 'N/A'}`
+                                ];
                               } else {
                                 return `Average Reactions: ${context.parsed.y.toFixed(1)}`;
                               }

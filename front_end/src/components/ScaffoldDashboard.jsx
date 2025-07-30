@@ -14,11 +14,11 @@ const SMALL_PANEL_WIDTH = 140;
 const SMALL_PANEL_HEIGHT = 90;
 
 const PAGE_CONFIG = {
-  draw: { count: 1, label: 'Explore Ubiquitin Pathways', panelWidth: 570, panelHeight: 370 },
+  draw: { count: 1, label: 'Explore Reaction Pathways', panelWidth: 570, panelHeight: 370 },
   tetramers: { count: 14, label: 'Tetramers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
   pentamers: { count: 42, label: 'Pentamers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
-  subgraph: { count: 1, label: 'Subgraph Analysis', panelWidth: 570, panelHeight: 500 },
-  reactionStats: { count: 1, label: 'Reaction Path Statistics', panelWidth: 570, panelHeight: 500 },
+  reactionStats: { count: 1, label: 'Reaction Path Metrics', panelWidth: 570, panelHeight: 500 },
+  subgraph: { count: 1, label: 'Ubiquitin Isomorphism', panelWidth: 570, panelHeight: 500 },
 };
 
 const ScaffoldDashboard = () => {
@@ -91,11 +91,11 @@ const ScaffoldDashboard = () => {
           onChange={e => setPage(e.target.value)}
           style={{ fontSize: 16, padding: '4px 12px', borderRadius: 6 }}
         >
-          <option value="draw">Draw</option>
+          <option value="draw">Explore Reaction Pathways</option>
           <option value="tetramers">Tetramers</option>
           <option value="pentamers">Pentamers</option>
-          <option value="subgraph">Subgraph</option>
-          <option value="reactionStats">Reaction Path Statistics</option>
+          <option value="reactionStats">Reaction Path Metrics</option>
+          <option value="subgraph">Ubiquitin Isomorphism</option>
         </select>
       </div>
       <div style={{
@@ -107,16 +107,7 @@ const ScaffoldDashboard = () => {
         rowGap: page === 'draw' ? '0' : '8px',
         columnGap: page === 'draw' ? '0' : '8px',
       }}>
-        {page === 'subgraph' ? (
-          <div style={{ 
-            width: '100%', 
-            padding: '0 32px', 
-            boxSizing: 'border-box',
-            maxWidth: '1400px'
-          }}>
-            <SubgraphAnalysisPage />
-          </div>
-        ) : page === 'reactionStats' ? (
+        {page === 'reactionStats' ? (
           <div style={{ 
             width: '100%', 
             padding: '0 32px', 
@@ -124,6 +115,15 @@ const ScaffoldDashboard = () => {
             maxWidth: '1400px'
           }}>
             <ReactionPathStatisticsPage />
+          </div>
+        ) : page === 'subgraph' ? (
+          <div style={{ 
+            width: '100%', 
+            padding: '0 32px', 
+            boxSizing: 'border-box',
+            maxWidth: '1400px'
+          }}>
+            <SubgraphAnalysisPage />
           </div>
         ) : (
           [...Array(count)].map((_, i) => {
