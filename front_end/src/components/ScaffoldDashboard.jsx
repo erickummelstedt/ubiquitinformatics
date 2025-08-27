@@ -4,6 +4,8 @@ import GameScaffoldPanel from './GameScaffoldPanel';
 import FrozenGameScaffoldPanel from './FrozenGameScaffoldPanel';
 import ScaffoldJsonWrapper from './ScaffoldJsonWrapper';
 import Sequences from './Sequences';
+import SubgraphAnalysisPage from './SubgraphAnalysisPage';
+import ReactionPathStatisticsPage from './ReactionPathStatisticsPage';
 import k48_dimer_ubiquitin from '../data/k48_dimer_ubiquitin';
 import multimerDataTetramers from '../data/multimer_id_to_json4.json';
 import multimerDataPentamers from '../data/multimer_id_to_json5.json';
@@ -12,9 +14,11 @@ const SMALL_PANEL_WIDTH = 140;
 const SMALL_PANEL_HEIGHT = 90;
 
 const PAGE_CONFIG = {
-  draw: { count: 1, label: 'Explore Ubiquitin Pathways', panelWidth: 570, panelHeight: 370 },
+  draw: { count: 1, label: 'Explore Reaction Pathways', panelWidth: 570, panelHeight: 370 },
   tetramers: { count: 14, label: 'Tetramers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
   pentamers: { count: 42, label: 'Pentamers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
+  reactionStats: { count: 1, label: 'Reaction Path Metrics', panelWidth: 570, panelHeight: 500 },
+  subgraph: { count: 1, label: 'Ubiquitin Isomorphism', panelWidth: 570, panelHeight: 500 },
 };
 
 const ScaffoldDashboard = () => {
@@ -87,9 +91,11 @@ const ScaffoldDashboard = () => {
           onChange={e => setPage(e.target.value)}
           style={{ fontSize: 16, padding: '4px 12px', borderRadius: 6 }}
         >
-          <option value="draw">Draw</option>
+          <option value="draw">Explore Reaction Pathways</option>
           <option value="tetramers">Tetramers</option>
           <option value="pentamers">Pentamers</option>
+          <option value="reactionStats">Reaction Path Metrics</option>
+          <option value="subgraph">Ubiquitin Isomorphism</option>
         </select>
       </div>
       <div style={{
@@ -101,27 +107,89 @@ const ScaffoldDashboard = () => {
         rowGap: page === 'draw' ? '0' : '8px',
         columnGap: page === 'draw' ? '0' : '8px',
       }}>
-        {[...Array(count)].map((_, i) => {
-          const isSelected = selectedPanels.includes(i);
-          const label = page === 'tetramers' ? `Ub4_${i + 1}` : page === 'pentamers' ? `Ub5_${i + 1}` : '';
-          const jsonData = getMultimerData(label);
+        {page === 'reactionStats' ? (
+          <div style={{ 
+            width: '100%', 
+            padding: '0 32px', 
+            boxSizing: 'border-box',
+            maxWidth: '1400px'
+          }}>
+            <ReactionPathStatisticsPage />
+          </div>
+        ) : page === 'subgraph' ? (
+          <div style={{ 
+            width: '100%', 
+            padding: '0 32px', 
+            boxSizing: 'border-box',
+            maxWidth: '1400px'
+          }}>
+            <SubgraphAnalysisPage />
+          </div>
+        ) : (
+          [...Array(count)].map((_, i) => {
+            const isSelected = selectedPanels.includes(i);
+            const label = page === 'tetramers' ? `Ub4_${i + 1}` : page === 'pentamers' ? `Ub5_${i + 1}` : '';
+            const jsonData = getMultimerData(label);
 
-          return (
-            <>
-              {page === 'draw' ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
-                  <input
-                    type="text"
-                    placeholder="Enter UbX_Y"
-                    onKeyDown={async (e) => {
-                      if (e.key === 'Enter') {
-                        const value = e.target.value;
-                        if (value) {
+            return (
+              <>
+                {page === 'draw' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter UbX_Y"
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter') {
+                          const value = e.target.value;
+                          if (value) {
+                            try {
+                              const response = await fetch('/api/submit-ubxy', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ ubxy: value }),
+                              });
+                              if (!response.ok) {
+                                console.error('Failed to fetch reaction sequences:', response.status, response.statusText);
+                                throw new Error('Failed to fetch reaction sequences');
+                              }
+                              const result = await response.json();
+                              const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
+                              setReactionSequence(decodedSequence); // Store the fetched sequence
+                            } catch (err) {
+                              console.error('Error details:', err);
+                              alert('Failed to fetch reaction sequences: ' + err.message);
+                            }
+                          }
+                        }
+                      }}
+                      style={{
+                        width: '300px',
+                        padding: '8px',
+                        borderRadius: '6px',
+                        border: '1px solid #ccc',
+                        fontSize: '16px',
+                        marginBottom: '12px',
+                      }}
+                    />
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      width: panelWidth,
+                      height: panelHeight,
+                      margin: '0 auto',
+                    }}>
+                      <GameScaffoldPanel
+                        panelWidth={panelWidth}
+                        panelHeight={panelHeight}
+                        onSubmit={async (jsonOutput) => {
+                          console.log('Linkages created:', jsonOutput);
+                          setJsonOutput(jsonOutput);
                           try {
-                            const response = await fetch('/api/submit-ubxy', {
+                            const response = await fetch('/api/submit-json-output', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ ubxy: value }),
+                              body: JSON.stringify({ jsonOutput }),
                             });
                             if (!response.ok) {
                               console.error('Failed to fetch reaction sequences:', response.status, response.statusText);
@@ -131,135 +199,93 @@ const ScaffoldDashboard = () => {
                             const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
                             setReactionSequence(decodedSequence); // Store the fetched sequence
                           } catch (err) {
-                            console.error('Error details:', err);
-                            alert('Failed to fetch reaction sequences: ' + err.message);
+                            console.error('Error submitting jsonOutput:', err);
                           }
-                        }
-                      }
-                    }}
-                    style={{
-                      width: '300px',
-                      padding: '8px',
-                      borderRadius: '6px',
-                      border: '1px solid #ccc',
-                      fontSize: '16px',
-                      marginBottom: '12px',
-                    }}
-                  />
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    width: panelWidth,
-                    height: panelHeight,
-                    margin: '0 auto',
-                  }}>
-                    <GameScaffoldPanel
-                      panelWidth={panelWidth}
-                      panelHeight={panelHeight}
-                      onSubmit={async (jsonOutput) => {
-                        console.log('Linkages created:', jsonOutput);
-                        setJsonOutput(jsonOutput);
-                        try {
-                          const response = await fetch('/api/submit-json-output', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ jsonOutput }),
-                          });
-                          if (!response.ok) {
-                            console.error('Failed to fetch reaction sequences:', response.status, response.statusText);
-                            throw new Error('Failed to fetch reaction sequences');
-                          }
-                          const result = await response.json();
-                          const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
-                          setReactionSequence(decodedSequence); // Store the fetched sequence
-                        } catch (err) {
-                          console.error('Error submitting jsonOutput:', err);
-                        }
-                      }}
-                    />
+                        }}
+                      />
+                    </div>
+                    <div style={{ marginTop: '24px' }}> {/* Add space between GameScaffoldPanel and Sequences */}
+                      {reactionSequence && (
+                        <div style={{
+                          maxHeight: '100%', // Set a fixed height for scrollability
+                          overflowY: 'auto',
+                          border: '1px solid #ccc',
+                          borderRadius: '8px',
+                          padding: '16px',
+                          boxSizing: 'border-box',
+                          width: '100%',
+                          minWidth: '300px', // Keep the width tight
+                          maxWidth: '1200px', // Keep the width tight
+                          margin: '0 auto',
+                        }}>
+                          <Sequences reactionSequence={reactionSequence} showReactionWell={false} />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ marginTop: '24px' }}> {/* Add space between GameScaffoldPanel and Sequences */}
-                    {reactionSequence && (
-                      <div style={{
-                        maxHeight: '100%', // Set a fixed height for scrollability
-                        overflowY: 'auto',
-                        border: '1px solid #ccc',
-                        borderRadius: '8px',
-                        padding: '16px',
-                        boxSizing: 'border-box',
-                        width: '100%',
-                        minWidth: '300px', // Keep the width tight
-                        maxWidth: '1200px', // Keep the width tight
-                        margin: '0 auto',
-                      }}>
-                        <Sequences reactionSequence={reactionSequence} showReactionWell={false} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <Panel
-                  key={i}
-                  style={{
-                    width: SMALL_PANEL_WIDTH,
-                    height: SMALL_PANEL_HEIGHT+35,
-                    minWidth: SMALL_PANEL_WIDTH,
-                    minHeight: SMALL_PANEL_HEIGHT+35,
-                    padding: 0,
-                    position: 'relative',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    border: isSelected ? '3px solid #1976d2' : '2px solid transparent',
-                    boxShadow: isSelected ? '0 0 12px #1976d2' : undefined,
-                    cursor: 'pointer',
-                    transition: 'border 0.2s, box-shadow 0.2s',
-                  }}
-                  onClick={() => handlePanelClick(i)}
-                >
-                  <div
+                ) : (
+                  <Panel
+                    key={`${page}-${i}`}
                     style={{
-                        width: SMALL_PANEL_WIDTH-5,
-                        height: SMALL_PANEL_HEIGHT-2,
-                        border: '1px solid #ccc',
-                        borderRadius: '10px',
-                        overflow: 'hidden',
-                        flexShrink: 0,
-                        marginBottom: '10px'
+                      width: SMALL_PANEL_WIDTH,
+                      height: SMALL_PANEL_HEIGHT+35,
+                      minWidth: SMALL_PANEL_WIDTH,
+                      minHeight: SMALL_PANEL_HEIGHT+35,
+                      padding: 0,
+                      position: 'relative',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      border: isSelected ? '3px solid #1976d2' : '2px solid transparent',
+                      boxShadow: isSelected ? '0 0 12px #1976d2' : undefined,
+                      cursor: 'pointer',
+                      transition: 'border 0.2s, box-shadow 0.2s',
                     }}
+                    onClick={() => handlePanelClick(i)}
                   >
-                      <ScaffoldJsonWrapper jsonData={jsonData} />
-                  </div>
-                  {label && (
                     <div
                       style={{
-                        width: '100%',
-                        textAlign: 'center',
-                        fontSize: 14,
-                        color: 'white',
-                        marginTop: -5,
-                        fontWeight: 600,
-                        textShadow: '0 2px 8px #222',
-                        letterSpacing: 1,
-                        userSelect: 'none',
-                        position: 'relative',
-                        zIndex: 2,
+                          width: SMALL_PANEL_WIDTH-5,
+                          height: SMALL_PANEL_HEIGHT-2,
+                          border: '1px solid #ccc',
+                          borderRadius: '10px',
+                          overflow: 'hidden',
+                          flexShrink: 0,
+                          marginBottom: '10px'
                       }}
                     >
-                      {label}
-                      {selectionCounts[label] ? (
-                        <span style={{ marginLeft: 8, color: '#ffd600', fontWeight: 700, fontSize: 13 }}>
-                          ×{selectionCounts[label]}
-                        </span>
-                      ) : null}
+                        <ScaffoldJsonWrapper key={`${page}-${label}`} jsonData={jsonData} />
                     </div>
-                  )}
-                </Panel>
-              )}
-            </>
-          );
-        })}
+                    {label && (
+                      <div
+                        style={{
+                          width: '100%',
+                          textAlign: 'center',
+                          fontSize: 14,
+                          color: 'white',
+                          marginTop: -5,
+                          fontWeight: 600,
+                          textShadow: '0 2px 8px #222',
+                          letterSpacing: 1,
+                          userSelect: 'none',
+                          position: 'relative',
+                          zIndex: 2,
+                        }}
+                      >
+                        {label}
+                        {selectionCounts[label] ? (
+                          <span style={{ marginLeft: 8, color: '#ffd600', fontWeight: 700, fontSize: 13 }}>
+                            ×{selectionCounts[label]}
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
+                  </Panel>
+                )}
+              </>
+            );
+          })
+        )}
       </div>
       {/* Selection tracker for tetramers and pentamers */}
       {(page === 'tetramers' || page === 'pentamers') && (

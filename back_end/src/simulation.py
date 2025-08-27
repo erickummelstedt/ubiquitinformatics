@@ -194,17 +194,19 @@ def determine_Ube2K_elongation(product_conjugated_lysines, new_bound_lysine):
     new_bound_parent_chain = new_bound_lysine[0]
     new_bound_child_chain = new_bound_lysine[2]
 
-     # This function only works for cases when the new bound ubiquitin is number 2 in the chain
-    if new_bound_child_chain == 2:
+    # This function only works for cases when the new bound ubiquitin is number 3 in the chain
+    # This is because the function checks that the previous species was a K63 dimer
+    # This might be redundant now
+    if new_bound_child_chain == 3:
         for parent_chain, lysine_site, child_chain in product_conjugated_lysines:
-            if parent_chain == 1 and lysine_site == 'K63' and child_chain == 3:
+            if parent_chain == 1 and lysine_site == 'K63' and child_chain == 2:
                 return "Ube2K"
         else: 
             # If no K63 linkage was found, it must be a K48 elongation via gp78/Ube2g2
             return "gp78/Ube2g2"
     
     # This part of the function only works for cases where a third or more ubiquitin is being added
-    if new_bound_child_chain >= 3:
+    if new_bound_child_chain >= 4:
         # Check if the new bound lysine is a K63 branch point
         for parent_chain, lysine_site, child_chain in product_conjugated_lysines:
             if child_chain == new_bound_parent_chain:

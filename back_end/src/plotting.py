@@ -3,14 +3,15 @@ import logging
 import copy
 import sys
 import ast
+import string
 import numpy as np
 from pathlib import Path
 import pandas as pd
 import ast 
 
-
 import matplotlib.pyplot as plt
 from matplotlib import font_manager
+from matplotlib.colors import ListedColormap, Normalize
 
 # Dynamically get the backend path relative to this file
 current_file = Path(__file__).resolve()
@@ -18,7 +19,6 @@ project_root = current_file.parents[2]  # Go up to project root
 sys.path.insert(0, str(project_root))
 local_path = project_root / 'back_end'
 sys.path.insert(0, str(local_path))
-
 
 def plot_96wells(figure=1, figure_name = 'Test',colorbar_type= 'PuRd', cdata=None, sdata=None, bdata=None, bcolors=None, bmeans=None, **kwargs):
     # from https://github.com/jaumebonet/RosettaSilentToolbox/blob/master/rstoolbox/plot/experimental.py
@@ -77,6 +77,9 @@ def plot_96wells(figure=1, figure_name = 'Test',colorbar_type= 'PuRd', cdata=Non
         In [3]: plt.close()
     """
 
+    # Reset/clear any existing figure before creating a new one
+    plt.close(figure) if plt.fignum_exists(figure) else None
+    
     # Changes in one of this parameters should change others to ensure size fit.
     fig = plt.figure(figure, figsize=(15, 7))
     fig.suptitle(figure_name, fontsize=16)
@@ -95,7 +98,75 @@ def plot_96wells(figure=1, figure_name = 'Test',colorbar_type= 'PuRd', cdata=Non
     kwargs.setdefault('c', 'white')
     kwargs.setdefault('edgecolor', ['black', ] * len(kwargs['y']))
     kwargs.setdefault('linewidths', 1.5)
-    kwargs.setdefault('cmap', colorbar_type)
+    
+    # Create custom colormap for PuRd with fixed color mapping
+    if colorbar_type == 'enzymes_donors':
+        # Define colors: 0 = white, 1 = #EBE7F1, 12 = #CD3878 or #9B214A
+        colors = ['white', '#EBE7F1', '#CD3878']
+        n_bins = 13  # 0 to 12
+        # Create color array with interpolation between the defined colors
+        color_array = []
+        for i in range(n_bins):
+            if i == 0:
+                color_array.append(colors[0])  # white for 0
+            elif i == 1:
+                color_array.append(colors[1])  # #EBE7F1 for 1
+            elif i == 12:
+                color_array.append(colors[2])  # #9B214A for 12
+            else:
+                # Interpolate between #EBE7F1 and #9B214A for values 2-11
+                ratio = (i - 1) / 11  # normalize to 0-1 for interpolation
+                # Convert hex to RGB for interpolation
+                color1_rgb = tuple(int(colors[1][j:j+2], 16) for j in (1, 3, 5))
+                color2_rgb = tuple(int(colors[2][j:j+2], 16) for j in (1, 3, 5))
+                # Interpolate
+                interp_rgb = tuple(int(color1_rgb[k] + ratio * (color2_rgb[k] - color1_rgb[k])) for k in range(3))
+                # Convert back to hex
+                interp_hex = '#{:02x}{:02x}{:02x}'.format(*interp_rgb)
+                color_array.append(interp_hex)
+        
+        custom_cmap = ListedColormap(color_array)
+        # CRITICAL: Always set vmin=0 and vmax=12 to ensure consistent color mapping
+        # This means value 2 will always map to the same color regardless of data range
+        kwargs['cmap'] = custom_cmap
+        kwargs['vmin'] = 0
+        kwargs['vmax'] = 12
+    elif colorbar_type == 'deprots':
+        # Define colors: 0 = white, 1 = mustard yellow, 2 = light beige
+        colors = ['white', '#DAA520', '#F5F5DC']  # white, mustard yellow, light beige
+        custom_cmap = ListedColormap(colors)
+        kwargs['cmap'] = custom_cmap
+        kwargs['vmin'] = 0
+        kwargs['vmax'] = 2
+    elif colorbar_type == 'acceptors':
+        # Define colors: 0 = white, 9 = #BED4E8, 20 = #447BB6
+        # Create color array with interpolation between the defined colors
+        color_array = ['white']  # Start with white for 0
+        # Add intermediate colors from 1-8 (all white since we want 0 to be white)
+        for i in range(1, 9):
+            color_array.append('white')
+        # Add color 9
+        color_array.append('#BED4E8')
+        # Interpolate colors 10-19 between #BED4E8 and #447BB6
+        for i in range(10, 20):
+            ratio = (i - 9) / 11  # normalize to 0-1 for interpolation from 9 to 20
+            # Convert hex to RGB for interpolation
+            color1_rgb = tuple(int('#BED4E8'[j:j+2], 16) for j in (1, 3, 5))
+            color2_rgb = tuple(int('#447BB6'[j:j+2], 16) for j in (1, 3, 5))
+            # Interpolate
+            interp_rgb = tuple(int(color1_rgb[k] + ratio * (color2_rgb[k] - color1_rgb[k])) for k in range(3))
+            # Convert back to hex
+            interp_hex = '#{:02x}{:02x}{:02x}'.format(*interp_rgb)
+            color_array.append(interp_hex)
+        # Add color 20
+        color_array.append('#447BB6')
+        
+        custom_cmap = ListedColormap(color_array)
+        kwargs['cmap'] = custom_cmap
+        kwargs['vmin'] = 0
+        kwargs['vmax'] = 20
+    else:
+        kwargs.setdefault('cmap', colorbar_type)
 
     # Color Data
     if cdata is not None:
@@ -143,7 +214,7 @@ def plot_96wells(figure=1, figure_name = 'Test',colorbar_type= 'PuRd', cdata=Non
     ax.set_xticks(range(1, 13))
     ax.xaxis.tick_top()
     ax.set_yticks(range(1, 9))
-#    ax.set_yticklabels(string.ascii_uppercase[0:9])
+    ax.set_yticklabels(string.ascii_uppercase[0:8])
     ax.set_ylim((8.5, 0.48))
     ax.set_aspect(1)
     ax.tick_params(axis='both', which='both', length=0)
@@ -166,6 +237,224 @@ def plot_96wells(figure=1, figure_name = 'Test',colorbar_type= 'PuRd', cdata=Non
             plt.text(x-0.175, y+0.15, str(new_text), fontsize = 23)
         else:
             plt.text(x-0.275, y+0.15, str(new_text), fontsize = 23)
+
+    return fig, ax
+
+
+def plot_deprotection_cycles(figure=2, figure_name='Deprotection Cycles', cdata=None, colorbar_type='deprots', **kwargs):
+    """
+    Plot deprotection cycles using the same approach as plot_96wells,
+    but with empty columns between each cycle (every 2 columns).
+    
+    Parameters:
+        figure (int): Figure number
+        figure_name (str): Title for the figure
+        cdata (pd.DataFrame): Data for the 96-well plate (8 rows x 12 columns)
+        colorbar_type (str): Type of colorbar to use
+        **kwargs: Additional arguments for scatter plot
+    
+    Returns:
+        tuple: (fig, ax) matplotlib figure and axes objects
+    """
+    if cdata is None:
+        raise ValueError("cdata is required for deprotection cycle plotting")
+    
+    if not isinstance(cdata, pd.DataFrame):
+        raise ValueError('Wrong data type - cdata must be a DataFrame')
+    if cdata.shape != (8, 12):
+        raise ValueError('Wrong data shape - cdata must be 8x12')
+    
+    # Determine how many active cycles there are for the title
+    active_cycles = []
+    for cycle in range(6):  # Check up to 6 possible cycles
+        cycle_start = cycle * 2
+        cycle_end = cycle_start + 2
+        if cycle_end <= cdata.shape[1]:  # Within bounds
+            cycle_data = cdata.iloc[:, cycle_start:cycle_end]
+            if cycle_data.values.sum() > 0:  # Has non-zero values
+                active_cycles.append(cycle + 1)  # Store 1-indexed cycle numbers
+    
+    # Update figure name based on number of active cycles
+    if len(active_cycles) == 1:
+        figure_name = f"Deprotection Cycles ({active_cycles[0]})"
+    elif len(active_cycles) > 1:
+        figure_name = f"Deprotection Cycles ({active_cycles[0]}-{active_cycles[-1]})"
+    # If no active cycles, keep original name
+    
+    # Reset/clear any existing figure before creating a new one
+    plt.close(figure) if plt.fignum_exists(figure) else None
+    
+    # Use the exact same setup as plot_96wells
+    fig = plt.figure(figure, figsize=(15, 7))
+    fig.suptitle(figure_name, fontsize=16)
+    ax = plt.subplot2grid((1, 1), (0, 0), fig=fig)
+    top = 2000
+    bot = 50
+    sizeOfFont = 15
+    ticks_font = font_manager.FontProperties(style='normal', size=sizeOfFont, weight='normal')
+
+    # Create modified positions and data with empty columns between cycles
+    modified_x = []
+    modified_y = []
+    modified_colors = []
+    modified_edge_colors = []
+    
+    # Create a full 12-column grid with empty columns between cycles
+    for col in range(1, 13):  # Columns 1-12
+        for row in range(1, 9):  # Rows 1-8 (A-H)
+            modified_x.append(col)
+            modified_y.append(row)
+            
+            # Determine which cycle this column belongs to and if it should have data
+            if col % 3 == 0:  # Every 3rd column is empty (3, 6, 9, 12)
+                modified_colors.append(0)  # Empty column
+                modified_edge_colors.append('white')  # Make circles invisible
+            else:
+                # Determine cycle and column within cycle
+                cycle_group = (col - 1) // 3  # 0, 1, 2, 3 for groups
+                col_in_group = (col - 1) % 3  # 0 or 1 for data columns
+                
+                # Map back to original data columns
+                original_col = cycle_group * 2 + col_in_group
+                
+                if original_col < 12:  # Within bounds of original data
+                    # Check if this cycle has non-zero values
+                    cycle_start = (original_col // 2) * 2
+                    cycle_end = cycle_start + 2
+                    cycle_data = cdata.iloc[:, cycle_start:cycle_end]
+                    
+                    if cycle_data.values.sum() > 0:
+                        modified_colors.append(cdata.iloc[row - 1, original_col])
+                        modified_edge_colors.append('black')  # Normal edge color
+                    else:
+                        modified_colors.append(0)  # Cycle has no data
+                        modified_edge_colors.append('white')  # Make invisible like separator columns
+                else:
+                    modified_colors.append(0)  # Beyond original data
+                    modified_edge_colors.append('white')  # Make invisible
+
+    # Fixed: THIS CANNOT CHANGE!
+    kwargs['x'] = modified_x
+    kwargs['y'] = modified_y
+
+    # Modified by the input data.
+    kwargs.setdefault('s', [top, ] * len(modified_y))
+    kwargs.setdefault('c', 'white')
+    kwargs.setdefault('edgecolor', modified_edge_colors)  # Use custom edge colors
+    kwargs.setdefault('linewidths', 1.5)
+    
+    # Apply custom colormap based on colorbar_type (same as plot_96wells)
+    if colorbar_type == 'deprots':
+        colors_map = ['white', '#DAA520', '#F5F5DC']  # white, mustard yellow, light beige
+        custom_cmap = ListedColormap(colors_map)
+        kwargs['cmap'] = custom_cmap
+        kwargs['vmin'] = 0
+        kwargs['vmax'] = 2
+    else:
+        kwargs.setdefault('cmap', colorbar_type)
+
+    # Color Data
+    kwargs['c'] = modified_colors
+
+    # PLOT (same as plot_96wells)
+    mesh = ax.scatter(**kwargs)
+
+    # Image aspects (same as plot_96wells with full 12 columns)
+    ax.grid(False)
+    ax.set_xticks(range(1, 13))
+    # Create x-axis labels, hiding labels for separator columns and empty cycles
+    x_labels = []
+    for col in range(1, 13):
+        if col % 3 == 0:  # Separator columns
+            x_labels.append('')
+        else:
+            # Check if this cycle has data
+            cycle_group = (col - 1) // 3
+            cycle_start = cycle_group * 2
+            cycle_end = cycle_start + 2
+            
+            # Check if cycle is within data bounds and has non-zero values
+            if cycle_end <= cdata.shape[1]:  # Within bounds of original data
+                cycle_data = cdata.iloc[:, cycle_start:cycle_end]
+                if cycle_data.values.sum() > 0:
+                    # Show label for cycles with data
+                    col_in_group = (col - 1) % 3
+                    x_labels.append(str(col_in_group + 1))  # 1 or 2
+                else:
+                    # Hide label for empty cycles
+                    x_labels.append('')
+            else:
+                # Hide label for cycles beyond data bounds
+                x_labels.append('')
+    
+    ax.set_xticklabels(x_labels)
+    ax.xaxis.tick_top()
+    ax.set_yticks(range(1, 9))
+    ax.set_yticklabels(string.ascii_uppercase[0:8])
+    ax.set_ylim((8.5, 0.48))
+    ax.set_aspect(1)
+    ax.tick_params(axis='both', which='both', length=0)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+    for label in ax.get_xticklabels():
+        label.set_fontproperties(ticks_font)
+
+    for label in ax.get_yticklabels():
+        label.set_fontproperties(ticks_font)
+    
+    # Adding text to plate, hiding text in separator columns and empty cycles
+    for text, x, y in zip(modified_colors, modified_x, modified_y):
+        if text == 0: 
+            new_text = ''
+        else:
+            new_text = text
+        
+        # Hide text in separator columns (columns 3, 6, 9, 12) or empty cycles
+        if x % 3 == 0:  # Separator columns
+            text_color = 'white'  # Make text invisible by matching background
+        else:
+            # Check if this cycle has data and is within bounds
+            cycle_group = (x - 1) // 3
+            cycle_start = cycle_group * 2
+            cycle_end = cycle_start + 2
+            
+            # Check if cycle is within data bounds and has non-zero values
+            if cycle_end <= cdata.shape[1]:  # Within bounds of original data
+                cycle_data = cdata.iloc[:, cycle_start:cycle_end]
+                if cycle_data.values.sum() > 0:
+                    text_color = 'black'  # Normal text color for cycles with data
+                else:
+                    text_color = 'white'  # Hide text for empty cycles
+            else:
+                text_color = 'white'  # Hide text for cycles beyond data bounds
+        
+        if text < 10:
+            plt.text(x-0.175, y+0.15, str(new_text), fontsize=23, color=text_color)
+        else:
+            plt.text(x-0.275, y+0.15, str(new_text), fontsize=23, color=text_color)
+
+    # Add A-H row labels at the start of each active column set
+    cycle_positions = [1, 4, 7, 10]  # Start positions of each cycle (columns 1, 4, 7, 10)
+    
+    for i, cycle_pos in enumerate(cycle_positions):
+        # Check if this cycle has data before adding labels
+        cycle_start = i * 2
+        cycle_end = cycle_start + 2
+        
+        if i == 0:  # First cycle (columns 1-2)
+            continue  # Skip first cycle since it has no previous cycle to label
+        else:
+            # Check if cycle is within data bounds and has non-zero values
+            if cycle_end <= cdata.shape[1]:  # Within bounds of original data
+                cycle_data = cdata.iloc[:, cycle_start:cycle_end]
+                if cycle_data.values.sum() > 0:  # Only add labels if cycle has data
+                    # Add A-H labels for each row at the start of this cycle
+                    for row in range(1, 9):
+                        row_label = string.ascii_uppercase[row - 1]  # A, B, C, D, E, F, G, H
+                        # Position labels to the left of the cycle start
+                        plt.text(cycle_pos - 0.71, row + 0.055, row_label, fontsize=15, fontweight='normal', 
+                                ha='center', va='center', color='black')
 
     return fig, ax
 
@@ -453,21 +742,18 @@ def inner_create_plate_dfs(data_dict, indexed_values, multimer_size=4):
 
     # Create a dimer encoded dictionary
     dimer_encoded_dictionary = {
-        'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_SMAC><K63_ABOC>)>)' : 9,
-        'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_ABOC><K63_SMAC>)>)' : 10,
-        'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_ABOC><K63_ABOC>)>)' : 11,
-
-        'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_SMAC>)><K63_ABOC>)': 12,
-        'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_SMAC><K63_ABOC>)><K63_ABOC>)': 13,
-        'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_ABOC><K63_SMAC>)><K63_ABOC>)': 14,
-
-        'his-GG-1ubq-1-(<K63_1ubq-2-(<K48_SMAC><K63_ABOC>)>)': 15,
-        'his-GG-1ubq-1-(<K63_1ubq-2-(<K48_ABOC><K63_SMAC>)>)': 16,
-        'his-GG-1ubq-1-(<K63_1ubq-2-(<K48_ABOC><K63_ABOC>)>)': 17,
-
-        'his-GG-1ubq-1-(<K48_ABOC><K63_1ubq-2-(<K63_SMAC>)>)': 18,
-        'his-GG-1ubq-1-(<K48_ABOC><K63_1ubq-2-(<K48_SMAC><K63_ABOC>)>)': 19,
-        'his-GG-1ubq-1-(<K48_ABOC><K63_1ubq-2-(<K48_ABOC><K63_SMAC>)>)': 20
+        'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_ABOC><K48_SMAC>)>)' : 9,
+        'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_SMAC><K48_ABOC>)>)' : 10,
+        'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_ABOC><K48_ABOC>)>)' : 11,
+        'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K48_SMAC>)>)': 12,
+        'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K63_ABOC><K48_SMAC>)>)': 13,
+        'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K63_SMAC><K48_ABOC>)>)': 14,
+        'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_SMAC>)>)': 15,
+        'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC><K48_ABOC>)>)': 16,
+        'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_ABOC>)>)': 17,
+        'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC>)><K48_ABOC>)': 18,
+        'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_SMAC>)><K48_ABOC>)': 19,
+        'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC><K48_ABOC>)><K48_ABOC>)': 20
     }
 
     # Filter the combined database for reactions and donors based on indexed values
@@ -594,15 +880,15 @@ def create_xlsx_bytes(output_dict):
     acceptor_description_dict = [
         {"No.": "Ub₂ᴬ 9", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "K", "Distal Ub K48": "Smac", "Distal Ub K63": "Aboc", "MW (Da)": 18372},
         {"No.": "Ub₂ᴬ 10", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "K", "Distal Ub K48": "Aboc", "Distal Ub K63": "Smac", "MW (Da)": 18372},
-        {"No.": "Ub₂ᴬ 11", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "K", "Distal Ub K48": "Aboc", "Distal Ub K63": "-", "MW (Da)": 18360},
+        {"No.": "Ub₂ᴬ 11", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "K", "Distal Ub K48": "Aboc", "Distal Ub K63": "Aboc", "MW (Da)": 18360},
         {"No.": "Ub₂ᴬ 12", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "Aboc", "Distal Ub K48": "Smac", "Distal Ub K63": "K", "MW (Da)": 18372},
-        {"No.": "Ub₂ᴬ 13", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "Aboc", "Distal Ub K48": "Smac", "Distal Ub K63": "-", "MW (Da)": 18504},
-        {"No.": "Ub₂ᴬ 14", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "Aboc", "Distal Ub K48": "Aboc", "Distal Ub K63": "-", "MW (Da)": 18504},
+        {"No.": "Ub₂ᴬ 13", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "Aboc", "Distal Ub K48": "Smac", "Distal Ub K63": "Aboc", "MW (Da)": 18504},
+        {"No.": "Ub₂ᴬ 14", "Dimer Linkage": "K48", "Proximal Ub K48": "-", "Proximal Ub K63": "Aboc", "Distal Ub K48": "Aboc", "Distal Ub K63": "Smac", "MW (Da)": 18504},
         {"No.": "Ub₂ᴬ 15", "Dimer Linkage": "K63", "Proximal Ub K48": "K", "Proximal Ub K63": "-", "Distal Ub K48": "Smac", "Distal Ub K63": "Aboc", "MW (Da)": 18372},
         {"No.": "Ub₂ᴬ 16", "Dimer Linkage": "K63", "Proximal Ub K48": "K", "Proximal Ub K63": "-", "Distal Ub K48": "Aboc", "Distal Ub K63": "Smac", "MW (Da)": 18372},
-        {"No.": "Ub₂ᴬ 17", "Dimer Linkage": "K63", "Proximal Ub K48": "K", "Proximal Ub K63": "-", "Distal Ub K48": "Aboc", "Distal Ub K63": "-", "MW (Da)": 18360},
-        {"No.": "Ub₂ᴬ 18", "Dimer Linkage": "K63", "Proximal Ub K48": "Aboc", "Proximal Ub K63": "-", "Distal Ub K48": "K", "Distal Ub K63": "-", "MW (Da)": 18372},
-        {"No.": "Ub₂ᴬ 19", "Dimer Linkage": "K63", "Proximal Ub K48": "Aboc", "Proximal Ub K63": "-", "Distal Ub K48": "Smac", "Distal Ub K63": "-", "MW (Da)": 18504},
+        {"No.": "Ub₂ᴬ 17", "Dimer Linkage": "K63", "Proximal Ub K48": "K", "Proximal Ub K63": "-", "Distal Ub K48": "Aboc", "Distal Ub K63": "Aboc", "MW (Da)": 18360},
+        {"No.": "Ub₂ᴬ 18", "Dimer Linkage": "K63", "Proximal Ub K48": "Aboc", "Proximal Ub K63": "-", "Distal Ub K48": "K", "Distal Ub K63": "Smac", "MW (Da)": 18372},
+        {"No.": "Ub₂ᴬ 19", "Dimer Linkage": "K63", "Proximal Ub K48": "Aboc", "Proximal Ub K63": "-", "Distal Ub K48": "Smac", "Distal Ub K63": "Aboc", "MW (Da)": 18504},
         {"No.": "Ub₂ᴬ 20", "Dimer Linkage": "K63", "Proximal Ub K48": "Aboc", "Proximal Ub K63": "-", "Distal Ub K48": "Aboc", "Distal Ub K63": "Smac", "MW (Da)": 18504},
     ]
 
@@ -2126,18 +2412,18 @@ def build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size):
             # Create a dimer encoded dictionary
             dimer_encoded_str_dictionary = {
                 # maybe change the code
-                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_SMAC><K63_ABOC>)>)' : "Ub₂ᴬ 9",
-                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_ABOC><K63_SMAC>)>)' : "Ub₂ᴬ 10",
-                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_ABOC><K63_ABOC>)>)' : "Ub₂ᴬ 11",
-                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_SMAC>)><K63_ABOC>)': "Ub₂ᴬ 12",
-                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_SMAC><K63_ABOC>)><K63_ABOC>)': "Ub₂ᴬ 13",
-                'his-GG-1ubq-1-(<K48_1ubq-2-(<K48_ABOC><K63_SMAC>)><K63_ABOC>)': "Ub₂ᴬ 14",
-                'his-GG-1ubq-1-(<K63_1ubq-2-(<K48_SMAC><K63_ABOC>)>)': "Ub₂ᴬ 15",
-                'his-GG-1ubq-1-(<K63_1ubq-2-(<K48_ABOC><K63_SMAC>)>)': "Ub₂ᴬ 16",
-                'his-GG-1ubq-1-(<K63_1ubq-2-(<K48_ABOC><K63_ABOC>)>)': "Ub₂ᴬ 17",
-                'his-GG-1ubq-1-(<K48_ABOC><K63_1ubq-2-(<K63_SMAC>)>)': "Ub₂ᴬ 18",
-                'his-GG-1ubq-1-(<K48_ABOC><K63_1ubq-2-(<K48_SMAC><K63_ABOC>)>)': "Ub₂ᴬ 19",
-                'his-GG-1ubq-1-(<K48_ABOC><K63_1ubq-2-(<K48_ABOC><K63_SMAC>)>)': "Ub₂ᴬ 20",
+                'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_ABOC><K48_SMAC>)>)' : "Ub₂ᴬ 9",
+                'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_SMAC><K48_ABOC>)>)' : "Ub₂ᴬ 10",
+                'his-GG-1ubq-1-(<K48_1ubq-2-(<K63_ABOC><K48_ABOC>)>)' : "Ub₂ᴬ 11",
+                'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K48_SMAC>)>)' : "Ub₂ᴬ 12",
+                'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K63_ABOC><K48_SMAC>)>)': "Ub₂ᴬ 13",
+                'his-GG-1ubq-1-(<K63_ABOC><K48_1ubq-2-(<K63_SMAC><K48_ABOC>)>)': "Ub₂ᴬ 14",
+                'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_SMAC>)>)' : "Ub₂ᴬ 15",
+                'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC><K48_ABOC>)>)' : "Ub₂ᴬ 16",
+                'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_ABOC>)>)' : "Ub₂ᴬ 17",
+                'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC>)><K48_ABOC>)' : "Ub₂ᴬ 18",
+                'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_ABOC><K48_SMAC>)><K48_ABOC>)' : "Ub₂ᴬ 19",
+                'his-GG-1ubq-1-(<K63_1ubq-2-(<K63_SMAC><K48_ABOC>)><K48_ABOC>)' : "Ub₂ᴬ 20",
             }
 
             working_context_df = context_history[context_history['index'] == idx]
@@ -2514,14 +2800,14 @@ def get_indexes_for_final_multimer(json_output, ubiquitin_history):
         "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
         "chain_length": 76,
         "branching_sites": [
-            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
-            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
-            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
-            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
-            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
-            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""},
             {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
-            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""}            
         ]
     }
 
@@ -2531,14 +2817,14 @@ def get_indexes_for_final_multimer(json_output, ubiquitin_history):
         "FASTA_sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH",
         "chain_length": 83,
         "branching_sites": [
-            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""},
-            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
-            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
-            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
-            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
-            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""},
             {"site_name": "K48", "sequence_id": "FAG(K)QLE", "children": ""},
-            {"site_name": "K63", "sequence_id": "NIQ(K)EST", "children": ""}
+            {"site_name": "K33", "sequence_id": "IQD(K)EGI", "children": ""},
+            {"site_name": "K29", "sequence_id": "VKA(K)IQD", "children": ""},
+            {"site_name": "K27", "sequence_id": "ENV(K)AKI", "children": ""},
+            {"site_name": "K11", "sequence_id": "LTG(K)TIT", "children": ""},
+            {"site_name": "K6", "sequence_id": "IFV(K)TLT", "children": ""},
+            {"site_name": "M1", "sequence_id": "(M)QIF", "children": ""} 
         ]
     }
 
@@ -2563,3 +2849,113 @@ def get_indexes_for_final_multimer(json_output, ubiquitin_history):
     final_ubiquitin, final_context = main.iterate_through_ubiquitin(growing_ubiquitin)
     indexes = ubiquitin_history.loc[ubiquitin_history["final_multimer"] == str(final_ubiquitin), "index"].dropna().unique()
     return [int(i) for i in indexes]
+
+
+def reaction_path_statistics(_ubiquitin_history_, _context_history_, multimers, project_root, multimer_size):
+    
+    import src.main as main
+    import src.data_cleaning as data_cleaning
+    import src.all_linkages as linkages
+    
+    # Reveal all the edges for trimers 
+    def reveal_edges(context_):
+        """
+        Gives the ID of the linkages from the context.
+        """
+        edges = context_['conjugated_lysines']
+        return edges
+
+
+    # Reset index if needed
+    _ubiquitin_history_ = _ubiquitin_history_.reset_index()
+    _context_history_ = _context_history_.reset_index()
+
+    # This should be a separate function in run_file.pyxs
+    multimered_ubiquitin_history, multimered_context_history = data_cleaning.global_deprotection_dual(_ubiquitin_history_, _context_history_)
+
+    json_counting = {}
+
+    for i in range(len(multimers.keys())):
+        num_of_reactions = len(multimered_ubiquitin_history[multimered_ubiquitin_history['final_multimer'] == multimers[f'Ub{multimer_size}_{i+1}']])
+        ubi_DAG, ubi_context = main.iterate_through_ubiquitin(multimers[f'Ub{multimer_size}_{i+1}'])
+        json_counting[f'Ub{multimer_size}_{i+1}'] = {
+            num_of_reactions: 'num_of_reactions', 
+            'ubiDAG_edges': str(reveal_edges(ubi_context))
+            }
+
+    # Load the data
+    higher_level_data = linkages.load_multimer_contexts(project_root, multimer_size)
+    n_level_data = linkages.load_multimer_contexts(project_root, 3)
+
+    # Filter by lysine types
+    higher_level_dict = linkages.get_multimer_edges_by_lysines(higher_level_data, {"K48", "K63"})
+    n_level_dict = linkages.get_multimer_edges_by_lysines(n_level_data, {"K48", "K63"})
+
+    # Analyze subgraph containment, with K48 and K63 linkages
+    results = linkages.analyze_subgraph_containment(higher_level_dict, n_level_dict)
+
+
+    def simplify_linkage_dict(nested_dict):
+        """
+        Simplifies the nested dictionary by removing specific keys and counting heterotypic and branching linkages.
+        Only works with K48 and K63 linkages when n_level_data = linkages.load_multimer_contexts(project_root, 3) is set to 3.
+
+        Args:
+            nested_dict (dict): The nested dictionary to simplify.
+        Returns:
+            dict: A simplified dictionary with counts of heterotypic and branching linkages.
+        """
+        
+        result = {}
+
+        # Keys to be removed
+        keys_to_remove = [
+            "[[1, 'K63', 2], [2, 'K63', 3]]",
+            "[[1, 'K48', 2], [2, 'K48', 3]]"
+        ]
+
+        # Keys to count for heterotypic and branching
+        heterotypic_keys = [
+            "[[1, 'K63', 2], [2, 'K48', 3]]",
+            "[[1, 'K48', 2], [2, 'K63', 3]]"
+        ]
+        branching_key = "[[1, 'K63', 2], [1, 'K48', 3]]"
+
+        for outer_key, inner_dict in nested_dict.items():
+            heterotypic_total = 0
+            branching_total = 0
+            simplified_inner = {}
+
+            for k, v in inner_dict.items():
+                if k in keys_to_remove:
+                    continue
+                elif k in heterotypic_keys:
+                    heterotypic_total += v
+                elif k == branching_key:
+                    branching_total += v
+                else:
+                    simplified_inner[k] = v
+
+            # Always include the linkage counts, even if they are 0
+            simplified_inner['heterotypic_linkage'] = heterotypic_total
+            simplified_inner['branching_linkage'] = branching_total
+
+            result[outer_key] = simplified_inner
+
+        return result
+
+    # Simplify the linkage dictionary
+    simplified_example = simplify_linkage_dict(results)
+
+    # Convert the nested dictionary into a flat structure suitable for a DataFrame
+    json_with_reaction_information = {}
+    for key, value in json_counting.items():
+        json_with_reaction_information[f'{key}'] = {
+            'UbID': key,
+            'num_of_reactions': list(value.keys())[0],
+            'ubiDAG_edges': value['ubiDAG_edges'],
+            'heterotypic_linkage': simplified_example.get(value['ubiDAG_edges'])['heterotypic_linkage'],
+            'branching_linkage': simplified_example.get(value['ubiDAG_edges'])['branching_linkage']
+            }
+
+    return json_with_reaction_information

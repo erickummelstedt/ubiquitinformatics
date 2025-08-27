@@ -13,6 +13,7 @@ from src.main import *
 from src.simulation import *
 from src.utils.utils import *
 from src.data_cleaning import *
+from src.all_linkages import *
 from tests.test_data import *
 
 # =========================================================
@@ -218,13 +219,26 @@ if not pentamer_mismatched_combined_database.empty:
 # If all checks pass, print success messages
 # =========================================================
 
-print("Indexed values for tetramers match expected values.")
-print("Indexed values for pentamers match expected values.")
-print("No validation errors found for tetramers and pentamers.")
+print("Indexed values for tetramer synthesis match expected values.")
+print("Indexed values for pentamers synthesis match expected values.")
+print("No validation errors found for tetramers and pentamers synthesis.")
 
 # =========================================================
 # If run_file.py completes without errors, it means all tests passed
 # and the reaction database and multimers were built correctly.
+# =========================================================
+
+# =========================================================
+# Build multimers with all linkages
+# This section builds multimers of polyubiquitin with all linkages.
+# =========================================================
+
+build_all_linkages_multimers(
+    monomer=ubi_ubq_1,
+    largest_multimer_size=5,
+    project_root_=project_root
+)
+
 # =========================================================
 
 print("All tests passed successfully. Reaction database and multimers built correctly.")
