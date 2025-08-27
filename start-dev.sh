@@ -12,19 +12,46 @@ done
 # Also kill any uvicorn processes
 pkill -f "uvicorn.*fast_api" 2>/dev/null || true
 
-echo "Setting up Python environment..."
-cd back_end
-if [ ! -d ".venv" ]; then
-  python3 -m venv .venv
+# Install Node.js and npm if missing
+if ! command -v npm &> /dev/null; then
+  echo "❌ 'npm' is not installed. Please install Node.js from https://nodejs.org/."
+  exit 1
 fi
-. .venv/bin/activate
-pip install --upgrade pip
-pip install -r ../requirements_pip.txt
-cd ..
+
+# Install concurrently globally if missing
+if ! command -v concurrently &> /dev/null; then
+  echo "Installing 'concurrently' globally..."
+  npm install -g concurrently
+fi
+
+# Install frontend dependencies
+if [ -d "front_end" ]; then
+  echo "Installing frontend dependencies..."
+  cd front_end
+  npm install
+  cd ..
+fi
+
+# Install backend dependencies
+if [ -d "back_end" ]; then
+  echo "Installing backend dependencies..."
+  cd back_end
+  if [ ! -d ".venv" ]; then
+    python3 -m venv .venv
+  fi
+  . .venv/bin/activate
+  pip install --upgrade pip
+  pip install -r ../requirements_pip.txt
+  deactivate
+  cd ..
+fi
+
+# Set default port if not provided
+PORT=${1:-5173}
 
 echo "Starting development servers..."
 cd front_end
-npm run dev:all -- --port 5173 &
+npm run dev:all -- --port $PORT &
 SERVER_PID=$!
 
 # Wait a few seconds for the server to start, then open the browser
@@ -32,11 +59,11 @@ echo "Waiting for servers to start..."
 sleep 5
 
 # Check if servers are running
-if lsof -i :5173 > /dev/null && lsof -i :8000 > /dev/null; then
+if lsof -i :$PORT > /dev/null && lsof -i :8000 > /dev/null; then
   echo "✅ Both servers started successfully!"
-  echo "Frontend: http://localhost:5173"
+  echo "Frontend: http://localhost:$PORT"
   echo "Backend API: http://localhost:8000"
-  open http://localhost:5173/
+  open http://localhost:$PORT/
 else
   echo "❌ Failed to start servers. Check for errors above."
 fi

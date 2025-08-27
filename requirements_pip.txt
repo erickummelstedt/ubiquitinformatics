@@ -12,3 +12,4 @@ zipfile36
 openpyxl
 reportlab
 plotly==5.20.0
+networkx==3.4.1

@@ -178,7 +178,8 @@ conda install --file requirements_conda.txt
 openbabel is easily install in conda
 opentrons is easily installed in pip/venv
 
-```Run script
+```Run script - You need to run these two commmands
+python3 back_end/src/run_file.py
 ./start-dev.sh
 
 ---
