@@ -6,6 +6,7 @@ import SubgraphAnalysisPage from './SubgraphAnalysisPage';
 import ReactionPathStatisticsPage from './ReactionPathStatisticsPage';
 import multimerDataTetramers from '../data/multimer_id_to_json4.json';
 import multimerDataPentamers from '../data/multimer_id_to_json5.json';
+import { simulateClicksFromJson } from './input_clickable';
 
 const SMALL_PANEL_WIDTH = 140;
 const SMALL_PANEL_HEIGHT = 90;
@@ -17,6 +18,15 @@ const DEFAULT_NODES = [
   { x: 150, y: 150, clicks: 0 }, { x: 250, y: 150, clicks: 0 }, { x: 350, y: 150, clicks: 0 }, { x: 450, y: 150, clicks: 0 },
   { x: 100, y: 100, clicks: 0 }, { x: 200, y: 100, clicks: 0 }, { x: 300, y: 100, clicks: 0 }, { x: 400, y: 100, clicks: 0 }, { x: 500, y: 100, clicks: 0 }
 ];
+
+const TEST_NODES = [
+  { x: 300, y: 300, clicks: 1 },
+  { x: 250, y: 250, clicks: 0 }, { x: 350, y: 250, clicks: 0 },
+  { x: 200, y: 200, clicks: 0 }, { x: 300, y: 200, clicks: 0 }, { x: 400, y: 200, clicks: 0 },
+  { x: 150, y: 150, clicks: 1 }, { x: 250, y: 150, clicks: 0 }, { x: 350, y: 150, clicks: 0 }, { x: 450, y: 150, clicks: 0 },
+  { x: 100, y: 100, clicks: 0 }, { x: 200, y: 100, clicks: 0 }, { x: 300, y: 100, clicks: 0 }, { x: 400, y: 100, clicks: 0 }, { x: 500, y: 100, clicks: 0 }
+];
+
 const DEFAULT_EDGES = [
   [0, 1], [0, 2],
   [1, 3], [1, 4],
@@ -44,6 +54,8 @@ const ModuleDashboard = () => {
   const [figures, setFigures] = useState(null); // Store backend images
   const [reactionSequence, setReactionSequence] = useState(null); // Store reaction sequences
   const [jsonOutput, setJsonOutput] = useState(null);
+  const [inputNodes, setInputNodes] = useState(DEFAULT_NODES);
+  const [scaffoldKey, setScaffoldKey] = useState(Date.now());
 
   const { count, panelWidth, panelHeight } = PAGE_CONFIG[page];
 
@@ -102,7 +114,7 @@ const ModuleDashboard = () => {
     }
     return data ? JSON.parse(fixQuotes(data)) : null;
   };
-  
+
   return (
     <div style={{ width: '100vw', minHeight: '100vh', boxSizing: 'border-box', overflow: 'auto', padding: '16px 0' }}>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
@@ -169,6 +181,8 @@ const ModuleDashboard = () => {
                               setReactionSequence(null);
                               setFigures(null);
                               setJsonOutput(null); // Clear previously rendered scaffold
+                              setInputNodes(DEFAULT_NODES);
+                              setScaffoldKey(Date.now());
 
                               const response = await fetch('/api/submit-ubxy', {
                                 method: 'POST',
@@ -184,8 +198,24 @@ const ModuleDashboard = () => {
                               const finalMultimerRaw = firstItem.ubi_his_JSON_final_multimer;
                               const finalMultimer = JSON.parse(fixQuotes(finalMultimerRaw));
                               console.log('Final Multimer:', finalMultimer);
+                              setJsonOutput(finalMultimer); // Update the state for setJsonOutput
 
-                              setJsonOutput(finalMultimer); // Update the state for ClickableScaffoldPanel
+                              const simulateResult = simulateClicksFromJson(finalMultimer, DEFAULT_NODES.map(node => ({ ...node, clicks: 0 })), DEFAULT_EDGES);
+                              console.log('simulateClicksFromJson output:', simulateResult);
+
+                              // Clean the nodes and ensure all clicks are properly reset
+                              let cleanedNodes;
+                              cleanedNodes = simulateResult.nodes.map(({ chain_number, ...rest }) => ({ ...rest, clicks: rest.clicks || 0 }));
+
+                              // Update inputNodes with cleaned nodes
+                              setTimeout(() => {
+                                setScaffoldKey(Date.now());
+                                setInputNodes(cleanedNodes);
+                              }, 0);
+
+                              console.log('simulateResult.nodes:', simulateResult.nodes);
+                              console.log('TEST_NODES:', TEST_NODES);
+
                             } catch (err) {
                               alert('Failed to fetch reaction sequences: ' + err.message);
                             }
@@ -210,6 +240,8 @@ const ModuleDashboard = () => {
                       margin: '0 auto',
                     }}>
                       <ClickableScaffoldPanel
+                        key={scaffoldKey} // Controlled remount via state
+                        initialNodes={inputNodes}
                         panelWidth={panelWidth}
                         panelHeight={panelHeight}
                         onSubmit={async (jsonOutput) => {
@@ -219,6 +251,7 @@ const ModuleDashboard = () => {
                           setReactionSequence(null);
                           setFigures(null);
                           setJsonOutput(null);
+                          setInputNodes(DEFAULT_NODES); // Reset to default nodes
 
                           setJsonOutput(jsonOutput);
                           try {
