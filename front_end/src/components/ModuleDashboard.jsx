@@ -54,7 +54,12 @@ const ModuleDashboard = () => {
   const [figures, setFigures] = useState(null); // Store backend images
   const [reactionSequence, setReactionSequence] = useState(null); // Store reaction sequences
   const [jsonOutput, setJsonOutput] = useState(null);
-  const [inputNodes, setInputNodes] = useState(DEFAULT_NODES);
+  const [inputNodes, setInputNodes] = useState({
+    nodes: DEFAULT_NODES,
+    arrows: [],
+    mapping: {},
+    smallNodes: []
+  });
   const [scaffoldKey, setScaffoldKey] = useState(Date.now());
 
   const { count, panelWidth, panelHeight } = PAGE_CONFIG[page];
@@ -181,7 +186,12 @@ const ModuleDashboard = () => {
                               setReactionSequence(null);
                               setFigures(null);
                               setJsonOutput(null); // Clear previously rendered scaffold
-                              setInputNodes(DEFAULT_NODES);
+                              setInputNodes({
+                                nodes: DEFAULT_NODES,
+                                arrows: [],
+                                mapping: {},
+                                smallNodes: []
+                              });
                               setScaffoldKey(Date.now());
 
                               const response = await fetch('/api/submit-ubxy', {
@@ -207,10 +217,15 @@ const ModuleDashboard = () => {
                               let cleanedNodes;
                               cleanedNodes = simulateResult.nodes.map(({ chain_number, ...rest }) => ({ ...rest, clicks: rest.clicks || 0 }));
 
-                              // Update inputNodes with cleaned nodes
+                              // Update inputNodes with cleaned nodes and pass all simulation data
                               setTimeout(() => {
                                 setScaffoldKey(Date.now());
-                                setInputNodes(cleanedNodes);
+                                setInputNodes({
+                                  nodes: cleanedNodes,
+                                  arrows: simulateResult.arrows || [],
+                                  mapping: simulateResult.mapping || {},
+                                  smallNodes: simulateResult.smallNodes || []
+                                });
                               }, 0);
 
                               console.log('simulateResult.nodes:', simulateResult.nodes);
@@ -241,17 +256,20 @@ const ModuleDashboard = () => {
                     }}>
                       <ClickableScaffoldPanel
                         key={scaffoldKey} // Controlled remount via state
-                        initialNodes={inputNodes}
+                        initialNodes={inputNodes.nodes}
+                        initialArrows={inputNodes.arrows}
+                        initialMapping={inputNodes.mapping}
+                        initialSmallNodes={inputNodes.smallNodes}
                         panelWidth={panelWidth}
                         panelHeight={panelHeight}
                         onSubmit={async (jsonOutput) => {
                           console.log('Linkages created:', jsonOutput);
 
-                          // Clear previous reaction sequences and scaffolds
+                          // Clear previous reaction sequences and figures but preserve scaffold state
                           setReactionSequence(null);
                           setFigures(null);
                           setJsonOutput(null);
-                          setInputNodes(DEFAULT_NODES); // Reset to default nodes
+                          // Don't reset inputNodes here to preserve the arrows and scaffold state
 
                           setJsonOutput(jsonOutput);
                           try {

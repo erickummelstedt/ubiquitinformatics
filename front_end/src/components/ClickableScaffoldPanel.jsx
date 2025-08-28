@@ -27,15 +27,39 @@ const LIGHT_GRAY = '#dddddd';
 const GRAY = '#aaaaaa';
 const BLACK = '#000000';
 
-const ClickableScaffoldPanel = ({ initialNodes = DEFAULT_NODES, edges = DEFAULT_EDGES, showRefresh = true, panelWidth, panelHeight, onSubmit }) => {
+const ClickableScaffoldPanel = ({ 
+  initialNodes = DEFAULT_NODES, 
+  initialArrows = [],
+  initialMapping = {},
+  initialSmallNodes = [],
+  edges = DEFAULT_EDGES, 
+  showRefresh = true, 
+  panelWidth, 
+  panelHeight, 
+  onSubmit 
+}) => {
   const canvasRef = useRef(null);
   const [nodes, setNodes] = useState(() => {
     const n = initialNodes.map(node => ({ ...node }));
-    n[0].clicks = 1;
+    // Only set first node to clicked if no initial arrows are provided
+    if (initialArrows.length === 0) {
+      n[0].clicks = 1;
+    }
     return n;
   });
-  const [arrows, setArrows] = useState([]);
-  const [clickedNodes, setClickedNodes] = useState(new Set([0]));
+  const [arrows, setArrows] = useState(initialArrows || []);
+  const [clickedNodes, setClickedNodes] = useState(() => {
+    // Initialize clicked nodes based on initial arrows or default to first node
+    if (initialArrows.length > 0) {
+      const clickedSet = new Set();
+      initialArrows.forEach(({ from, to }) => {
+        clickedSet.add(from);
+        clickedSet.add(to);
+      });
+      return clickedSet;
+    }
+    return new Set([0]);
+  });
   const [lastNodeIndex, setLastNodeIndex] = useState(0);
   const maxClicks = 5;
   const [refreshBtnRect, setRefreshBtnRect] = useState(null);
@@ -49,6 +73,32 @@ const ClickableScaffoldPanel = ({ initialNodes = DEFAULT_NODES, edges = DEFAULT_
   useEffect(() => { nodesRef.current = nodes; }, [nodes]);
   useEffect(() => { arrowsRef.current = arrows; }, [arrows]);
   useEffect(() => { clickedNodesRef.current = clickedNodes; }, [clickedNodes]);
+
+  // Update state when initial props change
+  useEffect(() => {
+    const n = initialNodes.map(node => ({ ...node }));
+    if (initialArrows.length === 0) {
+      n[0].clicks = 1;
+    }
+    setNodes(n);
+  }, [initialNodes]);
+
+  useEffect(() => {
+    setArrows(initialArrows || []);
+  }, [initialArrows]);
+
+  useEffect(() => {
+    if (initialArrows.length > 0) {
+      const clickedSet = new Set();
+      initialArrows.forEach(({ from, to }) => {
+        clickedSet.add(from);
+        clickedSet.add(to);
+      });
+      setClickedNodes(clickedSet);
+    } else {
+      setClickedNodes(new Set([0]));
+    }
+  }, [initialArrows]);
 
   // Draw the scaffold
   useEffect(() => {
