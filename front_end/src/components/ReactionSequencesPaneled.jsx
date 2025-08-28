@@ -315,7 +315,7 @@ const renderBox = (item, showReactionWell) => {
     );
 };
 
-const Sequences = ({ reactionSequence, showReactionWell = true }) => {
+const ReactionSequencesPaneled = ({ reactionSequence, showReactionWell = true }) => {
     const [boxes, setBoxes] = useState([]);
 
     useEffect(() => {
@@ -347,4 +347,4 @@ const Sequences = ({ reactionSequence, showReactionWell = true }) => {
     );
 };
 
-export default Sequences;
+export default ReactionSequencesPaneled;

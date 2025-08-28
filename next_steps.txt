@@ -130,7 +130,7 @@ Big things;
     DONE - Need to revert the Ub4_15 numbers, but maybe not... because they are based on synthesis number.. which is based on synthesis...
     - fix test_simulation!
 
-- Build website for ubiquitin topology with all linkages 
+DONE - Build website for ubiquitin topology with all linkages 
 
 3.  BIG BIG - Fix validation against confirmation data
 

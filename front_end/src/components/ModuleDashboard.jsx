@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Panel from './Panel';
 import ClickableScaffoldPanel from './ClickableScaffoldPanel';
 import JsonToScaffold from './JsonToScaffold';
-import Sequences from './Sequences';
+import ReactionSequencesPaneled from './ReactionSequencesPaneled';
 import SubgraphAnalysisPage from './SubgraphAnalysisPage';
 import ReactionPathStatisticsPage from './ReactionPathStatisticsPage';
 import multimerDataTetramers from '../data/multimer_id_to_json4.json';
@@ -202,7 +202,7 @@ const ModuleDashboard = () => {
                         }}
                       />
                     </div>
-                    <div style={{ marginTop: '24px' }}> {/* Add space between ClickableScaffoldPanel and Sequences */}
+                    <div style={{ marginTop: '24px' }}> {/* Add space between ClickableScaffoldPanel and ReactionSequencesPaneled */}
                       {reactionSequence && (
                         <div style={{
                           maxHeight: '100%', // Set a fixed height for scrollability
@@ -216,7 +216,7 @@ const ModuleDashboard = () => {
                           maxWidth: '1200px', // Keep the width tight
                           margin: '0 auto',
                         }}>
-                          <Sequences reactionSequence={reactionSequence} showReactionWell={false} />
+                          <ReactionSequencesPaneled reactionSequence={reactionSequence} showReactionWell={false} />
                         </div>
                       )}
                     </div>
@@ -469,7 +469,7 @@ const ModuleDashboard = () => {
               boxSizing: 'border-box',
             }}>
             <div id="reaction-sequences">
-              <Sequences reactionSequence={figures && figures["reaction_sequences.json"] ? JSON.parse(atob(figures["reaction_sequences.json"])) : null} />
+              <ReactionSequencesPaneled reactionSequence={figures && figures["reaction_sequences.json"] ? JSON.parse(atob(figures["reaction_sequences.json"])) : null} />
             </div>          
           </div>
         </div>
