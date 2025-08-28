@@ -1,5 +1,5 @@
 import React from 'react';
-import FrozenGameScaffoldPanelTest from './FrozenGameScaffoldPanelTest';
+import ScaffoldPanel from './ScaffoldPanel';
 
 // Simulate click logic in preorder traversal, matching adjacency, above, and arrow rules
 // K63 moves rightward and up, K48 moves leftward and up
@@ -110,7 +110,7 @@ const DEFAULT_EDGES = [
   [9, 13], [9, 14]
 ];
 
-const ScaffoldJsonWrapper = ({ jsonData }) => {
+const JsonToScaffold = ({ jsonData }) => {
   const { nodes, arrows, smallNodes } = React.useMemo(
     () => simulateClicksFromJson(jsonData, DEFAULT_NODES.map(n => ({ ...n })), DEFAULT_EDGES),
     [jsonData]
@@ -121,7 +121,7 @@ const ScaffoldJsonWrapper = ({ jsonData }) => {
     console.log('Scaffold arrows:', arrows);
   }, [arrows]);
   return (
-    <FrozenGameScaffoldPanelTest
+    <ScaffoldPanel
       initialNodes={nodes}
       initialSmallNodes={smallNodes}
       edges={DEFAULT_EDGES}
@@ -131,4 +131,4 @@ const ScaffoldJsonWrapper = ({ jsonData }) => {
   );
 };
 
-export default ScaffoldJsonWrapper;
+export default JsonToScaffold;

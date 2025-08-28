@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Panel from './Panel';
-import GameScaffoldPanel from './GameScaffoldPanel';
-import FrozenGameScaffoldPanel from './FrozenGameScaffoldPanel';
-import ScaffoldJsonWrapper from './ScaffoldJsonWrapper';
+import ClickableScaffoldPanel from './ClickableScaffoldPanel';
+import JsonToScaffold from './JsonToScaffold';
 import Sequences from './Sequences';
 import SubgraphAnalysisPage from './SubgraphAnalysisPage';
 import ReactionPathStatisticsPage from './ReactionPathStatisticsPage';
-import k48_dimer_ubiquitin from '../data/k48_dimer_ubiquitin';
 import multimerDataTetramers from '../data/multimer_id_to_json4.json';
 import multimerDataPentamers from '../data/multimer_id_to_json5.json';
 
@@ -21,7 +19,7 @@ const PAGE_CONFIG = {
   subgraph: { count: 1, label: 'Ubiquitin Isomorphism', panelWidth: 570, panelHeight: 500 },
 };
 
-const ScaffoldDashboard = () => {
+const ModuleDashboard = () => {
   const [page, setPage] = useState('draw');
   const [selectedPanels, setSelectedPanels] = useState([]); // Track selected panel indices
   const [figures, setFigures] = useState(null); // Store backend images
@@ -179,7 +177,7 @@ const ScaffoldDashboard = () => {
                       height: panelHeight,
                       margin: '0 auto',
                     }}>
-                      <GameScaffoldPanel
+                      <ClickableScaffoldPanel
                         panelWidth={panelWidth}
                         panelHeight={panelHeight}
                         onSubmit={async (jsonOutput) => {
@@ -204,7 +202,7 @@ const ScaffoldDashboard = () => {
                         }}
                       />
                     </div>
-                    <div style={{ marginTop: '24px' }}> {/* Add space between GameScaffoldPanel and Sequences */}
+                    <div style={{ marginTop: '24px' }}> {/* Add space between ClickableScaffoldPanel and Sequences */}
                       {reactionSequence && (
                         <div style={{
                           maxHeight: '100%', // Set a fixed height for scrollability
@@ -254,7 +252,7 @@ const ScaffoldDashboard = () => {
                           marginBottom: '10px'
                       }}
                     >
-                        <ScaffoldJsonWrapper key={`${page}-${label}`} jsonData={jsonData} />
+                        <JsonToScaffold key={`${page}-${label}`} jsonData={jsonData} />
                     </div>
                     {label && (
                       <div
@@ -480,4 +478,4 @@ const ScaffoldDashboard = () => {
   );
 };
 
-export default ScaffoldDashboard;
+export default ModuleDashboard;

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import ScaffoldJsonWrapper from './ScaffoldJsonWrapper';
-import k48_dimer_ubiquitin from '../data/k48_dimer_ubiquitin';
+import JsonToScaffold from './JsonToScaffold';
 
 
 const renderBox = (item, showReactionWell) => {
@@ -90,7 +89,7 @@ const renderBox = (item, showReactionWell) => {
                                 marginBottom: '10px',
                             }}
                         >
-                            <ScaffoldJsonWrapper jsonData={JSON.parse(fixQuotes(item[donorKeys[0]]))} />
+                            <JsonToScaffold jsonData={JSON.parse(fixQuotes(item[donorKeys[0]]))} />
                         </div>
                     )}
                     <div style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: '10px', whiteSpace: 'nowrap' }}>{labels[key]}</div>
@@ -104,7 +103,7 @@ const renderBox = (item, showReactionWell) => {
                             flexShrink: 0,
                         }}
                     >
-                        <ScaffoldJsonWrapper jsonData={JSON.parse(fixQuotes(item[key]))} />
+                        <JsonToScaffold jsonData={JSON.parse(fixQuotes(item[key]))} />
                     </div>
                 </div>
             )}
@@ -141,7 +140,7 @@ const renderBox = (item, showReactionWell) => {
                                 flexShrink: 0,
                             }}
                         >
-                            <ScaffoldJsonWrapper jsonData={JSON.parse(fixQuotes(item["ubi_his_JSON_final_multimer"]))} />
+                            <JsonToScaffold jsonData={JSON.parse(fixQuotes(item["ubi_his_JSON_final_multimer"]))} />
                         </div>
                     </div>
                 </>
@@ -179,7 +178,7 @@ const renderBox = (item, showReactionWell) => {
                                         flexShrink: 0,
                                     }}
                                 >
-                                    <ScaffoldJsonWrapper jsonData={JSON.parse(fixQuotes(item[donorKeys[(index/2)-1]]))} />
+                                    <JsonToScaffold jsonData={JSON.parse(fixQuotes(item[donorKeys[(index/2)-1]]))} />
                                 </div>
                             </div>
                         </>
@@ -215,7 +214,7 @@ const renderBox = (item, showReactionWell) => {
                                 flexShrink: 0,
                             }}
                         >
-                            <ScaffoldJsonWrapper jsonData={JSON.parse(fixQuotes(item[key]))} />
+                            <JsonToScaffold jsonData={JSON.parse(fixQuotes(item[key]))} />
                         </div>
                     </div>
                 </>
@@ -295,7 +294,7 @@ const renderBox = (item, showReactionWell) => {
                         marginBottom: '10px'
                     }}
                 >
-                    <ScaffoldJsonWrapper jsonData={JSON.parse(fixQuotes(item['ubi_his_JSON_final_multimer']))} />
+                    <JsonToScaffold jsonData={JSON.parse(fixQuotes(item['ubi_his_JSON_final_multimer']))} />
                 </div>
             </div>
             <div
