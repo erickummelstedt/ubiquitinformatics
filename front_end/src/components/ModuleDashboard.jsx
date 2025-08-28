@@ -72,6 +72,11 @@ const ModuleDashboard = () => {
       page === 'tetramers' ? `Ub4_${idx + 1}` : page === 'pentamers' ? `Ub5_${idx + 1}` : null
     ).filter(Boolean);
     try {
+      // Clear previous reaction sequences and scaffolds
+      setReactionSequence(null);
+      setFigures(null);
+      setJsonOutput(null); // Clear previously rendered scaffold
+
       const response = await fetch('/api/submit-selection', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -160,6 +165,11 @@ const ModuleDashboard = () => {
                           const value = e.target.value;
                           if (value) {
                             try {
+                              // Clear previous reaction sequences and scaffolds
+                              setReactionSequence(null);
+                              setFigures(null);
+                              setJsonOutput(null); // Clear previously rendered scaffold
+
                               const response = await fetch('/api/submit-ubxy', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -172,10 +182,10 @@ const ModuleDashboard = () => {
 
                               const firstItem = decodedSequence[0];
                               const finalMultimerRaw = firstItem.ubi_his_JSON_final_multimer;
-                              const finalMultimer = JSON.parse(fixQuotes(finalMultimerRaw));                              
+                              const finalMultimer = JSON.parse(fixQuotes(finalMultimerRaw));
                               console.log('Final Multimer:', finalMultimer);
-                              console.log('simulateClicksFromJson:', simulateClicksFromJson(finalMultimer, DEFAULT_NODES.map(n => ({ ...n })), DEFAULT_EDGES)); // Just to validate and log
 
+                              setJsonOutput(finalMultimer); // Update the state for ClickableScaffoldPanel
                             } catch (err) {
                               alert('Failed to fetch reaction sequences: ' + err.message);
                             }
@@ -204,6 +214,12 @@ const ModuleDashboard = () => {
                         panelHeight={panelHeight}
                         onSubmit={async (jsonOutput) => {
                           console.log('Linkages created:', jsonOutput);
+
+                          // Clear previous reaction sequences and scaffolds
+                          setReactionSequence(null);
+                          setFigures(null);
+                          setJsonOutput(null);
+
                           setJsonOutput(jsonOutput);
                           try {
                             const response = await fetch('/api/submit-json-output', {
