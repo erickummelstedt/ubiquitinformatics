@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Panel from './Panel';
-import ClickableScaffoldPanel from './ClickableScaffoldPanel';
+import ClickableScaffoldPanel, { simulateClicksFromJson } from './ClickableScaffoldPanel';
 import ReactionSequencesPaneled from './ReactionSequencesPaneled';
 import SubgraphAnalysisPage from './SubgraphAnalysisPage';
 import ReactionPathStatisticsPage from './ReactionPathStatisticsPage';
 import multimerDataTetramers from '../data/multimer_id_to_json4.json';
 import multimerDataPentamers from '../data/multimer_id_to_json5.json';
-import { simulateClicksFromJson } from './input_clickable';
 
 const SMALL_PANEL_WIDTH = 140;
 const SMALL_PANEL_HEIGHT = 90;
