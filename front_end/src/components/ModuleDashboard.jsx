@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Panel from './Panel';
 import ClickableScaffoldPanel from './ClickableScaffoldPanel';
-import JsonToScaffold from './JsonToScaffold';
 import ReactionSequencesPaneled from './ReactionSequencesPaneled';
 import SubgraphAnalysisPage from './SubgraphAnalysisPage';
 import ReactionPathStatisticsPage from './ReactionPathStatisticsPage';
@@ -10,6 +9,26 @@ import multimerDataPentamers from '../data/multimer_id_to_json5.json';
 
 const SMALL_PANEL_WIDTH = 140;
 const SMALL_PANEL_HEIGHT = 90;
+
+const DEFAULT_NODES = [
+  { x: 300, y: 300, clicks: 0 },
+  { x: 250, y: 250, clicks: 0 }, { x: 350, y: 250, clicks: 0 },
+  { x: 200, y: 200, clicks: 0 }, { x: 300, y: 200, clicks: 0 }, { x: 400, y: 200, clicks: 0 },
+  { x: 150, y: 150, clicks: 0 }, { x: 250, y: 150, clicks: 0 }, { x: 350, y: 150, clicks: 0 }, { x: 450, y: 150, clicks: 0 },
+  { x: 100, y: 100, clicks: 0 }, { x: 200, y: 100, clicks: 0 }, { x: 300, y: 100, clicks: 0 }, { x: 400, y: 100, clicks: 0 }, { x: 500, y: 100, clicks: 0 }
+];
+const DEFAULT_EDGES = [
+  [0, 1], [0, 2],
+  [1, 3], [1, 4],
+  [2, 4], [2, 5],
+  [3, 6], [3, 7],
+  [4, 7], [4, 8],
+  [5, 8], [5, 9],
+  [6, 10], [6, 11],
+  [7, 11], [7, 12],
+  [8, 12], [8, 13],
+  [9, 13], [9, 14]
+];
 
 const PAGE_CONFIG = {
   draw: { count: 1, label: 'Explore Reaction Pathways', panelWidth: 570, panelHeight: 370 },
@@ -78,7 +97,7 @@ const ModuleDashboard = () => {
     }
     return data ? JSON.parse(fixQuotes(data)) : null;
   };
-
+  
   return (
     <div style={{ width: '100vw', minHeight: '100vh', boxSizing: 'border-box', overflow: 'auto', padding: '16px 0' }}>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
@@ -130,7 +149,7 @@ const ModuleDashboard = () => {
             const jsonData = getMultimerData(label);
 
             return (
-              <>
+              <React.Fragment key={`${page}-${i}`}>
                 {page === 'draw' ? (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
                     <input
@@ -146,15 +165,18 @@ const ModuleDashboard = () => {
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ ubxy: value }),
                               });
-                              if (!response.ok) {
-                                console.error('Failed to fetch reaction sequences:', response.status, response.statusText);
-                                throw new Error('Failed to fetch reaction sequences');
-                              }
+                              if (!response.ok) throw new Error('Failed to fetch reaction sequences');
                               const result = await response.json();
                               const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
-                              setReactionSequence(decodedSequence); // Store the fetched sequence
+                              setReactionSequence(decodedSequence);
+
+                              const firstItem = decodedSequence[0];
+                              const finalMultimerRaw = firstItem.ubi_his_JSON_final_multimer;
+                              const finalMultimer = JSON.parse(fixQuotes(finalMultimerRaw));                              
+                              console.log('Final Multimer:', finalMultimer);
+                              console.log('simulateClicksFromJson:', simulateClicksFromJson(finalMultimer, DEFAULT_NODES.map(n => ({ ...n })), DEFAULT_EDGES)); // Just to validate and log
+
                             } catch (err) {
-                              console.error('Error details:', err);
                               alert('Failed to fetch reaction sequences: ' + err.message);
                             }
                           }
@@ -195,6 +217,7 @@ const ModuleDashboard = () => {
                             }
                             const result = await response.json();
                             const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
+                            console.log('Decoded Sequence:', decodedSequence); // Log the decoded sequence
                             setReactionSequence(decodedSequence); // Store the fetched sequence
                           } catch (err) {
                             console.error('Error submitting jsonOutput:', err);
@@ -280,7 +303,7 @@ const ModuleDashboard = () => {
                     )}
                   </Panel>
                 )}
-              </>
+              </React.Fragment>
             );
           })
         )}
@@ -314,7 +337,7 @@ const ModuleDashboard = () => {
               maxWidth: '100%',
             }}>
               {Object.entries(selectionCounts).map(([label, count], idx) => (
-                <span key={label} style={{
+                <span key={`selection-${label}-${idx}`} style={{
                   display: 'inline-block',
                   background: '#1976d2',
                   color: '#fff',

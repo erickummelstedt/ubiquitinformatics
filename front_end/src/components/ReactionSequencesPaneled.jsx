@@ -320,7 +320,11 @@ const ReactionSequencesPaneled = ({ reactionSequence, showReactionWell = true })
 
     useEffect(() => {
         if (reactionSequence) {
-            const renderedBoxes = reactionSequence.map((item) => renderBox(item, showReactionWell));
+            const renderedBoxes = reactionSequence.map((item, index) => (
+                <div key={item.id || index}>
+                    {renderBox(item, showReactionWell)}
+                </div>
+            ));
             setBoxes(renderedBoxes);
         }
     }, [reactionSequence, showReactionWell]);
