@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Panel from './Panel';
+import JsonToScaffold from './JsonToScaffold';
 import ClickableScaffoldPanel, { simulateClicksFromJson } from './ClickableScaffoldPanel';
 import ReactionSequencesPaneled from './ReactionSequencesPaneled';
 import SubgraphAnalysisPage from './SubgraphAnalysisPage';
