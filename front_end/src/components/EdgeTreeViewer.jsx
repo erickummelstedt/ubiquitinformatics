@@ -1,6 +1,6 @@
 import React from 'react';
 
-const EdgeTreeViewer = ({ formattedEdges, ubxyValue }) => {
+const EdgeTreeViewer = ({ formattedEdges, ubxyValue, nomenclatureValue }) => {
   // Function to convert formatted edges to tree structure
   const createTreeFromEdges = (formattedEdges) => {
     if (!formattedEdges) return '';
@@ -80,6 +80,33 @@ const EdgeTreeViewer = ({ formattedEdges, ubxyValue }) => {
       {/* Formatted Edges Display */}
       {formattedEdges && (
         <>
+          {/* Nomenclature Display - above Chain Linkages */}
+          {nomenclatureValue && (
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ 
+                margin: '0 0 8px 0', 
+                color: '#333',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}>
+                Ubiquitin Nomenclature (just K48 and K63)
+              </h4>
+              <div style={{
+                color: '#7b1fa2',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                textAlign: 'center',
+                padding: '8px',
+                backgroundColor: '#f3e5f5',
+                borderRadius: '4px',
+                border: '1px solid #7b1fa2'
+              }}>
+                {nomenclatureValue}
+              </div>
+            </div>
+          )}
+          
           <div style={{ marginBottom: '16px' }}>
             <h4 style={{ 
               margin: '0 0 8px 0', 

@@ -56,6 +56,7 @@ const ModuleDashboard = () => {
   const [jsonOutput, setJsonOutput] = useState(null);
   const [formattedEdges, setFormattedEdges] = useState(null); // Store formatted edges from API
   const [ubxyValue, setUbxyValue] = useState(null); // Store UbX_Y value from API
+  const [nomenclatureValue, setNomenclatureValue] = useState(null); // Store nomenclature value from API
   const [inputNodes, setInputNodes] = useState({
     nodes: DEFAULT_NODES,
     arrows: [],
@@ -72,6 +73,7 @@ const ModuleDashboard = () => {
     setFigures(null);
     setFormattedEdges(null);
     setUbxyValue(null);
+    setNomenclatureValue(null);
   }, [page]);
 
   // Count selections for each label
@@ -99,6 +101,7 @@ const ModuleDashboard = () => {
       setJsonOutput(null); // Clear previously rendered scaffold
       setFormattedEdges(null); // Clear formatted edges
       setUbxyValue(null); // Clear UbX_Y value
+      setNomenclatureValue(null); // Clear nomenclature value
 
       const response = await fetch('/api/submit-selection', {
         method: 'POST',
@@ -182,7 +185,7 @@ const ModuleDashboard = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
                     <input
                       type="text"
-                      placeholder="Enter UbX_Y"
+                      placeholder="Enter UbX_Y e.g.(Ub5_31) or A1B1B2..."
                       onKeyDown={async (e) => {
                         if (e.key === 'Enter') {
                           const value = e.target.value;
@@ -194,6 +197,7 @@ const ModuleDashboard = () => {
                               setJsonOutput(null); // Clear previously rendered scaffold
                               setFormattedEdges(null); // Clear formatted edges
                               setUbxyValue(null); // Clear UbX_Y value
+                              setNomenclatureValue(null); // Clear nomenclature value
                               setInputNodes({
                                 nodes: DEFAULT_NODES,
                                 arrows: [],
@@ -216,6 +220,9 @@ const ModuleDashboard = () => {
                               }
                               if (result.ubxy) {
                                 setUbxyValue(result.ubxy);
+                              }
+                              if (result.nomenclature_value) {
+                                setNomenclatureValue(result.nomenclature_value);
                               }
                               
                               const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
@@ -288,6 +295,7 @@ const ModuleDashboard = () => {
                           setJsonOutput(null);
                           setFormattedEdges(null); // Clear formatted edges
                           setUbxyValue(null); // Clear UbX_Y value
+                          setNomenclatureValue(null); // Clear nomenclature value
                           // Don't reset inputNodes here to preserve the arrows and scaffold state
 
                           setJsonOutput(jsonOutput);
@@ -310,6 +318,9 @@ const ModuleDashboard = () => {
                             if (result.ubxy) {
                               setUbxyValue(result.ubxy);
                             }
+                            if (result.nomenclature_value) {
+                              setNomenclatureValue(result.nomenclature_value);
+                            }
                             
                             const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
                             console.log('Decoded Sequence:', decodedSequence); // Log the decoded sequence
@@ -323,7 +334,7 @@ const ModuleDashboard = () => {
                     {/* Display formatted edges and tree structure if available */}
                     {formattedEdges && ubxyValue && (
                       <div style={{ marginTop: '16px', width: '100%', maxWidth: '800px' }}>
-                        <EdgeTreeViewer formattedEdges={formattedEdges} ubxyValue={ubxyValue} />
+                        <EdgeTreeViewer formattedEdges={formattedEdges} ubxyValue={ubxyValue} nomenclatureValue={nomenclatureValue} />
                       </div>
                     )}
                     <div style={{ marginTop: '24px' }}> {/* Add space between ClickableScaffoldPanel and ReactionSequencesPaneled */}
