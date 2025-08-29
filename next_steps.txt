@@ -133,9 +133,14 @@ Big things;
 DONE - Build website for ubiquitin topology with all linkages 
 
 
-4.  Finish Jeff's scheme, but show him the comparison between yours and his.
+DONE 4.  Finish Jeff's scheme, but show him the comparison between yours and his.
         - build out the translation of yours
 
+Show why jeffs scheme wont work
+- for binary system it works
+Show why your scheme works amazingly
+- however once you go beyond it doesn't scale
+Build in tests into your scheme
 
 3.  BIG BIG - Fix validation against confirmation data
 
