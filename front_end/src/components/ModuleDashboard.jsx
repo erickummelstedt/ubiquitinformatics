@@ -4,6 +4,7 @@ import ClickableScaffoldPanel, { simulateClicksFromJson } from './ClickableScaff
 import ReactionSequencesPaneled from './ReactionSequencesPaneled';
 import SubgraphAnalysisPage from './SubgraphAnalysisPage';
 import ReactionPathStatisticsPage from './ReactionPathStatisticsPage';
+import EdgeTreeViewer from './EdgeTreeViewer';
 import multimerDataTetramers from '../data/multimer_id_to_json4.json';
 import multimerDataPentamers from '../data/multimer_id_to_json5.json';
 
@@ -53,6 +54,8 @@ const ModuleDashboard = () => {
   const [figures, setFigures] = useState(null); // Store backend images
   const [reactionSequence, setReactionSequence] = useState(null); // Store reaction sequences
   const [jsonOutput, setJsonOutput] = useState(null);
+  const [formattedEdges, setFormattedEdges] = useState(null); // Store formatted edges from API
+  const [ubxyValue, setUbxyValue] = useState(null); // Store UbX_Y value from API
   const [inputNodes, setInputNodes] = useState({
     nodes: DEFAULT_NODES,
     arrows: [],
@@ -67,6 +70,8 @@ const ModuleDashboard = () => {
   React.useEffect(() => {
     setSelectedPanels([]);
     setFigures(null);
+    setFormattedEdges(null);
+    setUbxyValue(null);
   }, [page]);
 
   // Count selections for each label
@@ -92,6 +97,8 @@ const ModuleDashboard = () => {
       setReactionSequence(null);
       setFigures(null);
       setJsonOutput(null); // Clear previously rendered scaffold
+      setFormattedEdges(null); // Clear formatted edges
+      setUbxyValue(null); // Clear UbX_Y value
 
       const response = await fetch('/api/submit-selection', {
         method: 'POST',
@@ -185,6 +192,8 @@ const ModuleDashboard = () => {
                               setReactionSequence(null);
                               setFigures(null);
                               setJsonOutput(null); // Clear previously rendered scaffold
+                              setFormattedEdges(null); // Clear formatted edges
+                              setUbxyValue(null); // Clear UbX_Y value
                               setInputNodes({
                                 nodes: DEFAULT_NODES,
                                 arrows: [],
@@ -200,6 +209,15 @@ const ModuleDashboard = () => {
                               });
                               if (!response.ok) throw new Error('Failed to fetch reaction sequences');
                               const result = await response.json();
+                              
+                              // Store formatted edges and UbX_Y value if available
+                              if (result.formatted_edges) {
+                                setFormattedEdges(result.formatted_edges);
+                              }
+                              if (result.ubxy) {
+                                setUbxyValue(result.ubxy);
+                              }
+                              
                               const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
                               setReactionSequence(decodedSequence);
 
@@ -268,6 +286,8 @@ const ModuleDashboard = () => {
                           setReactionSequence(null);
                           setFigures(null);
                           setJsonOutput(null);
+                          setFormattedEdges(null); // Clear formatted edges
+                          setUbxyValue(null); // Clear UbX_Y value
                           // Don't reset inputNodes here to preserve the arrows and scaffold state
 
                           setJsonOutput(jsonOutput);
@@ -282,6 +302,15 @@ const ModuleDashboard = () => {
                               throw new Error('Failed to fetch reaction sequences');
                             }
                             const result = await response.json();
+                            
+                            // Store formatted edges and UbX_Y value if available
+                            if (result.formatted_edges) {
+                              setFormattedEdges(result.formatted_edges);
+                            }
+                            if (result.ubxy) {
+                              setUbxyValue(result.ubxy);
+                            }
+                            
                             const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
                             console.log('Decoded Sequence:', decodedSequence); // Log the decoded sequence
                             setReactionSequence(decodedSequence); // Store the fetched sequence
@@ -291,6 +320,12 @@ const ModuleDashboard = () => {
                         }}
                       />
                     </div>
+                    {/* Display formatted edges and tree structure if available */}
+                    {formattedEdges && ubxyValue && (
+                      <div style={{ marginTop: '16px', width: '100%', maxWidth: '800px' }}>
+                        <EdgeTreeViewer formattedEdges={formattedEdges} ubxyValue={ubxyValue} />
+                      </div>
+                    )}
                     <div style={{ marginTop: '24px' }}> {/* Add space between ClickableScaffoldPanel and ReactionSequencesPaneled */}
                       {reactionSequence && (
                         <div style={{

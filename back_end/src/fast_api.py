@@ -299,8 +299,7 @@ async def submit_ubxy(request: Request):
         return JSONResponse(content={
             "status": "ok", "ubxy": ubxy_value, 
             "reaction_sequences_b64": reaction_sequences_b64,
-            "formatted_edges": formatted_edges,
-            "ubxy": ubxy_value
+            "formatted_edges": formatted_edges
             })
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
