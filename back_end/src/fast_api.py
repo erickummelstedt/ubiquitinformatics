@@ -5,6 +5,19 @@ import base64
 import io
 import json
 import asyncio
+import logging
+
+# Configure logging to write to a file instead of the terminal
+log_file_path = "application.log"
+file_handler = logging.FileHandler(log_file_path)
+file_handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+
+# Clear existing handlers and add the file handler
+logging.getLogger().handlers.clear()
+logging.getLogger().addHandler(file_handler)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -117,7 +130,6 @@ async def submit_selection(request: Request):
     opentrons_bytes.seek(0)
     opentrons_b64 = base64.b64encode(opentrons_bytes.read()).decode('utf-8')
 
-
     # Convert reaction_sequences_dicts to bytes
     reaction_sequences_dicts = plotting.build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size)
     reaction_sequences_bytes = io.BytesIO()
@@ -147,6 +159,7 @@ async def submit_ubxy(request: Request):
     import sys
     from pathlib import Path
     import pandas as pd
+    import copy
 
     # Dynamically get the backend path relative to this file's location
     current_path = Path(__file__).resolve()
@@ -160,6 +173,7 @@ async def submit_ubxy(request: Request):
     import src.utils.logging_utils
     import src.main as main
     import src.plotting as plotting
+    import src.nomenclature as nomenclature
     
     try:
         data = await request.json()
@@ -167,9 +181,20 @@ async def submit_ubxy(request: Request):
         if not ubxy_value:
             return JSONResponse(content={"status": "error", "message": "No UbX_Y value provided"}, status_code=400)
 
+        # Validate that ubxy_value begins with 'U' or 'A'
+        if not (ubxy_value.startswith('U') or ubxy_value.startswith('A')):
+            return JSONResponse(content={"status": "error", "message": "UbX_Y value must begin with 'U' or 'A'"}, status_code=400)
 
-        multimer_size = int(ubxy_value.replace("Ub", "").split('_')[0])
+        logger.info(f"Received UbX_Y value: {ubxy_value}")
 
+        # If it starts with 'A', fix the nomenclature
+        if ubxy_value.startswith('A'):
+            # Original UbX_Y processing for values starting with 'U'
+            multimer_size = int(len(ubxy_value)/2)  # Rough estimate based on length
+        else:
+            # Original UbX_Y processing for values starting with 'U'
+            multimer_size = int(ubxy_value.replace("Ub", "").split('_')[0])
+        
         # Function to load data
         def download_data_dict(multimer_size):
             input_dir = project_root / 'back_end' / 'data' / 'filtered_reaction_database' / f'multimer_size_{multimer_size}'
@@ -194,9 +219,74 @@ async def submit_ubxy(request: Request):
         reaction_history = data_dict['reaction_history']
         ubiquitin_history = data_dict['ubiquitin_history']
 
+        # If it starts with 'A', convert from nomenclature format to UbX_Y format 
+        if ubxy_value.startswith('A'):
+            # Convert 'A1B2C3' style to 'U4_1' style
+            try:
+                nomenclature_value = ubxy_value  # e.g., 'A1B2C3'
+                
+                output_ubiG_json, connections  = nomenclature.build_polyubiquitin_from_nomenclature(ubxy_value)
+                # Load multimers JSON file and convert to dictionary
+                file_path1 = f"/Users/ekummelstedt/le_code_base/ubiquitinformatics/front_end/src/data/multimer_id_to_json{multimer_size}.json"
+                with open(file_path1, 'r') as f:
+                    multimers_dict = json.load(f)
+
+                # Find the key in multimers_dict that corresponds to output_ubiG_json
+                ubxy_value = None
+                for key, value in multimers_dict.items():
+                    if value == str(output_ubiG_json):
+                        ubxy_value = key
+                        break
+                
+                if ubxy_value is None:
+                    return JSONResponse(content={"status": "error", "message": "Generated structure not found in multimers database"}, status_code=404)
+                    
+                logger.info(f"Converted {nomenclature_value} to {ubxy_value}")  # Debug print
+            except Exception as e:
+                return JSONResponse(content={"status": "error", "message": f"Error in nomenclature conversion: {str(e)}"}, status_code=400)
+
         # Get unique indices for the specified multimer_id and ensure all values are integers
         indexes = ubiquitin_history.loc[ubiquitin_history["multimer_id"] == ubxy_value, "index"].dropna().unique()
         indexes = [int(i) for i in indexes]
+
+        if len(indexes) > 0:
+            final_multimer = ubiquitin_history[ubiquitin_history["index"] == indexes[0]]["final_multimer"].iloc[0]
+            ubxy_value = ubiquitin_history[ubiquitin_history["index"] == indexes[0]]["multimer_id"].iloc[0]
+        else:
+            logger.info(f"No indexes found for multimer_id: {ubxy_value}")
+
+        print("final_multimer:", final_multimer)
+        # Pull the final multimer json and context
+        output_json, output_context = main.iterate_through_ubiquitin(final_multimer)
+        
+        # Pull formatted edges
+        edges = output_context['conjugated_lysines']
+        formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
+
+        
+        # At this point we have the UBX_Y value in ubxy_value
+        # Now we want:
+        #   the filepath for the multimer
+        #   the formated edges
+        #   from formated edges to nomenclature
+        #   the reaction sequences for this multimer which is based on indexes
+
+        #"""
+        #get the multimer
+        #add formated edges
+        #edges = context_json['conjugated_lysines']
+
+        #formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
+
+        ## Return placeholder message with multimer size
+        #return JSONResponse(content={
+        #    "status": "ok", 
+        #    "filepath": filepath,
+        #    "formatted_edges": formatted_edges,
+        #    "ubxy": ubxy_value
+        #    })
+        #"""
+
 
         # Convert reaction_sequences_dicts to bytes
         reaction_sequences_dicts = plotting.build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size)
@@ -208,7 +298,9 @@ async def submit_ubxy(request: Request):
         # Return the entered UbX_Y value
         return JSONResponse(content={
             "status": "ok", "ubxy": ubxy_value, 
-            "reaction_sequences_b64": reaction_sequences_b64
+            "reaction_sequences_b64": reaction_sequences_b64,
+            "formatted_edges": formatted_edges,
+            "ubxy": ubxy_value
             })
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
@@ -269,6 +361,20 @@ async def submit_json_output(request: Request):
         # Get indexes for the final multimer from jsonOutput
         indexes = plotting.get_indexes_for_final_multimer(json_output, ubiquitin_history)
 
+        if len(indexes) > 0:
+            final_multimer = ubiquitin_history[ubiquitin_history["index"] == indexes[0]]["final_multimer"].iloc[0]
+            ubxy_value = ubiquitin_history[ubiquitin_history["index"] == indexes[0]]["multimer_id"].iloc[0]
+        else:
+            logger.info(f"No indexes found for multimer_id: {ubxy_value}")
+
+        print("final_multimer:", final_multimer)
+        # Pull the final multimer json and context
+        output_json, output_context = main.iterate_through_ubiquitin(final_multimer)
+        
+        # Pull formatted edges
+        edges = output_context['conjugated_lysines']
+        formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
+
         # Convert reaction_sequences_dicts to bytes
         reaction_sequences_dicts = plotting.build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size)
         reaction_sequences_bytes = io.BytesIO()
@@ -279,7 +385,9 @@ async def submit_json_output(request: Request):
         # Return the entered UbX_Y value
         return JSONResponse(content={
             "status": "ok", "json_output": json_output, 
-            "reaction_sequences_b64": reaction_sequences_b64
+            "reaction_sequences_b64": reaction_sequences_b64,
+            "formatted_edges": formatted_edges,
+            "ubxy": ubxy_value
             })
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)

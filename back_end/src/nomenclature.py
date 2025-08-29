@@ -276,19 +276,16 @@ def build_polyubiquitin_from_nomenclature(tree_string):
     result = convert_ubiquitin_nomenclature(tree_string)
     
     connections = result['result']
-    print(connections)
     
     # Start with the base ubiquitin molecule
     current_structure = histag_ubi_ubq_1
     
     # Apply each connection iteratively
     for connection in connections:
-        print(f"Processing connection: {connection}")
         # Parse the connection string: "1 → K63 → 2"
         parts = connection.split(' → ')
         ubiquitin_number = int(parts[0])
         lysine_residue = parts[1]  # K63 or K48
-        print("ubiquitin_number, lysine_residue:", ubiquitin_number, lysine_residue)
         # parts[2] is the target ubiquitin number (not needed for ubiquitin_building_all)
         
         current_structure, context = ubiquitin_building_all(
@@ -297,13 +294,7 @@ def build_polyubiquitin_from_nomenclature(tree_string):
             ubiquitin_number=ubiquitin_number,
             lysine_residue=lysine_residue
         )
-        print("Current structure updated.:", current_structure)
 
     output_structure, output_context = iterate_through_ubiquitin(current_structure)
     
-    return output_structure
-
-
-hi = build_polyubiquitin_from_nomenclature('A1B1B2C3D5')
-
-print(hi)
+    return output_structure, connections
