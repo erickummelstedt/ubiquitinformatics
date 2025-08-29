@@ -182,15 +182,15 @@ async def submit_ubxy(request: Request):
             return JSONResponse(content={"status": "error", "message": "No UbX_Y value provided"}, status_code=400)
 
         # Validate that ubxy_value begins with 'U' or 'A'
-        if not (ubxy_value.startswith('U') or ubxy_value.startswith('A')):
-            return JSONResponse(content={"status": "error", "message": "UbX_Y value must begin with 'U' or 'A'"}, status_code=400)
+        if not (ubxy_value.startswith('U') or ubxy_value.startswith('1')):
+            return JSONResponse(content={"status": "error", "message": "UbX_Y value must begin with 'U' or '1'"}, status_code=400)
 
         logger.info(f"Received UbX_Y value: {ubxy_value}")
 
         # If it starts with 'A', fix the nomenclature
-        if ubxy_value.startswith('A'):
+        if ubxy_value.startswith('1'):
             # Original UbX_Y processing for values starting with 'U'
-            multimer_size = int(len(ubxy_value)/2)  # Rough estimate based on length
+            multimer_size = int(nomenclature.multimer_length_from_nomenclature(ubxy_value))  # Rough estimate based on length
         else:
             # Original UbX_Y processing for values starting with 'U'
             multimer_size = int(ubxy_value.replace("Ub", "").split('_')[0])
@@ -220,27 +220,34 @@ async def submit_ubxy(request: Request):
         ubiquitin_history = data_dict['ubiquitin_history']
 
         # If it starts with 'A', convert from nomenclature format to UbX_Y format 
-        if ubxy_value.startswith('A'):
+        if ubxy_value.startswith('1'):
             # Convert 'A1B2C3' style to 'U4_1' style
             try:
                 nomenclature_value = ubxy_value  # e.g., 'A1B2C3'
                 
-                output_ubiG_json, connections  = nomenclature.build_polyubiquitin_from_nomenclature(ubxy_value)
+                parsed_edges = nomenclature.parse_compact_edges(ubxy_value)
+                print("parsed_edges: ", parsed_edges)   
+                output_ubiG_json = nomenclature.build_polyubiquitin_from_edges(parsed_edges)
+                print("output_ubiG_json: ", output_ubiG_json )
                 # Load multimers JSON file and convert to dictionary
                 file_path1 = f"/Users/ekummelstedt/le_code_base/ubiquitinformatics/front_end/src/data/multimer_id_to_json{multimer_size}.json"
                 with open(file_path1, 'r') as f:
                     multimers_dict = json.load(f)
 
                 # Find the key in multimers_dict that corresponds to output_ubiG_json
+                print("output_ubiG_json: ", output_ubiG_json )
+                print("ubxy_value found:", ubxy_value)
+
                 ubxy_value = None
                 for key, value in multimers_dict.items():
                     if value == str(output_ubiG_json):
                         ubxy_value = key
                         break
-                
                 if ubxy_value is None:
                     return JSONResponse(content={"status": "error", "message": "Generated structure not found in multimers database"}, status_code=404)
                     
+                print("ubxy_value found:", ubxy_value)
+
                 logger.info(f"Converted {nomenclature_value} to {ubxy_value}")  # Debug print
             except Exception as e:
                 return JSONResponse(content={"status": "error", "message": f"Error in nomenclature conversion: {str(e)}"}, status_code=400)
@@ -261,7 +268,11 @@ async def submit_ubxy(request: Request):
         # Pull formatted edges
         edges = output_context['conjugated_lysines']
         formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
-        nomenclature_value = nomenclature.conjugated_lysines_to_nomenclature(edges)
+        
+        # Old version - Jeffs without pre-order
+        # nomenclature_value = nomenclature.conjugated_lysines_to_nomenclature(edges)
+        # New version - Erics with pre-order
+        nomenclature_value = nomenclature.format_edges(edges)
 
         # Convert reaction_sequences_dicts to bytes
         reaction_sequences_dicts = plotting.build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size)

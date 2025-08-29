@@ -132,11 +132,12 @@ Big things;
 
 DONE - Build website for ubiquitin topology with all linkages 
 
+
+4.  Finish Jeff's scheme, but show him the comparison between yours and his.
+        - build out the translation of yours
+
+
 3.  BIG BIG - Fix validation against confirmation data
-
-4.  Perhaps do the thing that Jeff wanted.... that silly scheme
-
-
 
 
 Tinkerings; 

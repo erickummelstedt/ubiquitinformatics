@@ -1,6 +1,7 @@
 from pathlib import Path
 import pandas as pd
 import sys
+import copy
 
 # Dynamically get the backend path relative to this file
 current_file = Path(__file__).resolve()
@@ -17,377 +18,223 @@ from src.all_linkages import *
 from tests.test_data import *
 
 """
-Level System:
+UBIQUITIN NOMENCLATURE SYSTEM
+============================
 
-A = level 1, B = level 2, C = level 3, D = level 4, etc.
-Numbering System:
+This module implements a comprehensive nomenclature system for representing ubiquitin chain structures 
+in multiple complementary formats. The system provides bidirectional conversion between different 
+notation styles to support various scientific and computational use cases.
 
-Odd numbers (1, 3, 5, 7, ...) = K63 linkages
-Even numbers (2, 4, 6, 8, ...) = K48 linkages
-Level Capacity:
+NOMENCLATURE FORMATS:
+--------------------
 
-Level A: n = 1 (so A1 only)
-Level B: n = 2 (so B1, B2)
-Level C: n = 4 (so C1, C2, C3, C4)
-Level D: n = 8 (so D1, D2, D3, D4, D5, D6, D7, D8)
-Pattern: each level has 2^(level-1) positions
-Binding Rules:
+1. TREE NOMENCLATURE (A1B2C4D6 format):
+   - Hierarchical representation using letters (A,B,C,D...) for levels and numbers for positions
+   - Level System: A = level 1, B = level 2, C = level 3, D = level 4, etc.
+   - Position System: Each level has 2^(level-1) capacity (A:1, B:2, C:4, D:8...)
+   - Linkage Encoding by Position Number:
+     * Position 1 = K63 linkage
+     * Position 2 = K48 linkage  
+     * Position 3 = K33 linkage
+     * Position 4 = K29 linkage
+     * Position 5 = K27 linkage
+     * Position 6 = K11 linkage
+     * Position 7 = K6 linkage
+     * Position 8 = K63 linkage (cycle repeats)
+     * Pattern: [K63, K48, K33, K29, K27, K11, K6] repeats for positions 1-7, 8-14, 15-21, etc.
+   - Binding Rules: Position x can bind to positions (7x-6) through (7x) in next level
+     * Example: A1 → B1,B2,B3,B4,B5,B6,B7 (positions 1-7)
+     * Example: A2 → B8,B9,B10,B11,B12,B13,B14 (positions 8-14)
+   - Example: A1B1B2C1C4 represents a branched tetramer with specific connectivity
 
-Each position can only bind to specific positions in the next level
-The rule is: position x can bind to positions (2x-1) and (2x) in the next level
-Examples:
-A1 → B1, B2
-B1 → C1, C2
-B2 → C3, C4
-C4 → D7, D8
+2. COMPACT EDGE FORMAT (1A2-2A3-3A4 format):
+   - Linear representation of direct connections between ubiquitin units
+   - Format: SourceUnitLetterDestinationUnit (e.g., 1A2 = unit 1 connects to unit 2 via K63)
+   - Letter Mapping: A=K63, B=K48, C=K33, D=K29, E=K27, F=K11, G=K6
+   - Separators: Supports both dash (-) and comma (,) separation
+   - Example: "1A2-2A3-3B4" = linear chain with K63 linkages and one K48 branch
+
+3. CONJUGATED LYSINES FORMAT ([[1,'K63',2],...] format):
+   - Explicit list representation showing source, linkage type, and destination
+   - Format: [[source_unit, 'Kxx', destination_unit], ...]
+   - Preserves preorder traversal information for tree reconstruction
+   - Example: [[1,'K63',2], [2,'K63',3], [1,'K48',4]] = branched structure
+
+4. FORMATTED EDGES (1 → K63 → 2 format):
+   - Human-readable arrow notation for visualization
+   - Shows explicit linkage sites and connection directions
+   - Used primarily for display and user interface components
+   - Example: "1 → K63 → 2, 2 → K63 → 3, 1 → K48 → 4"
+
+CONVERSION CAPABILITIES:
+-----------------------
+- Tree Nomenclature ↔ Conjugated Lysines
+- Tree Nomenclature → Polyubiquitin Structure (via ubiquitin_building_all)
+- Compact Edges → Conjugated Lysines → Tree Nomenclature
+- All formats → Formatted Edges for display
+
+VALIDATION FEATURES:
+-------------------
+- Tree structure validation (binding rules, level constraints)
+- Preorder traversal preservation during conversions
+- Error handling for malformed inputs
+- Consistent position calculation algorithms
+
+SCIENTIFIC APPLICATIONS:
+-----------------------
+- Automated synthesis planning for complex ubiquitin chains
+- Structure-function relationship analysis
+- Computational modeling of ubiquitin signaling pathways
+- Standardized notation for research documentation and databases
 """
 
+### BETTER VERSION ### 
 
-def parse_tree_nomenclature(tree_string):
+def format_edges(edges):
     """
-    Parse tree nomenclature string into individual positions
-    Example: 'A1B2C4D6' -> [('A', 1), ('B', 2), ('C', 4), ('D', 6)]
+    Convert edges with lysine labels into compact string form using fixed mapping:
+        K63 -> A, K48 -> B, K33 -> C, K29 -> D, K27 -> E, K11 -> F, K6 -> G
+    Example:
+        [[1, 'K63', 2], [1, 'K48', 4]] -> "1A2, 1B4"
     """
-    positions = []
-    i = 0
-    while i < len(tree_string):
-        if tree_string[i].isalpha():
-            level = tree_string[i]
-            i += 1
-            # Extract the number
-            num_str = ''
-            while i < len(tree_string) and tree_string[i].isdigit():
-                num_str += tree_string[i]
-                i += 1
-            if num_str:
-                positions.append((level, int(num_str)))
+    fixed_map = {
+        'K63': 'A',
+        'K48': 'B',
+        'K33': 'C',
+        'K29': 'D',
+        'K27': 'E',
+        'K11': 'F',
+        'K6':  'G'
+    }
+    return '-'.join(f"{s}{fixed_map.get(k, '?')}{d}" for s, k, d in edges)
+
+
+import re
+
+# Fixed, canonical mapping
+LETTER_TO_LYS = {
+    'A': 'K63',
+    'B': 'K48',
+    'C': 'K33',
+    'D': 'K29',
+    'E': 'K27',
+    'F': 'K11',
+    'G': 'K6',
+}
+
+
+def parse_compact_edges(compact):
+    """
+    Parse compact edge notation into [[src, 'Kxx', dst], ...].
+
+    Accepts either:
+      - a single string like "1A2, 1B4, 2A3, 4B5" (comma-separated)
+      - a single string like "1A2-2A3-3A4-4B5" (dash-separated)
+      - an iterable of strings like ["1A2", "1B4", "2A3", "4B5"]
+
+    Returns: list of [int, str, int], e.g. [[1,'K63',2], ...]
+    """
+    # Normalize to a list of tokens like ["1A2", "1B4", ...]
+    if isinstance(compact, str):
+        # split on commas or dashes; also allow arbitrary whitespace
+        if ',' in compact:
+            tokens = [t.strip() for t in compact.split(',') if t.strip()]
+        elif '-' in compact:
+            tokens = [t.strip() for t in compact.split('-') if t.strip()]
         else:
-            i += 1
-    return positions
+            # Single token
+            tokens = [compact.strip()] if compact.strip() else []
+    else:
+        tokens = [str(t).strip() for t in compact if str(t).strip()]
 
-def validate_tree_structure(positions):
-    """
-    Validate that the tree structure follows the binding rules
-    Position x can only bind to positions (2x-1) and (2x) in the next level
-    """
-    for i in range(len(positions) - 1):
-        current_level, current_pos = positions[i]
-        next_level, next_pos = positions[i + 1]
-        
-        # Check if the binding rule is satisfied
-        expected_pos_1 = 2 * current_pos - 1
-        expected_pos_2 = 2 * current_pos
-        
-        if next_pos not in [expected_pos_1, expected_pos_2]:
-            return False, f"Invalid binding: {current_level}{current_pos} cannot bind to {next_level}{next_pos}"
-    
-    return True, "Valid tree structure"
+    edges = []
+    pat = re.compile(r'^(\d+)\s*([A-G])\s*(\d+)$')
+    for tok in tokens:
+        m = pat.match(tok)
+        if not m:
+            raise ValueError(f"Invalid compact edge token: {tok!r} (expected like '12A7')")
+        s, letter, d = m.groups()
+        lys = LETTER_TO_LYS.get(letter)
+        if lys is None:
+            raise ValueError(f"Unknown lysine letter: {letter!r}")
+        edges.append([int(s), lys, int(d)])
+    return edges
 
-def determine_linkage_type(position):
+# NEW FUNCTION: build_polyubiquitin_from_edges
+def build_polyubiquitin_from_edges(connections):
     """
-    Determine linkage type based on position number
-    Odd = K63, Even = K48
-    """
-    return "K63" if position % 2 == 1 else "K48"
+    Build a polyubiquitin structure from an explicit edge list.
 
-def tree_to_graphical(tree_string):
-    """
-    Convert tree nomenclature to graphical description with preorder numbering
-    """
-    positions = parse_tree_nomenclature(tree_string)
-    
-    # Validate structure
-    is_valid, message = validate_tree_structure(positions)
-    if not is_valid:
-        return None, message
-    
-    # Convert to graphical representation
-    graphical_chain = []
-    
-    for i in range(len(positions) - 1):
-        current_node = i + 1  # Preorder numbering starts at 1
-        next_node = i + 2
-        
-        # Linkage type determined by target position
-        _, target_pos = positions[i + 1]
-        linkage_type = determine_linkage_type(target_pos)
-        
-        graphical_chain.append(f"{current_node} → {linkage_type} → {next_node}")
-    
-    return graphical_chain, "Success"
-
-def convert_ubiquitin_nomenclature(tree_string):
-    """
-    Single function to convert tree nomenclature to graphical representation
-    Handles both linear chains and branching structures with proper preorder numbering
-    
     Args:
-        tree_string (str): Tree nomenclature string (e.g., 'A1B2C4D6' or 'A1B1B2C3D5')
-    
-    Returns:
-        dict: {
-            'success': bool,
-            'result': list or str,  # graphical chain if success, error message if not
-            'input': str            # original input for reference
-        }
-    """
-    try:
-        # Parse the input
-        positions = []
-        i = 0
-        while i < len(tree_string):
-            if tree_string[i].isalpha():
-                level = tree_string[i]
-                i += 1
-                # Extract the number
-                num_str = ''
-                while i < len(tree_string) and tree_string[i].isdigit():
-                    num_str += tree_string[i]
-                    i += 1
-                if num_str:
-                    positions.append((level, int(num_str)))
-            else:
-                i += 1
-        
-        if not positions:
-            return {
-                'success': False,
-                'result': 'Invalid input: No valid positions found',
-                'input': tree_string
-            }
-        
-        # Group positions by level
-        levels = {}
-        for level, pos in positions:
-            if level not in levels:
-                levels[level] = []
-            levels[level].append(pos)
-        
-        # Sort positions within each level
-        for level in levels:
-            levels[level].sort()
-        
-        # Build tree structure
-        tree = {}
-        level_names = sorted(levels.keys())
-        
-        # Create parent-child relationships
-        for i in range(len(level_names) - 1):
-            current_level = level_names[i]
-            next_level = level_names[i + 1]
-            
-            for current_pos in levels[current_level]:
-                expected_pos_1 = 2 * current_pos - 1
-                expected_pos_2 = 2 * current_pos
-                
-                children = []
-                for next_pos in levels[next_level]:
-                    if next_pos in [expected_pos_1, expected_pos_2]:
-                        children.append(next_pos)
-                
-                if children:
-                    tree[(current_level, current_pos)] = [(next_level, child) for child in children]
-        
-        # Validate that all positions have valid parents (except root)
-        for i in range(1, len(positions)):
-            current_level, current_pos = positions[i]
-            
-            # Find potential parents
-            parent_found = False
-            for j in range(i):
-                parent_level, parent_pos = positions[j]
-                expected_pos_1 = 2 * parent_pos - 1
-                expected_pos_2 = 2 * parent_pos
-                
-                if current_pos in [expected_pos_1, expected_pos_2]:
-                    if ord(parent_level) == ord(current_level) - 1:
-                        parent_found = True
-                        break
-            
-            if not parent_found:
-                return {
-                    'success': False,
-                    'result': f"Validation: Invalid binding: {current_level}{current_pos} has no valid parent",
-                    'input': tree_string
-                }
-        
-        # Assign preorder numbers using DFS traversal
-        def assign_preorder_numbers(node, node_counter):
-            position_to_node[node] = node_counter[0]
-            node_counter[0] += 1
-            
-            # Visit children in order
-            if node in tree:
-                for child in sorted(tree[node], key=lambda x: x[1]):  # Sort by position number
-                    assign_preorder_numbers(child, node_counter)
-        
-        position_to_node = {}
-        node_counter = [1]  # Use list to allow modification in nested function
-        
-        # Start DFS from root
-        root = positions[0]
-        assign_preorder_numbers(root, node_counter)
-        
-        # Build graphical chain
-        graphical_chain = []
-        
-        def build_connections(node):
-            if node in tree:
-                for child in sorted(tree[node], key=lambda x: x[1]):
-                    parent_node_num = position_to_node[node]
-                    child_node_num = position_to_node[child]
-                    
-                    # Linkage type determined by target position
-                    _, child_pos = child
-                    linkage_type = "K63" if child_pos % 2 == 1 else "K48"
-                    
-                    graphical_chain.append(f"{parent_node_num} → {linkage_type} → {child_node_num}")
-                    
-                    # Recursively build connections for children
-                    build_connections(child)
-        
-        build_connections(root)
-        
-        return {
-            'success': True,
-            'result': graphical_chain,
-            'input': tree_string
-        }
-        
-    except Exception as e:
-        return {
-            'success': False,
-            'result': f"Error processing input: {str(e)}",
-            'input': tree_string
-        }
+        connections (list): List like [[src, 'Kxx', dst], ...],
+                            e.g. [[1, 'K63', 2], [1, 'K48', 4], [2, 'K63', 3], [4, 'K48', 5]]
 
-
-def build_polyubiquitin_from_nomenclature(tree_string):
-    """
-    Convert tree nomenclature to actual polyubiquitin structure using ubiquitin_building_all
-    
-    Args:
-        tree_string (str): Tree nomenclature string (e.g., 'A1B1B2C3D5')
-    
     Returns:
-        dict: The final polyubiquitin structure or error information
+        dict: The final polyubiquitin structure built from the edges.
     """
-    # First convert the nomenclature to graphical representation
-    result = convert_ubiquitin_nomenclature(tree_string)
-    
-    connections = result['result']
-    
+    print("hello")
+    if not connections:
+        # Nothing to add: just iterate the base structure
+        output_structure, _ = iterate_through_ubiquitin(histag_ubi_ubq_1)
+        return output_structure
+
+    print("hello2")
     # Start with the base ubiquitin molecule
     current_structure = histag_ubi_ubq_1
-    
-    # Apply each connection iteratively
-    for connection in connections:
-        # Parse the connection string: "1 → K63 → 2"
-        parts = connection.split(' → ')
-        ubiquitin_number = int(parts[0])
-        lysine_residue = parts[1]  # K63 or K48
-        # parts[2] is the target ubiquitin number (not needed for ubiquitin_building_all)
-        
-        current_structure, context = ubiquitin_building_all(
+
+    # Apply each connection iteratively; dst is implied/unused by ubiquitin_building_all
+    for edge in connections:
+        try:
+            src, lys, dst = edge  
+        except ValueError:
+            # Skip malformed edges
+            continue
+
+        # Normalize types
+        try:
+            ubiquitin_number = int(src)
+        except (TypeError, ValueError):
+            # If src isn't an int, skip this edge
+            continue
+        lysine_residue = str(lys)
+
+        print("hello3")
+
+        # Prepare the new ubiquitin to add. give it the correct chain number
+        new_ubi_ubq_1 = ubi_ubq_1
+        new_ubi_ubq_1= convert_json_to_dict(new_ubi_ubq_1)
+        new_ubi_ubq_1['chain_number'] = int(dst)
+
+        # Build the chain
+        current_structure, _ = ubiquitin_building_all(
             parent_dictionary=current_structure,
-            ubi_molecule_to_add=ubi_ubq_1,
+            ubi_molecule_to_add=new_ubi_ubq_1,
             ubiquitin_number=ubiquitin_number,
-            lysine_residue=lysine_residue
+            lysine_residue=lysine_residue,
         )
 
-    output_structure, output_context = iterate_through_ubiquitin(current_structure)
-    
-    return output_structure, connections
+    output_structure, _ = iterate_through_ubiquitin(current_structure)
+    return output_structure
 
 
-def conjugated_lysines_to_nomenclature(conjugated_lysines):
+import re
+
+def multimer_length_from_nomenclature(compact: str) -> int:
     """
-    Convert conjugated lysines format to tree nomenclature
-    
-    Args:
-        conjugated_lysines (list): List of connections in format [[src, linkage, dst], ...]
-                                  Example: [[1, 'K63', 2], [2, 'K63', 3], [1, 'K48', 4], [4, 'K48', 5]]
-                                  Order matters - represents preorder traversal
-    
-    Returns:
-        str: Tree nomenclature string (e.g., 'A1B1B2C3D5')
+    Return the number of unique ubiquitin units in a compact edge string.
+
+    Example:
+        "1A2-2A3-3A4-4B5" -> 5  (units: {1,2,3,4,5})
+
+    Accepts letters A–G for lysines (fixed mapping), ignores whitespace.
     """
-    if not conjugated_lysines:
-        return "A1"  # Single ubiquitin
-    
-    # Build mapping from node number to the order it appears in connections
-    node_to_order = {}
-    all_nodes = set()
-    
-    # Track the order nodes appear in the conjugated lysines list
-    order_counter = 0
-    for src, linkage, dst in conjugated_lysines:
-        if src not in node_to_order:
-            node_to_order[src] = order_counter
-            order_counter += 1
-        if dst not in node_to_order:
-            node_to_order[dst] = order_counter
-            order_counter += 1
-        all_nodes.add(src)
-        all_nodes.add(dst)
-    
-    # Build tree structure
-    children = {}  # parent -> list of (child, linkage, order)
-    parents = {}   # child -> (parent, linkage)
-    
-    for src, linkage, dst in conjugated_lysines:
-        if src not in children:
-            children[src] = []
-        children[src].append((dst, linkage, node_to_order[dst]))
-        parents[dst] = (src, linkage)
-    
-    # Find root node (node with no parent)
-    root = None
-    for node in all_nodes:
-        if node not in parents:
-            root = node
-            break
-    
-    if root is None:
-        return "Error: No root node found"
-    
-    # Assign positions using the actual order from conjugated lysines
-    nomenclature_map = {}  # node -> (level_letter, position)
-    
-    def assign_positions(node, level, position):
-        level_letter = chr(ord('A') + level)
-        nomenclature_map[node] = (level_letter, position)
-        
-        if node in children:
-            # Sort children by their appearance order in the original list
-            # This preserves the preorder traversal where K63 branches are visited before K48
-            sorted_children = sorted(children[node], key=lambda x: x[2])  # Sort by order
-            
-            for child, linkage, _ in sorted_children:
-                # Calculate child position based on parent position and linkage type
-                if linkage == 'K63':
-                    child_position = 2 * position - 1
-                else:  # K48
-                    child_position = 2 * position
-                
-                assign_positions(child, level + 1, child_position)
-    
-    # Start DFS from root with position 1
-    assign_positions(root, 0, 1)
-    
-    # Build nomenclature string by collecting all positions and sorting by level then position
-    all_positions = []
-    for node in nomenclature_map:
-        level_letter, position = nomenclature_map[node]
-        level_num = ord(level_letter) - ord('A')
-        all_positions.append((level_num, position, level_letter, node))
-    
-    # Sort by level first, then by position
-    all_positions.sort(key=lambda x: (x[0], x[1]))
-    
-    # Build the nomenclature string
-    nomenclature_parts = []
-    for level_num, position, level_letter, node in all_positions:
-        nomenclature_parts.append(f"{level_letter}{position}")
-    
-    return ''.join(nomenclature_parts)
+    # Find all "number Letter number" patterns, e.g. 1A2, 12B7, etc.
+    pairs = re.findall(r'(\d+)\s*[A-G]\s*(\d+)', compact)
+    nodes = set()
+    for s, d in pairs:
+        nodes.add(int(s))
+        nodes.add(int(d))
+    return len(nodes)
+
+
+
