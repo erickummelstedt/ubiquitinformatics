@@ -255,38 +255,13 @@ async def submit_ubxy(request: Request):
         else:
             logger.info(f"No indexes found for multimer_id: {ubxy_value}")
 
-        print("final_multimer:", final_multimer)
         # Pull the final multimer json and context
         output_json, output_context = main.iterate_through_ubiquitin(final_multimer)
         
         # Pull formatted edges
         edges = output_context['conjugated_lysines']
         formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
-
-        
-        # At this point we have the UBX_Y value in ubxy_value
-        # Now we want:
-        #   the filepath for the multimer
-        #   the formated edges
-        #   from formated edges to nomenclature
-        #   the reaction sequences for this multimer which is based on indexes
-
-        #"""
-        #get the multimer
-        #add formated edges
-        #edges = context_json['conjugated_lysines']
-
-        #formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
-
-        ## Return placeholder message with multimer size
-        #return JSONResponse(content={
-        #    "status": "ok", 
-        #    "filepath": filepath,
-        #    "formatted_edges": formatted_edges,
-        #    "ubxy": ubxy_value
-        #    })
-        #"""
-
+        nomenclature_value = nomenclature.conjugated_lysines_to_nomenclature(edges)
 
         # Convert reaction_sequences_dicts to bytes
         reaction_sequences_dicts = plotting.build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size)
@@ -299,7 +274,8 @@ async def submit_ubxy(request: Request):
         return JSONResponse(content={
             "status": "ok", "ubxy": ubxy_value, 
             "reaction_sequences_b64": reaction_sequences_b64,
-            "formatted_edges": formatted_edges
+            "formatted_edges": formatted_edges,
+            "nomenclature_value": nomenclature_value
             })
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
@@ -323,7 +299,8 @@ async def submit_json_output(request: Request):
     import src.utils.logging_utils
     import src.main as main
     import src.plotting as plotting
-    
+    import src.nomenclature as nomenclature
+
     try:
         data = await request.json()
         json_output = data.get("jsonOutput", None)
@@ -366,13 +343,13 @@ async def submit_json_output(request: Request):
         else:
             logger.info(f"No indexes found for multimer_id: {ubxy_value}")
 
-        print("final_multimer:", final_multimer)
         # Pull the final multimer json and context
         output_json, output_context = main.iterate_through_ubiquitin(final_multimer)
         
         # Pull formatted edges
         edges = output_context['conjugated_lysines']
         formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
+        nomenclature_value = nomenclature.conjugated_lysines_to_nomenclature(edges)
 
         # Convert reaction_sequences_dicts to bytes
         reaction_sequences_dicts = plotting.build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size)
@@ -386,7 +363,8 @@ async def submit_json_output(request: Request):
             "status": "ok", "json_output": json_output, 
             "reaction_sequences_b64": reaction_sequences_b64,
             "formatted_edges": formatted_edges,
-            "ubxy": ubxy_value
+            "ubxy": ubxy_value,
+            "nomenclature_value": nomenclature_value
             })
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)

@@ -298,3 +298,96 @@ def build_polyubiquitin_from_nomenclature(tree_string):
     output_structure, output_context = iterate_through_ubiquitin(current_structure)
     
     return output_structure, connections
+
+
+def conjugated_lysines_to_nomenclature(conjugated_lysines):
+    """
+    Convert conjugated lysines format to tree nomenclature
+    
+    Args:
+        conjugated_lysines (list): List of connections in format [[src, linkage, dst], ...]
+                                  Example: [[1, 'K63', 2], [2, 'K63', 3], [1, 'K48', 4], [4, 'K48', 5]]
+                                  Order matters - represents preorder traversal
+    
+    Returns:
+        str: Tree nomenclature string (e.g., 'A1B1B2C3D5')
+    """
+    if not conjugated_lysines:
+        return "A1"  # Single ubiquitin
+    
+    # Build mapping from node number to the order it appears in connections
+    node_to_order = {}
+    all_nodes = set()
+    
+    # Track the order nodes appear in the conjugated lysines list
+    order_counter = 0
+    for src, linkage, dst in conjugated_lysines:
+        if src not in node_to_order:
+            node_to_order[src] = order_counter
+            order_counter += 1
+        if dst not in node_to_order:
+            node_to_order[dst] = order_counter
+            order_counter += 1
+        all_nodes.add(src)
+        all_nodes.add(dst)
+    
+    # Build tree structure
+    children = {}  # parent -> list of (child, linkage, order)
+    parents = {}   # child -> (parent, linkage)
+    
+    for src, linkage, dst in conjugated_lysines:
+        if src not in children:
+            children[src] = []
+        children[src].append((dst, linkage, node_to_order[dst]))
+        parents[dst] = (src, linkage)
+    
+    # Find root node (node with no parent)
+    root = None
+    for node in all_nodes:
+        if node not in parents:
+            root = node
+            break
+    
+    if root is None:
+        return "Error: No root node found"
+    
+    # Assign positions using the actual order from conjugated lysines
+    nomenclature_map = {}  # node -> (level_letter, position)
+    
+    def assign_positions(node, level, position):
+        level_letter = chr(ord('A') + level)
+        nomenclature_map[node] = (level_letter, position)
+        
+        if node in children:
+            # Sort children by their appearance order in the original list
+            # This preserves the preorder traversal where K63 branches are visited before K48
+            sorted_children = sorted(children[node], key=lambda x: x[2])  # Sort by order
+            
+            for child, linkage, _ in sorted_children:
+                # Calculate child position based on parent position and linkage type
+                if linkage == 'K63':
+                    child_position = 2 * position - 1
+                else:  # K48
+                    child_position = 2 * position
+                
+                assign_positions(child, level + 1, child_position)
+    
+    # Start DFS from root with position 1
+    assign_positions(root, 0, 1)
+    
+    # Build nomenclature string by collecting all positions and sorting by level then position
+    all_positions = []
+    for node in nomenclature_map:
+        level_letter, position = nomenclature_map[node]
+        level_num = ord(level_letter) - ord('A')
+        all_positions.append((level_num, position, level_letter, node))
+    
+    # Sort by level first, then by position
+    all_positions.sort(key=lambda x: (x[0], x[1]))
+    
+    # Build the nomenclature string
+    nomenclature_parts = []
+    for level_num, position, level_letter, node in all_positions:
+        nomenclature_parts.append(f"{level_letter}{position}")
+    
+    return ''.join(nomenclature_parts)
