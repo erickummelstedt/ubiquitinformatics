@@ -59,11 +59,13 @@ const ModuleDashboard = () => {
   const [formattedEdges, setFormattedEdges] = useState(null); // Store formatted edges from API
   const [ubxyValue, setUbxyValue] = useState(null); // Store UbX_Y value from API
   const [nomenclaturePreorderABC, setNomenclaturePreorderABC] = useState(null); // Store nomenclature value from API
-  const [stritarNomenclatureWoPreorder, setStritarNomenclatureWoPreorder] = useState(null); // Store stritar nomenclature (without preorder)
+  const [strieterNomenclatureWoPreorder, setStrieterNomenclatureWoPreorder] = useState(null); // Store strieter nomenclature (without preorder)
   const [kummelstedtNomenclatureWPreorder, setKummelstedtNomenclatureWPreorder] = useState(null); // Store kummelstedt nomenclature (with preorder)
   const [jeffK48K63Nomenclature, setJeffK48K63Nomenclature] = useState(null); // Store jeff K48/K63 nomenclature
   const [jeffAllLysinesNomenclature, setJeffAllLysinesNomenclature] = useState(null); // Store jeff all lysines nomenclature
   const [jeffNumericalNomenclature, setJeffNumericalNomenclature] = useState(null); // Store jeff numerical nomenclature
+  const [outputJsonString, setOutputJsonString] = useState(null); // Store output JSON from nomenclature API
+  const [txtFileContent, setTxtFileContent] = useState(null); // Store txt file content from nomenclature API
   const [inputNodes, setInputNodes] = useState({
     nodes: DEFAULT_NODES,
     arrows: [],
@@ -81,11 +83,13 @@ const ModuleDashboard = () => {
     setFormattedEdges(null);
     setUbxyValue(null);
     setNomenclaturePreorderABC(null);
-    setStritarNomenclatureWoPreorder(null);
+    setStrieterNomenclatureWoPreorder(null);
     setKummelstedtNomenclatureWPreorder(null);
     setJeffK48K63Nomenclature(null);
     setJeffAllLysinesNomenclature(null);
     setJeffNumericalNomenclature(null);
+    setOutputJsonString(null);
+    setTxtFileContent(null);
   }, [page]);
 
   // Count selections for each label
@@ -114,7 +118,7 @@ const ModuleDashboard = () => {
       setFormattedEdges(null); // Clear formatted edges
       setUbxyValue(null); // Clear UbX_Y value
       setNomenclaturePreorderABC(null); // Clear nomenclature value
-      setStritarNomenclatureWoPreorder(null); // Clear stritar nomenclature
+      setStrieterNomenclatureWoPreorder(null); // Clear strieter nomenclature
       setKummelstedtNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
       setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
       setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
@@ -205,12 +209,14 @@ const ModuleDashboard = () => {
                       setFormattedEdges(null);
                       setUbxyValue(null);
                       setNomenclaturePreorderABC(null);
-                      setStritarNomenclatureWoPreorder(null);
+                      setStrieterNomenclatureWoPreorder(null);
                       setKummelstedtNomenclatureWPreorder(null);
                       setJeffAllLysinesNomenclature(null);
                       setJeffNumericalNomenclature(null);
+                      setOutputJsonString(null);
+                      setTxtFileContent(null);
 
-                      const response = await fetch('/api/submit-ubxy', {
+                      const response = await fetch('/api/submit_nomenclature_request', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ ubxy: value }),
@@ -228,8 +234,8 @@ const ModuleDashboard = () => {
                       if (result.nomenclature_preorder_ABC) {
                         setNomenclaturePreorderABC(result.nomenclature_preorder_ABC);
                       }
-                      if (result.stritar_nomenclature_wo_preorder) {
-                        setStritarNomenclatureWoPreorder(result.stritar_nomenclature_wo_preorder);
+                      if (result.strieter_nomenclature_wo_preorder) {
+                        setStrieterNomenclatureWoPreorder(result.strieter_nomenclature_wo_preorder);
                       }
                       if (result.kummelstedt_nomenclature_w_preorder) {
                         setKummelstedtNomenclatureWPreorder(result.kummelstedt_nomenclature_w_preorder);
@@ -239,6 +245,12 @@ const ModuleDashboard = () => {
                       }
                       if (result.jeff_numerical_nomenclature) {
                         setJeffNumericalNomenclature(result.jeff_numerical_nomenclature);
+                      }
+                      if (result.output_json) {
+                        setOutputJsonString(result.output_json);
+                      }
+                      if (result.txt_file_content) {
+                        setTxtFileContent(result.txt_file_content);
                       }
 
                     } catch (err) {
@@ -272,10 +284,12 @@ const ModuleDashboard = () => {
                   formattedEdges={formattedEdges} 
                   ubxyValue={ubxyValue} 
                   nomenclaturePreorderABC={nomenclaturePreorderABC}
-                  stritarNomenclatureWoPreorder={stritarNomenclatureWoPreorder}
+                  strieterNomenclatureWoPreorder={strieterNomenclatureWoPreorder}
                   kummelstedtNomenclatureWPreorder={kummelstedtNomenclatureWPreorder}
                   jeffAllLysinesNomenclature={jeffAllLysinesNomenclature}
                   jeffNumericalNomenclature={jeffNumericalNomenclature}
+                  outputJsonString={outputJsonString}
+                  txtFileContent={txtFileContent}
                 />
               </div>
             )}
@@ -305,7 +319,7 @@ const ModuleDashboard = () => {
                               setFormattedEdges(null); // Clear formatted edges
                               setUbxyValue(null); // Clear UbX_Y value
                               setNomenclaturePreorderABC(null); // Clear nomenclature value
-                              setStritarNomenclatureWoPreorder(null); // Clear stritar nomenclature
+                              setStrieterNomenclatureWoPreorder(null); // Clear strieter nomenclature
                               setKummelstedtNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
                               setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
                               setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
@@ -336,8 +350,8 @@ const ModuleDashboard = () => {
                               if (result.nomenclature_preorder_ABC) {
                                 setNomenclaturePreorderABC(result.nomenclature_preorder_ABC);
                               }
-                              if (result.stritar_nomenclature_wo_preorder) {
-                                setStritarNomenclatureWoPreorder(result.stritar_nomenclature_wo_preorder);
+                              if (result.strieter_nomenclature_wo_preorder) {
+                                setStrieterNomenclatureWoPreorder(result.strieter_nomenclature_wo_preorder);
                               }
                               if (result.kummelstedt_nomenclature_w_preorder) {
                                 setKummelstedtNomenclatureWPreorder(result.kummelstedt_nomenclature_w_preorder);
@@ -432,7 +446,7 @@ const ModuleDashboard = () => {
                           setFormattedEdges(null); // Clear formatted edges
                           setUbxyValue(null); // Clear UbX_Y value
                           setNomenclaturePreorderABC(null); // Clear nomenclature value
-                          setStritarNomenclatureWoPreorder(null); // Clear stritar nomenclature
+                          setStrieterNomenclatureWoPreorder(null); // Clear strieter nomenclature
                           setKummelstedtNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
                           setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
                           setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
@@ -462,8 +476,8 @@ const ModuleDashboard = () => {
                             if (result.nomenclature_preorder_ABC) {
                               setNomenclaturePreorderABC(result.nomenclature_preorder_ABC);
                             }
-                            if (result.stritar_nomenclature_wo_preorder) {
-                              setStritarNomenclatureWoPreorder(result.stritar_nomenclature_wo_preorder);
+                            if (result.strieter_nomenclature_wo_preorder) {
+                              setStrieterNomenclatureWoPreorder(result.strieter_nomenclature_wo_preorder);
                             }
                             if (result.kummelstedt_nomenclature_w_preorder) {
                               setKummelstedtNomenclatureWPreorder(result.kummelstedt_nomenclature_w_preorder);
@@ -494,7 +508,7 @@ const ModuleDashboard = () => {
                           formattedEdges={formattedEdges} 
                           ubxyValue={ubxyValue} 
                           nomenclaturePreorderABC={nomenclaturePreorderABC}
-                          stritarNomenclatureWoPreorder={stritarNomenclatureWoPreorder}
+                          strieterNomenclatureWoPreorder={strieterNomenclatureWoPreorder}
                           kummelstedtNomenclatureWPreorder={kummelstedtNomenclatureWPreorder}
                           jeffK48K63Nomenclature={jeffK48K63Nomenclature}
                           jeffAllLysinesNomenclature={jeffAllLysinesNomenclature}

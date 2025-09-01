@@ -553,3 +553,130 @@ def tree_nomenclature_to_numerical_system(tree_nomenclature):
         numerical_values.append(numerical_value)
     
     return ", ".join(map(str, numerical_values))
+
+
+
+# =========================================================
+# Mass Spec Dictionary Functions
+# Extract unique FASTA sequences for mass spectrometry analysis
+# =========================================================
+
+def extract_fasta_sequences_for_mass_spec(parent_dictionary):
+    """
+    Traverse the polyubiquitin structure and extract unique FASTA sequences
+    to build a mass spec dictionary mapping sequence names to their FASTA sequences.
+    
+    Args:
+        parent_dictionary (dict or str): Ubiquitin structure as a dictionary or JSON string.
+    
+    Returns:
+        dict: Dictionary mapping sequence names (e.g., "his-Ub", "Ub") to their FASTA sequences.
+    """
+    
+    # Ensure that the parent dictionary is a JSON
+    parent_dictionary = convert_json_to_dict(parent_dictionary)
+    
+    # Ensure that the parent dictionary has all the valid keys 
+    validate_protein_keys(parent_dictionary)
+    
+    # Initialize context object to track unique FASTA sequences
+    fasta_context = {
+        "unique_sequences": {},  # Dictionary to store unique sequence_name -> FASTA_sequence mappings
+        "chain_number_list": [1]
+    }
+    
+    # Start the recursive traversal
+    _, fasta_context = inner_wrapper_extract_fasta_sequences(parent_dictionary, fasta_context)
+    
+    return fasta_context["unique_sequences"]
+
+
+def inner_wrapper_extract_fasta_sequences(input_dictionary, fasta_context):
+    """
+    Recursively process nested dictionaries to extract unique FASTA sequences
+    and map them to appropriate sequence names.
+    """
+    working_dictionary = copy.deepcopy(input_dictionary)
+    
+    # Ensure that the working dictionary is a JSON
+    working_dictionary = convert_json_to_dict(working_dictionary)
+    
+    # Ensure that the working dictionary has all the valid keys 
+    validate_protein_keys(working_dictionary)
+    
+    # Process current protein and assign chain number
+    working_dictionary, fasta_context = process_current_protein_fasta(working_dictionary, fasta_context)
+    
+    # Extract FASTA sequence and determine sequence name
+    fasta_sequence = working_dictionary["FASTA_sequence"]
+    
+    # Determine sequence name based on FASTA sequence
+    if fasta_sequence == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH":
+        if working_dictionary["chain_number"] == 1:
+            sequence_name = "his-Ub"
+        else:
+            sequence_name = "his-Ub"  # Keep consistent naming
+    elif fasta_sequence == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG":
+        if working_dictionary["chain_number"] == 1:
+            sequence_name = "Ub"
+        else:
+            sequence_name = "Ub"  # Keep consistent naming
+    else:
+        # For any other FASTA sequences, use a generic naming pattern
+        sequence_name = f"Unknown_Protein_{working_dictionary['protein']}"
+    
+    # Add to unique sequences dictionary
+    fasta_context["unique_sequences"][sequence_name] = fasta_sequence
+    
+    # Log protein details for debugging
+    logging.info(f"Processing protein chain {working_dictionary['chain_number']}: {sequence_name}")
+    logging.info(f"FASTA sequence: {fasta_sequence[:50]}..." if len(fasta_sequence) > 50 else f"FASTA sequence: {fasta_sequence}")
+    
+    # Process branching sites recursively
+    working_branching_sites = working_dictionary.get("branching_sites", [])
+    
+    for branch in working_branching_sites:
+        # Log branching details
+        logging.info(f"Processing branch: {branch['site_name']} with children: {type(branch['children'])}")
+        
+        # If branch has a protein child, recursively process it
+        if isinstance(branch["children"], dict):
+            branch["children"], fasta_context = inner_wrapper_extract_fasta_sequences(
+                branch["children"], fasta_context
+            )
+    
+    return working_dictionary, fasta_context
+
+
+def process_current_protein_fasta(working_dictionary, fasta_context):
+    """
+    Process the current protein for FASTA extraction, similar to process_current_protein
+    but focused on sequence extraction needs.
+    """
+    # Set the current chain number from context
+    working_dictionary['chain_number'] = fasta_context['chain_number_list'][-1]
+    
+    # Set chain length
+    working_dictionary['chain_length'] = len(working_dictionary['FASTA_sequence'])
+    
+    # Increment chain_number for future recursive calls
+    fasta_context['chain_number_list'].append(fasta_context['chain_number_list'][-1] + 1)
+    
+    return working_dictionary, fasta_context
+
+
+def build_mass_spec_dictionary(parent_dictionary):
+    """
+    Convenience function to build a mass spec dictionary from a polyubiquitin structure.
+    
+    Args:
+        parent_dictionary (dict or str): Ubiquitin structure as a dictionary or JSON string.
+    
+    Returns:
+        dict: Dictionary with sequence names as keys and FASTA sequences as values.
+              Example: {"his-Ub": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH",
+                       "Ub": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"}
+    """
+    return extract_fasta_sequences_for_mass_spec(parent_dictionary)
+
+# =========================================================

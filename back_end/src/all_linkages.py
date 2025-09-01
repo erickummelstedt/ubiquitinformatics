@@ -143,7 +143,7 @@ def inner_wrapper_iterate_through_ubiquitin_all(input_dictionary, context):
     if (working_dictionary["FASTA_sequence"] == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH") & (working_dictionary["chain_number"]==1):
         context["multimer_string_name"] += f"his-GG-{working_dictionary['protein']}-{working_dictionary['chain_number']}-("  
         context["nomenclature_w_preorder"] += f"Ub{working_dictionary['chain_number']}"  
-        context["nomenclature_wo_preorder"] += f"Ub"  
+        context["nomenclature_wo_preorder"] += f"his-Ub"  
     elif (working_dictionary["FASTA_sequence"] == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG") & (working_dictionary["chain_number"]==1):
         context["multimer_string_name"] += f"GG-{working_dictionary['protein']}-{working_dictionary['chain_number']}-("
         context["nomenclature_w_preorder"] += f"Ub{working_dictionary['chain_number']}" 
@@ -633,4 +633,5 @@ def build_all_linkages_multimers(
             with open(jsons_path, 'w') as json_file:
                 json.dump(jsons_numbered, json_file, indent=2)
 
-# =========================================================
+
+

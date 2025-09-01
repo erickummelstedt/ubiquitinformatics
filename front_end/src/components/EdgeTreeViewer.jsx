@@ -4,11 +4,13 @@ const EdgeTreeViewer = ({
   formattedEdges, 
   ubxyValue, 
   nomenclaturePreorderABC, 
-  stritarNomenclatureWoPreorder, 
+  strieterNomenclatureWoPreorder, 
   kummelstedtNomenclatureWPreorder,
   jeffK48K63Nomenclature,
   jeffAllLysinesNomenclature,
-  jeffNumericalNomenclature
+  jeffNumericalNomenclature,
+  outputJsonString,
+  txtFileContent
 }) => {
   // Function to format nomenclature with subscripts for negative numbers
   const formatWithSubscripts = (text) => {
@@ -187,8 +189,8 @@ const EdgeTreeViewer = ({
             </div>
           )}
 
-          {/* Stritar Nomenclature (without preorder) */}
-          {stritarNomenclatureWoPreorder && (
+          {/* Strieter Nomenclature (without preorder) */}
+          {strieterNomenclatureWoPreorder && (
             <div style={{ marginBottom: '16px' }}>
               <h4 style={{ 
                 margin: '0 0 8px 0', 
@@ -196,7 +198,7 @@ const EdgeTreeViewer = ({
                 fontSize: '14px',
                 fontWeight: 'bold'
               }}>
-                Stritar Nomenclature (without preorder)
+                Strieter Nomenclature (without preorder)
               </h4>
               <div style={{
                 color: '#d32f2f',
@@ -209,7 +211,7 @@ const EdgeTreeViewer = ({
                 borderRadius: '4px',
                 border: '1px solid #d32f2f'
               }}>
-                {stritarNomenclatureWoPreorder}
+                {strieterNomenclatureWoPreorder}
               </div>
             </div>
           )}
@@ -321,7 +323,133 @@ const EdgeTreeViewer = ({
               </div>
             </div>
           )}
+
+          {/* Strieter-style mass spec file */}
+          {txtFileContent && (
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: '8px'
+              }}>
+                <h4 style={{ 
+                  margin: '0', 
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                }}>
+                  Strieter-style mass spec file
+                </h4>
+                <button
+                  onClick={() => {
+                    const blob = new Blob([txtFileContent], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `${ubxyValue || 'polyubiquitin'}_mass_spec.txt`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                  }}
+                  style={{
+                    backgroundColor: '#ff6f00',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '6px 12px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Save TXT
+                </button>
+              </div>
+              <div style={{
+                color: '#333',
+                fontSize: '10px',
+                lineHeight: '1.4',
+                fontFamily: 'monospace',
+                backgroundColor: '#fff3e0',
+                padding: '12px',
+                borderRadius: '4px',
+                border: '1px solid #ff6f00',
+                whiteSpace: 'pre-wrap',
+                overflowWrap: 'break-word',
+                overflowX: 'auto',
+                maxHeight: '200px',
+                overflowY: 'auto'
+              }}>
+                {txtFileContent}
+              </div>
+            </div>
+          )}
         </>
+      )}
+
+      {/* JSON Structure Display - Only show if outputJsonString is present */}
+      {outputJsonString && (
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginBottom: '8px'
+          }}>
+            <h4 style={{ 
+              margin: '0', 
+              color: '#333',
+              fontSize: '14px',
+              fontWeight: 'bold'
+            }}>
+              JSON Structure
+            </h4>
+            <button
+              onClick={() => {
+                const blob = new Blob([outputJsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${ubxyValue || 'polyubiquitin'}_structure.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+              }}
+              style={{
+                backgroundColor: '#1976d2',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              Save JSON
+            </button>
+          </div>
+          <div style={{
+            color: '#333',
+            fontSize: '10px',
+            lineHeight: '1.4',
+            fontFamily: 'monospace',
+            backgroundColor: '#f8f9fa',
+            padding: '12px',
+            borderRadius: '4px',
+            border: '1px solid #ddd',
+            whiteSpace: 'pre-wrap',
+            overflowWrap: 'break-word',
+            overflowX: 'auto',
+            maxHeight: '300px',
+            overflowY: 'auto'
+          }}>
+            {outputJsonString}
+          </div>
+        </div>
       )}
     </div>
   );
