@@ -195,7 +195,7 @@ const ModuleDashboard = () => {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
             <input
               type="text"
-              placeholder="Enter UbX_Y e.g.(Ub5_31) or A1B1B2..."
+              placeholder="Enter UbX_Y e.g.(Ub5_31)"
               onKeyDown={async (e) => {
                 if (e.key === 'Enter') {
                   const value = e.target.value;
@@ -256,6 +256,15 @@ const ModuleDashboard = () => {
                 marginBottom: '12px',
               }}
             />
+            <div style={{
+              fontSize: '14px',
+              color: '#666',
+              marginBottom: '-5px',
+              textAlign: 'center',
+              fontStyle: 'italic'
+            }}>
+              X = 4 or 5, Y = 1-819 for Ub4, 1-10472 for Ub5
+            </div>
             {/* Display EdgeTreeViewer if available */}
             {formattedEdges && ubxyValue && (
               <div style={{ marginTop: '16px', width: '100%', maxWidth: '800px' }}>
@@ -283,7 +292,7 @@ const ModuleDashboard = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
                     <input
                       type="text"
-                      placeholder="Enter UbX_Y e.g.(Ub5_31) or A1B1B2..."
+                      placeholder="Enter UbX_Y e.g.(Ub5_31)"
                       onKeyDown={async (e) => {
                         if (e.key === 'Enter') {
                           const value = e.target.value;
@@ -388,6 +397,15 @@ const ModuleDashboard = () => {
                         marginBottom: '12px',
                       }}
                     />
+                    <div style={{
+                      fontSize: '14px',
+                      color: '#666',
+                      marginBottom: '10px',
+                      textAlign: 'center',
+                      fontStyle: 'italic'
+                    }}>
+                      X = 4 or 5, Y = 1-14 for Ub4, 1-42 for Ub5
+                    </div>
                     <div style={{
                       display: 'flex',
                       justifyContent: 'center',
