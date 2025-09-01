@@ -106,7 +106,7 @@ const EdgeTreeViewer = ({ formattedEdges, ubxyValue, nomenclaturePreorderABC, st
                 fontSize: '14px',
                 fontWeight: 'bold'
               }}>
-                Preorder Nomenclature with ABCD... as K63, K48, K33, K29...
+                Kummelstedt Preorder Nomenclature with ABCD... as K63, K48, K33, K29...
               </h4>
               <div style={{
                 color: '#7b1fa2',
