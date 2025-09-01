@@ -1,6 +1,15 @@
 import React from 'react';
 
-const EdgeTreeViewer = ({ formattedEdges, ubxyValue, nomenclaturePreorderABC, stritarNomenclatureWoPreorder, kummelstedtNomenclatureWPreorder }) => {
+const EdgeTreeViewer = ({ 
+  formattedEdges, 
+  ubxyValue, 
+  nomenclaturePreorderABC, 
+  stritarNomenclatureWoPreorder, 
+  kummelstedtNomenclatureWPreorder,
+  jeffK48K63Nomenclature,
+  jeffAllLysinesNomenclature,
+  jeffNumericalNomenclature
+}) => {
   // Function to format nomenclature with subscripts for negative numbers
   const formatWithSubscripts = (text) => {
     if (!text) return text;
@@ -94,10 +103,64 @@ const EdgeTreeViewer = ({ formattedEdges, ubxyValue, nomenclaturePreorderABC, st
         </div>
       )}
 
-      {/* Formatted Edges Display */}
+      {/* Chain Linkages and Tree Structure - Display First */}
       {formattedEdges && (
         <>
-          {/* Nomenclature Display - above Chain Linkages */}
+          <div style={{ marginBottom: '16px' }}>
+            <h4 style={{ 
+              margin: '0 0 8px 0', 
+              color: '#333',
+              fontSize: '14px',
+              fontWeight: 'bold'
+            }}>
+              Chain Linkages
+            </h4>
+            <div style={{
+              color: '#555',
+              fontSize: '12px',
+              lineHeight: '1.3',
+              fontFamily: 'monospace',
+              backgroundColor: '#ffffff',
+              padding: '8px',
+              borderRadius: '4px',
+              border: '1px solid #ddd'
+            }}>
+              {formattedEdges}
+            </div>
+          </div>
+          
+          <div style={{ marginBottom: '16px' }}>
+            <h4 style={{ 
+              margin: '0 0 8px 0', 
+              color: '#333',
+              fontSize: '14px',
+              fontWeight: 'bold'
+            }}>
+              Tree Structure
+            </h4>
+            <div style={{
+              color: '#333',
+              fontSize: '12px',
+              lineHeight: '1.4',
+              fontFamily: 'monospace',
+              textAlign: 'left',
+              backgroundColor: '#f1f3f4',
+              padding: '12px',
+              borderRadius: '4px',
+              border: '1px solid #ddd',
+              whiteSpace: 'pre-wrap',
+              overflowWrap: 'break-word',
+              overflowX: 'auto'
+            }}>
+              {createTreeFromEdges(formattedEdges)}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Nomenclature Displays */}
+      {formattedEdges && (
+        <>
           {nomenclaturePreorderABC && (
             <div style={{ marginBottom: '16px' }}>
               <h4 style={{ 
@@ -177,56 +240,87 @@ const EdgeTreeViewer = ({ formattedEdges, ubxyValue, nomenclaturePreorderABC, st
               </div>
             </div>
           )}
-          
-          <div style={{ marginBottom: '16px' }}>
-            <h4 style={{ 
-              margin: '0 0 8px 0', 
-              color: '#333',
-              fontSize: '14px',
-              fontWeight: 'bold'
-            }}>
-              Chain Linkages
-            </h4>
-            <div style={{
-              color: '#555',
-              fontSize: '12px',
-              lineHeight: '1.3',
-              fontFamily: 'monospace',
-              backgroundColor: '#ffffff',
-              padding: '8px',
-              borderRadius: '4px',
-              border: '1px solid #ddd'
-            }}>
-              {formattedEdges}
+
+          {/* Jeff K48/K63 Nomenclature */}
+          {jeffK48K63Nomenclature && (
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ 
+                margin: '0 0 8px 0', 
+                color: '#333',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}>
+                Jeff K48/K63 Nomenclature (K48/K63 linkages only)
+              </h4>
+              <div style={{
+                color: '#ff6f00',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                textAlign: 'center',
+                padding: '8px',
+                backgroundColor: '#fff3e0',
+                borderRadius: '4px',
+                border: '1px solid #ff6f00'
+              }}>
+                {jeffK48K63Nomenclature}
+              </div>
             </div>
-          </div>
-          
-          <div>
-            <h4 style={{ 
-              margin: '0 0 8px 0', 
-              color: '#333',
-              fontSize: '14px',
-              fontWeight: 'bold'
-            }}>
-              Tree Structure
-            </h4>
-            <div style={{
-              color: '#333',
-              fontSize: '12px',
-              lineHeight: '1.4',
-              fontFamily: 'monospace',
-              textAlign: 'left',
-              backgroundColor: '#f1f3f4',
-              padding: '12px',
-              borderRadius: '4px',
-              border: '1px solid #ddd',
-              whiteSpace: 'pre-wrap',
-              overflowWrap: 'break-word',
-              overflowX: 'auto'
-            }}>
-              {createTreeFromEdges(formattedEdges)}
+          )}
+
+          {/* Jeff All Lysines Nomenclature */}
+          {jeffAllLysinesNomenclature && (
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ 
+                margin: '0 0 8px 0', 
+                color: '#333',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}>
+                Jeff All Lysines Nomenclature (7-lysine mapping system)
+              </h4>
+              <div style={{
+                color: '#9c27b0',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                textAlign: 'center',
+                padding: '8px',
+                backgroundColor: '#fce4ec',
+                borderRadius: '4px',
+                border: '1px solid #9c27b0'
+              }}>
+                {jeffAllLysinesNomenclature}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Jeff Numerical Nomenclature */}
+          {jeffNumericalNomenclature && (
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ 
+                margin: '0 0 8px 0', 
+                color: '#333',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}>
+                Jeff Numerical Nomenclature (base-7 numerical system)
+              </h4>
+              <div style={{
+                color: '#795548',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                textAlign: 'center',
+                padding: '8px',
+                backgroundColor: '#efebe9',
+                borderRadius: '4px',
+                border: '1px solid #795548'
+              }}>
+                {jeffNumericalNomenclature}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

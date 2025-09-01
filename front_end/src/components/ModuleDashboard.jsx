@@ -47,6 +47,7 @@ const PAGE_CONFIG = {
   pentamers: { count: 42, label: 'Pentamers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
   reactionStats: { count: 1, label: 'Reaction Path Metrics', panelWidth: 570, panelHeight: 500 },
   subgraph: { count: 1, label: 'Ubiquitin Isomorphism', panelWidth: 570, panelHeight: 500 },
+  nomenclature: { count: 1, label: 'Nomenclature Explorer', panelWidth: 570, panelHeight: 370 },
 };
 
 const ModuleDashboard = () => {
@@ -60,6 +61,9 @@ const ModuleDashboard = () => {
   const [nomenclaturePreorderABC, setNomenclaturePreorderABC] = useState(null); // Store nomenclature value from API
   const [stritarNomenclatureWoPreorder, setStritarNomenclatureWoPreorder] = useState(null); // Store stritar nomenclature (without preorder)
   const [kummelstedtNomenclatureWPreorder, setKummelstedtNomenclatureWPreorder] = useState(null); // Store kummelstedt nomenclature (with preorder)
+  const [jeffK48K63Nomenclature, setJeffK48K63Nomenclature] = useState(null); // Store jeff K48/K63 nomenclature
+  const [jeffAllLysinesNomenclature, setJeffAllLysinesNomenclature] = useState(null); // Store jeff all lysines nomenclature
+  const [jeffNumericalNomenclature, setJeffNumericalNomenclature] = useState(null); // Store jeff numerical nomenclature
   const [inputNodes, setInputNodes] = useState({
     nodes: DEFAULT_NODES,
     arrows: [],
@@ -79,6 +83,9 @@ const ModuleDashboard = () => {
     setNomenclaturePreorderABC(null);
     setStritarNomenclatureWoPreorder(null);
     setKummelstedtNomenclatureWPreorder(null);
+    setJeffK48K63Nomenclature(null);
+    setJeffAllLysinesNomenclature(null);
+    setJeffNumericalNomenclature(null);
   }, [page]);
 
   // Count selections for each label
@@ -109,6 +116,9 @@ const ModuleDashboard = () => {
       setNomenclaturePreorderABC(null); // Clear nomenclature value
       setStritarNomenclatureWoPreorder(null); // Clear stritar nomenclature
       setKummelstedtNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
+      setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
+      setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
+      setJeffNumericalNomenclature(null); // Clear jeff numerical nomenclature
 
       const response = await fetch('/api/submit-selection', {
         method: 'POST',
@@ -151,6 +161,7 @@ const ModuleDashboard = () => {
           <option value="pentamers">Pentamers</option>
           <option value="reactionStats">Reaction Path Metrics</option>
           <option value="subgraph">Ubiquitin Isomorphism</option>
+          <option value="nomenclature">Nomenclature Explorer</option>
         </select>
       </div>
       <div style={{
@@ -158,9 +169,9 @@ const ModuleDashboard = () => {
         flexWrap: 'wrap',
         alignItems: 'flex-start',
         justifyContent: 'center',
-        gap: page === 'draw' ? '0' : '8px',
-        rowGap: page === 'draw' ? '0' : '8px',
-        columnGap: page === 'draw' ? '0' : '8px',
+        gap: (page === 'draw' || page === 'nomenclature') ? '0' : '8px',
+        rowGap: (page === 'draw' || page === 'nomenclature') ? '0' : '8px',
+        columnGap: (page === 'draw' || page === 'nomenclature') ? '0' : '8px',
       }}>
         {page === 'reactionStats' ? (
           <div style={{ 
@@ -179,6 +190,86 @@ const ModuleDashboard = () => {
             maxWidth: '1400px'
           }}>
             <SubgraphAnalysisPage />
+          </div>
+        ) : page === 'nomenclature' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
+            <input
+              type="text"
+              placeholder="Enter UbX_Y e.g.(Ub5_31) or A1B1B2..."
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter') {
+                  const value = e.target.value;
+                  if (value) {
+                    try {
+                      // Clear previous data
+                      setFormattedEdges(null);
+                      setUbxyValue(null);
+                      setNomenclaturePreorderABC(null);
+                      setStritarNomenclatureWoPreorder(null);
+                      setKummelstedtNomenclatureWPreorder(null);
+                      setJeffAllLysinesNomenclature(null);
+                      setJeffNumericalNomenclature(null);
+
+                      const response = await fetch('/api/submit-ubxy', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ubxy: value }),
+                      });
+                      if (!response.ok) throw new Error('Failed to fetch nomenclature data');
+                      const result = await response.json();
+                      
+                      // Store formatted edges and nomenclature values if available
+                      if (result.formatted_edges) {
+                        setFormattedEdges(result.formatted_edges);
+                      }
+                      if (result.ubxy) {
+                        setUbxyValue(result.ubxy);
+                      }
+                      if (result.nomenclature_preorder_ABC) {
+                        setNomenclaturePreorderABC(result.nomenclature_preorder_ABC);
+                      }
+                      if (result.stritar_nomenclature_wo_preorder) {
+                        setStritarNomenclatureWoPreorder(result.stritar_nomenclature_wo_preorder);
+                      }
+                      if (result.kummelstedt_nomenclature_w_preorder) {
+                        setKummelstedtNomenclatureWPreorder(result.kummelstedt_nomenclature_w_preorder);
+                      }
+                      if (result.jeff_all_lysines_nomenclature) {
+                        setJeffAllLysinesNomenclature(result.jeff_all_lysines_nomenclature);
+                      }
+                      if (result.jeff_numerical_nomenclature) {
+                        setJeffNumericalNomenclature(result.jeff_numerical_nomenclature);
+                      }
+
+                    } catch (err) {
+                      alert('Failed to fetch nomenclature data: ' + err.message);
+                    }
+                  }
+                }
+              }}
+              style={{
+                width: '300px',
+                padding: '8px',
+                borderRadius: '6px',
+                border: '1px solid #ccc',
+                fontSize: '16px',
+                marginBottom: '12px',
+              }}
+            />
+            {/* Display EdgeTreeViewer if available */}
+            {formattedEdges && ubxyValue && (
+              <div style={{ marginTop: '16px', width: '100%', maxWidth: '800px' }}>
+                <EdgeTreeViewer 
+                  formattedEdges={formattedEdges} 
+                  ubxyValue={ubxyValue} 
+                  nomenclaturePreorderABC={nomenclaturePreorderABC}
+                  stritarNomenclatureWoPreorder={stritarNomenclatureWoPreorder}
+                  kummelstedtNomenclatureWPreorder={kummelstedtNomenclatureWPreorder}
+                  jeffAllLysinesNomenclature={jeffAllLysinesNomenclature}
+                  jeffNumericalNomenclature={jeffNumericalNomenclature}
+                />
+              </div>
+            )}
           </div>
         ) : (
           [...Array(count)].map((_, i) => {
@@ -207,6 +298,9 @@ const ModuleDashboard = () => {
                               setNomenclaturePreorderABC(null); // Clear nomenclature value
                               setStritarNomenclatureWoPreorder(null); // Clear stritar nomenclature
                               setKummelstedtNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
+                              setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
+                              setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
+                              setJeffNumericalNomenclature(null); // Clear jeff numerical nomenclature
                               setInputNodes({
                                 nodes: DEFAULT_NODES,
                                 arrows: [],
@@ -238,6 +332,15 @@ const ModuleDashboard = () => {
                               }
                               if (result.kummelstedt_nomenclature_w_preorder) {
                                 setKummelstedtNomenclatureWPreorder(result.kummelstedt_nomenclature_w_preorder);
+                              }
+                              if (result.jeff_K48_K63_nomenclature) {
+                                setJeffK48K63Nomenclature(result.jeff_K48_K63_nomenclature);
+                              }
+                              if (result.jeff_all_lysines_nomenclature) {
+                                setJeffAllLysinesNomenclature(result.jeff_all_lysines_nomenclature);
+                              }
+                              if (result.jeff_numerical_nomenclature) {
+                                setJeffNumericalNomenclature(result.jeff_numerical_nomenclature);
                               }
                               
                               const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
@@ -313,6 +416,9 @@ const ModuleDashboard = () => {
                           setNomenclaturePreorderABC(null); // Clear nomenclature value
                           setStritarNomenclatureWoPreorder(null); // Clear stritar nomenclature
                           setKummelstedtNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
+                          setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
+                          setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
+                          setJeffNumericalNomenclature(null); // Clear jeff numerical nomenclature
                           // Don't reset inputNodes here to preserve the arrows and scaffold state
 
                           setJsonOutput(jsonOutput);
@@ -344,6 +450,15 @@ const ModuleDashboard = () => {
                             if (result.kummelstedt_nomenclature_w_preorder) {
                               setKummelstedtNomenclatureWPreorder(result.kummelstedt_nomenclature_w_preorder);
                             }
+                            if (result.jeff_K48_K63_nomenclature) {
+                              setJeffK48K63Nomenclature(result.jeff_K48_K63_nomenclature);
+                            }
+                            if (result.jeff_all_lysines_nomenclature) {
+                              setJeffAllLysinesNomenclature(result.jeff_all_lysines_nomenclature);
+                            }
+                            if (result.jeff_numerical_nomenclature) {
+                              setJeffNumericalNomenclature(result.jeff_numerical_nomenclature);
+                            }
                             
                             const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
                             console.log('Decoded Sequence:', decodedSequence); // Log the decoded sequence
@@ -363,6 +478,9 @@ const ModuleDashboard = () => {
                           nomenclaturePreorderABC={nomenclaturePreorderABC}
                           stritarNomenclatureWoPreorder={stritarNomenclatureWoPreorder}
                           kummelstedtNomenclatureWPreorder={kummelstedtNomenclatureWPreorder}
+                          jeffK48K63Nomenclature={jeffK48K63Nomenclature}
+                          jeffAllLysinesNomenclature={jeffAllLysinesNomenclature}
+                          jeffNumericalNomenclature={jeffNumericalNomenclature}
                         />
                       </div>
                     )}
