@@ -230,7 +230,7 @@ async def submit_ubxy(request: Request):
                 output_ubiG_json = nomenclature.build_polyubiquitin_from_edges(parsed_edges)
                 print("output_ubiG_json: ", output_ubiG_json )
                 # Load multimers JSON file and convert to dictionary
-                file_path1 = f"/Users/ekummelstedt/le_code_base/ubiquitinformatics/front_end/src/data/multimer_id_to_json{multimer_size}.json"
+                file_path1 = project_root / 'front_end' / 'src' / 'data' / f'multimer_id_to_json{multimer_size}.json'
                 with open(file_path1, 'r') as f:
                     multimers_dict = json.load(f)
 
@@ -269,11 +269,19 @@ async def submit_ubxy(request: Request):
         edges = output_context['conjugated_lysines']
         formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
         
-        # Old version - Jeffs without pre-order
-        # nomenclature_value = nomenclature.conjugated_lysines_to_nomenclature(edges)
-        # New version - Erics with pre-order
-        nomenclature_value = nomenclature.format_edges(edges)
+        # Old version - Jeffs without pre-order - NEED TO FIX AGAIN
+        # jeff_k48_k63_nomenclature = nomenclature.conjugated_lysines_to_nomenclature(edges)
+        
+        # jeff_full_nomenclature_ABC = ....
+        # jeff_full_nomenclature_numbered = ....
 
+        # New version - pre-order with A, B, C
+        nomenclature_preorder_ABC = nomenclature.format_edges(edges)
+
+        # Correct nomenclature assignments
+        stritar_nomenclature_wo_preorder = output_context['nomenclature_wo_preorder']
+        kummelstedt_nomenclature_w_preorder = output_context['nomenclature_w_preorder']
+        
         # Convert reaction_sequences_dicts to bytes
         reaction_sequences_dicts = plotting.build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size)
         reaction_sequences_bytes = io.BytesIO()
@@ -286,7 +294,9 @@ async def submit_ubxy(request: Request):
             "status": "ok", "ubxy": ubxy_value, 
             "reaction_sequences_b64": reaction_sequences_b64,
             "formatted_edges": formatted_edges,
-            "nomenclature_value": nomenclature_value
+            "nomenclature_preorder_ABC": nomenclature_preorder_ABC,
+            "stritar_nomenclature_wo_preorder": stritar_nomenclature_wo_preorder,
+            "kummelstedt_nomenclature_w_preorder": kummelstedt_nomenclature_w_preorder,
             })
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
@@ -360,8 +370,19 @@ async def submit_json_output(request: Request):
         # Pull formatted edges
         edges = output_context['conjugated_lysines']
         formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
-        nomenclature_value = nomenclature.conjugated_lysines_to_nomenclature(edges)
+        # Old version - Jeffs without pre-order - NEED TO FIX AGAIN
+        # jeff_k48_k63_nomenclature = nomenclature.conjugated_lysines_to_nomenclature(edges)
+        
+        # jeff_full_nomenclature_ABC = ....
+        # jeff_full_nomenclature_numbered = ....
 
+        # New version - pre-order with A, B, C
+        nomenclature_preorder_ABC = nomenclature.format_edges(edges)
+
+        # Correct nomenclature assignments
+        stritar_nomenclature_wo_preorder = output_context['nomenclature_wo_preorder']
+        kummelstedt_nomenclature_w_preorder = output_context['nomenclature_w_preorder']
+        
         # Convert reaction_sequences_dicts to bytes
         reaction_sequences_dicts = plotting.build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size)
         reaction_sequences_bytes = io.BytesIO()
@@ -369,13 +390,17 @@ async def submit_json_output(request: Request):
         reaction_sequences_bytes.seek(0)
         reaction_sequences_b64 = base64.b64encode(reaction_sequences_bytes.read()).decode('utf-8')
 
+        print("stritar_nomenclature_wo_preorder", stritar_nomenclature_wo_preorder)
+        print("kummelstedt_nomenclature_w_preorder", kummelstedt_nomenclature_w_preorder)
+
         # Return the entered UbX_Y value
         return JSONResponse(content={
-            "status": "ok", "json_output": json_output, 
+            "status": "ok", "ubxy": ubxy_value, 
             "reaction_sequences_b64": reaction_sequences_b64,
             "formatted_edges": formatted_edges,
-            "ubxy": ubxy_value,
-            "nomenclature_value": nomenclature_value
+            "nomenclature_preorder_ABC": nomenclature_preorder_ABC,
+            "stritar_nomenclature_wo_preorder": stritar_nomenclature_wo_preorder,
+            "kummelstedt_nomenclature_w_preorder": kummelstedt_nomenclature_w_preorder,
             })
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)

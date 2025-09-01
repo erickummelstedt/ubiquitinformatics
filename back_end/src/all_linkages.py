@@ -34,12 +34,17 @@ def process_branch_all(branch, working_dictionary, context):
         ## add protecting group
         context["multimer_string_name"] += f"<{branch['site_name']}_SMAC>"
         context["SMAC_lysines"] += [[working_dictionary['chain_number'], str(branch['site_name'])]]
+        context["nomenclature_w_preorder"] += f",{branch['site_name'][1:]}smac"
+        context["nomenclature_wo_preorder"] += f",{branch['site_name'][1:]}smac"
 
     elif branch["children"] in ["ABOC"]:
         ## add protecting group
         context["multimer_string_name"] += f"<{branch['site_name']}_ABOC>"
         context["ABOC_lysines"] += [[working_dictionary['chain_number'], str(branch['site_name'])]]
+        context["nomenclature_w_preorder"] += f",{branch['site_name'][1:]}aboc"
+        context["nomenclature_wo_preorder"] += f",{branch['site_name'][1:]}aboc"
 
+        
     # this can change later
     # Handle free lysines
     elif (branch['children'] == "") & (branch['site_name'] in ['M1']): 
@@ -51,12 +56,16 @@ def process_branch_all(branch, working_dictionary, context):
 
     # Handle branches that have proteins bound  
     elif isinstance(branch["children"], dict):
+        context["nomenclature_w_preorder"] += f", {branch['site_name']}("
+        context["nomenclature_wo_preorder"] += f",{branch['site_name'][1:]}("
         context["multimer_string_name"] += f"<{branch['site_name']}_"
         context["conjugated_lysines"] += [[working_dictionary['chain_number'], str(branch['site_name']), chain_number_list[-1]]]
         branch["children"], context = inner_wrapper_iterate_through_ubiquitin_all(
             branch["children"], context
         )
-        context["multimer_string_name"] += ">"
+        context["multimer_string_name"] += ")"
+        context["nomenclature_w_preorder"] += ")"
+        context["nomenclature_wo_preorder"] += ")"
 
     return branch, working_dictionary, context
 
@@ -98,11 +107,13 @@ def iterate_through_ubiquitin_all(parent_dictionary):
         "chain_number_list": [1],
         "chain_length_list": [],
         "multimer_string_name": "",
+        "nomenclature_w_preorder" : "",
+        "nomenclature_wo_preorder" : "",
         "max_chain_number" : "",
         "ABOC_lysines" : [],
         "SMAC_lysines": [],
         "free_lysines": [],
-        "conjugated_lysines": []
+        "conjugated_lysines": [] 
     }
 
     adapted_dictionary, context = inner_wrapper_iterate_through_ubiquitin_all(
@@ -130,11 +141,17 @@ def inner_wrapper_iterate_through_ubiquitin_all(input_dictionary, context):
     # Append chain information to multimer string
     # Change to pdbid
     if (working_dictionary["FASTA_sequence"] == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH") & (working_dictionary["chain_number"]==1):
-        context["multimer_string_name"] += f"his-GG-{working_dictionary['protein']}-{working_dictionary['chain_number']}-("    
+        context["multimer_string_name"] += f"his-GG-{working_dictionary['protein']}-{working_dictionary['chain_number']}-("  
+        context["nomenclature_w_preorder"] += f"Ub{working_dictionary['chain_number']}"  
+        context["nomenclature_wo_preorder"] += f"Ub"  
     elif (working_dictionary["FASTA_sequence"] == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG") & (working_dictionary["chain_number"]==1):
         context["multimer_string_name"] += f"GG-{working_dictionary['protein']}-{working_dictionary['chain_number']}-("
+        context["nomenclature_w_preorder"] += f"Ub{working_dictionary['chain_number']}" 
+        context["nomenclature_wo_preorder"] += f"Ub"  
     else: 
         context["multimer_string_name"] += f"{working_dictionary['protein']}-{working_dictionary['chain_number']}-("
+        context["nomenclature_w_preorder"] += f"Ub{working_dictionary['chain_number']}" 
+        context["nomenclature_wo_preorder"] += f"Ub"  
 
     # Log current protein details
     log_protein_details(working_dictionary, context)

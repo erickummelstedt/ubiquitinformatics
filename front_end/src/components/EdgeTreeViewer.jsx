@@ -1,6 +1,23 @@
 import React from 'react';
 
-const EdgeTreeViewer = ({ formattedEdges, ubxyValue, nomenclatureValue }) => {
+const EdgeTreeViewer = ({ formattedEdges, ubxyValue, nomenclaturePreorderABC, stritarNomenclatureWoPreorder, kummelstedtNomenclatureWPreorder }) => {
+  // Function to format nomenclature with subscripts for negative numbers
+  const formatWithSubscripts = (text) => {
+    if (!text) return text;
+    
+    // Replace Ub followed by numbers with subscript format
+    // This will match patterns like "Ub1", "Ub2", "Ub10", etc.
+    return text.replace(/Ub(\d+)/g, (match, number) => {
+      // Convert each digit to its subscript Unicode equivalent
+      const subscriptDigits = {
+        '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+        '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉'
+      };
+      
+      const subscriptNumber = number.split('').map(digit => subscriptDigits[digit]).join('');
+      return `Ub${subscriptNumber}`;
+    });
+  };
   // Function to convert formatted edges to tree structure
   const createTreeFromEdges = (formattedEdges) => {
     if (!formattedEdges) return '';
@@ -81,7 +98,7 @@ const EdgeTreeViewer = ({ formattedEdges, ubxyValue, nomenclatureValue }) => {
       {formattedEdges && (
         <>
           {/* Nomenclature Display - above Chain Linkages */}
-          {nomenclatureValue && (
+          {nomenclaturePreorderABC && (
             <div style={{ marginBottom: '16px' }}>
               <h4 style={{ 
                 margin: '0 0 8px 0', 
@@ -89,7 +106,7 @@ const EdgeTreeViewer = ({ formattedEdges, ubxyValue, nomenclatureValue }) => {
                 fontSize: '14px',
                 fontWeight: 'bold'
               }}>
-                Ubiquitin Nomenclature (just K48 and K63)
+                Preorder Nomenclature with ABCD... as K63, K48, K33, K29...
               </h4>
               <div style={{
                 color: '#7b1fa2',
@@ -102,7 +119,61 @@ const EdgeTreeViewer = ({ formattedEdges, ubxyValue, nomenclatureValue }) => {
                 borderRadius: '4px',
                 border: '1px solid #7b1fa2'
               }}>
-                {nomenclatureValue}
+                {nomenclaturePreorderABC}
+              </div>
+            </div>
+          )}
+
+          {/* Stritar Nomenclature (without preorder) */}
+          {stritarNomenclatureWoPreorder && (
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ 
+                margin: '0 0 8px 0', 
+                color: '#333',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}>
+                Stritar Nomenclature (without preorder)
+              </h4>
+              <div style={{
+                color: '#d32f2f',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                textAlign: 'center',
+                padding: '8px',
+                backgroundColor: '#ffebee',
+                borderRadius: '4px',
+                border: '1px solid #d32f2f'
+              }}>
+                {stritarNomenclatureWoPreorder}
+              </div>
+            </div>
+          )}
+
+          {/* Kummelstedt Nomenclature (with preorder) */}
+          {kummelstedtNomenclatureWPreorder && (
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ 
+                margin: '0 0 8px 0', 
+                color: '#333',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}>
+                Kummelstedt Nomenclature (with preorder)
+              </h4>
+              <div style={{
+                color: '#388e3c',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                textAlign: 'center',
+                padding: '8px',
+                backgroundColor: '#e8f5e8',
+                borderRadius: '4px',
+                border: '1px solid #388e3c'
+              }}>
+                {formatWithSubscripts(kummelstedtNomenclatureWPreorder)}
               </div>
             </div>
           )}
