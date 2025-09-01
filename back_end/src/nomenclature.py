@@ -238,3 +238,318 @@ def multimer_length_from_nomenclature(compact: str) -> int:
 
 
 
+# ==================================
+# ==== Jeff K48-K63 Nomenclature Conversion
+# ==================================
+
+def conjugated_lysines_to_jeff_K48_K63_nomenclature(conjugated_lysines):
+    """
+    Convert conjugated lysines format to tree nomenclature (K48-K63 ONLY)
+    
+    Args:
+        conjugated_lysines (list): List of connections in format [[src, linkage, dst], ...]
+                                  Example: [[1, 'K63', 2], [2, 'K63', 3], [1, 'K48', 4], [4, 'K48', 5]]
+                                  Order matters - represents preorder traversal
+                                  ONLY K48 and K63 linkages are supported
+    
+    Returns:
+        str: Tree nomenclature string (e.g., 'A1B1B2C3D5')
+    
+    Raises:
+        ValueError: If any linkage other than K48 or K63 is found
+    """
+    if not conjugated_lysines:
+        return "A1"  # Single ubiquitin
+    
+    # Validate that only K48 and K63 linkages are present
+    allowed_lysines = {'K48', 'K63'}
+    for src, linkage, dst in conjugated_lysines:
+        if linkage not in allowed_lysines:
+            raise ValueError(f"K48-K63 nomenclature only supports K48 and K63 linkages. Found: {linkage}")
+    
+    # Build mapping from node number to the order it appears in connections
+    node_to_order = {}
+    all_nodes = set()
+    
+    # Track the order nodes appear in the conjugated lysines list
+    order_counter = 0
+    for src, linkage, dst in conjugated_lysines:
+        if src not in node_to_order:
+            node_to_order[src] = order_counter
+            order_counter += 1
+        if dst not in node_to_order:
+            node_to_order[dst] = order_counter
+            order_counter += 1
+        all_nodes.add(src)
+        all_nodes.add(dst)
+    
+    # Build tree structure
+    children = {}  # parent -> list of (child, linkage, order)
+    parents = {}   # child -> (parent, linkage)
+    
+    for src, linkage, dst in conjugated_lysines:
+        if src not in children:
+            children[src] = []
+        children[src].append((dst, linkage, node_to_order[dst]))
+        parents[dst] = (src, linkage)
+    
+    # Find root node (node with no parent)
+    root = None
+    for node in all_nodes:
+        if node not in parents:
+            root = node
+            break
+    
+    if root is None:
+        return "Error: No root node found"
+    
+    # Assign positions using the actual order from conjugated lysines
+    nomenclature_map = {}  # node -> (level_letter, position)
+    
+    def assign_positions(node, level, position):
+        level_letter = chr(ord('A') + level)
+        nomenclature_map[node] = (level_letter, position)
+        
+        if node in children:
+            # Sort children by their appearance order in the original list
+            # This preserves the preorder traversal where K63 branches are visited before K48
+            sorted_children = sorted(children[node], key=lambda x: x[2])  # Sort by order
+            
+            for child, linkage, _ in sorted_children:
+                # Calculate child position based on parent position and linkage type
+                # ONLY K63 and K48 are allowed here due to validation above
+                if linkage == 'K63':
+                    child_position = 2 * position - 1
+                elif linkage == 'K48':
+                    child_position = 2 * position
+                else:
+                    # This should never happen due to validation, but just in case
+                    raise ValueError(f"Unexpected linkage type in K48-K63 nomenclature: {linkage}")
+                
+                assign_positions(child, level + 1, child_position)
+    
+    # Start DFS from root with position 1
+    assign_positions(root, 0, 1)
+    
+    # Build nomenclature string by collecting all positions and sorting by level then position
+    all_positions = []
+    for node in nomenclature_map:
+        level_letter, position = nomenclature_map[node]
+        level_num = ord(level_letter) - ord('A')
+        all_positions.append((level_num, position, level_letter, node))
+    
+    # Sort by level first, then by position
+    all_positions.sort(key=lambda x: (x[0], x[1]))
+    
+    # Build the nomenclature string
+    nomenclature_parts = []
+    for level_num, position, level_letter, node in all_positions:
+        nomenclature_parts.append(f"{level_letter}{position}")
+    
+    return ''.join(nomenclature_parts)
+
+
+# ==================================
+# ==== Jeff all lysines Nomenclature Conversion
+# ==================================
+
+def conjugated_lysines_to_jeff_all_lysines_nomenclature(conjugated_lysines):
+    """
+    Convert conjugated lysines format to tree nomenclature using 7-lysine mapping system
+    
+    Args:
+        conjugated_lysines (list): List of connections in format [[src, linkage, dst], ...]
+                                  Example: [[1, 'K63', 2], [2, 'K33', 3], [1, 'K48', 4]]
+                                  Order matters - represents preorder traversal
+    
+    Returns:
+        str: Tree nomenclature string using 7-lysine cyclic position mapping
+    
+    Position Mapping:
+        K63: positions 1, 8, 15, 22... (1 + 7*n)
+        K48: positions 2, 9, 16, 23... (2 + 7*n)  
+        K33: positions 3, 10, 17, 24... (3 + 7*n)
+        K29: positions 4, 11, 18, 25... (4 + 7*n)
+        K27: positions 5, 12, 19, 26... (5 + 7*n)
+        K11: positions 6, 13, 20, 27... (6 + 7*n)
+        K6:  positions 7, 14, 21, 28... (7 + 7*n)
+    
+    Binding Rules: Parent at position x can bind to positions (7*x-6) through (7*x) in next level
+    """
+    if not conjugated_lysines:
+        return "A1"  # Single ubiquitin
+    
+    # Lysine to base position mapping (1-7 cycle)
+    lysine_to_base_position = {
+        'K63': 1,
+        'K48': 2,
+        'K33': 3,
+        'K29': 4,
+        'K27': 5,
+        'K11': 6,
+        'K6': 7
+    }
+    
+    # Build mapping from node number to the order it appears in connections
+    node_to_order = {}
+    all_nodes = set()
+    
+    # Track the order nodes appear in the conjugated lysines list
+    order_counter = 0
+    for src, linkage, dst in conjugated_lysines:
+        if src not in node_to_order:
+            node_to_order[src] = order_counter
+            order_counter += 1
+        if dst not in node_to_order:
+            node_to_order[dst] = order_counter
+            order_counter += 1
+        all_nodes.add(src)
+        all_nodes.add(dst)
+    
+    # Build tree structure
+    children = {}  # parent -> list of (child, linkage, order)
+    parents = {}   # child -> (parent, linkage)
+    
+    for src, linkage, dst in conjugated_lysines:
+        if src not in children:
+            children[src] = []
+        children[src].append((dst, linkage, node_to_order[dst]))
+        parents[dst] = (src, linkage)
+    
+    # Find root node (node with no parent)
+    root = None
+    for node in all_nodes:
+        if node not in parents:
+            root = node
+            break
+    
+    if root is None:
+        return "Error: No root node found"
+    
+    # Assign positions using the 7-lysine mapping system
+    nomenclature_map = {}  # node -> (level_letter, position)
+    
+    def assign_positions(node, level, position):
+        level_letter = chr(ord('A') + level)
+        nomenclature_map[node] = (level_letter, position)
+        
+        if node in children:
+            # Sort children by their appearance order in the original list
+            # This preserves the preorder traversal
+            sorted_children = sorted(children[node], key=lambda x: x[2])  # Sort by order
+            
+            # Calculate the range of positions this parent can bind to: (7*position-6) to (7*position)
+            min_child_position = 7 * position - 6
+            max_child_position = 7 * position
+            
+            # Track which positions are used to avoid conflicts
+            used_positions = set()
+            
+            for child, linkage, _ in sorted_children:
+                # Get base position for this lysine type (1-7)
+                base_pos = lysine_to_base_position.get(linkage)
+                if base_pos is None:
+                    continue  # Skip unknown lysine types
+                
+                # Find the correct position within the allowed range
+                # Start with base position and increment by 7 until we're in range
+                child_position = base_pos
+                
+                # Adjust to be within the parent's binding range
+                while child_position < min_child_position:
+                    child_position += 7
+                
+                # If this position is beyond the range, use the highest available position
+                if child_position > max_child_position:
+                    # Find the largest valid position for this lysine type within range
+                    for test_pos in range(max_child_position, min_child_position - 1, -1):
+                        if (test_pos - base_pos) % 7 == 0 and test_pos not in used_positions:
+                            child_position = test_pos
+                            break
+                    else:
+                        # If no valid position found, skip this child
+                        continue
+                
+                # Ensure position is not already used
+                while child_position in used_positions and child_position <= max_child_position:
+                    child_position += 7
+                
+                if child_position <= max_child_position:
+                    used_positions.add(child_position)
+                    assign_positions(child, level + 1, child_position)
+    
+    # Start DFS from root with position 1
+    assign_positions(root, 0, 1)
+    
+    # Build nomenclature string by collecting all positions and sorting by level then position
+    all_positions = []
+    for node in nomenclature_map:
+        level_letter, position = nomenclature_map[node]
+        level_num = ord(level_letter) - ord('A')
+        all_positions.append((level_num, position, level_letter, node))
+    
+    # Sort by level first, then by position
+    all_positions.sort(key=lambda x: (x[0], x[1]))
+    
+    # Build the nomenclature string
+    nomenclature_parts = []
+    for level_num, position, level_letter, node in all_positions:
+        nomenclature_parts.append(f"{level_letter}{position}")
+    
+    return ''.join(nomenclature_parts)
+
+# ==================================
+# ==== Numerical System Conversion
+# ==================================
+
+def tree_nomenclature_to_numerical_system(tree_nomenclature):
+    """
+    Convert tree nomenclature to a purely numerical system using base-7 hierarchy.
+    
+    Args:
+        tree_nomenclature (str): Tree nomenclature string (e.g., 'A1B1B2C1C4')
+    
+    Returns:
+        str: Comma-separated string of numerical values where each position is converted using:
+             A = 0, B = 7, C = 7*7 = 49, D = 7*7*7 = 343, etc.
+             Final value = level_multiplier + position_number
+             Example: D9 = 7*7*7 + 9 = 343 + 9 = 352
+    
+    Example:
+        'A1B1B2C1C4' -> "1, 8, 9, 50, 53"
+        (A1=0+1=1, B1=7+1=8, B2=7+2=9, C1=49+1=50, C4=49+4=53)
+    """
+    if not tree_nomenclature:
+        return ""
+    
+    import re
+    
+    # Find all level-position pairs (e.g., 'A1', 'B2', 'C4')
+    # Only accept letters A-Z followed by digits
+    pattern = r'([A-Z])(\d+)'
+    matches = re.findall(pattern, tree_nomenclature)
+    
+    if not matches:
+        return ""
+    
+    # Validate that the entire string consists only of valid nomenclature parts
+    # Reconstruct what should be the input from the matches
+    reconstructed = ''.join(f"{letter}{number}" for letter, number in matches)
+    if reconstructed != tree_nomenclature:
+        return ""  # Invalid format - contains extra characters
+    
+    numerical_values = []
+    
+    for level_letter, position_str in matches:
+        # Calculate level multiplier: A=0, B=7^1, C=7^2, D=7^3, etc.
+        level_index = ord(level_letter) - ord('A')
+        level_multiplier = 7 ** level_index if level_index > 0 else 0
+        
+        # Get position number
+        position_number = int(position_str)
+        
+        # Calculate final numerical value
+        numerical_value = level_multiplier + position_number
+        numerical_values.append(numerical_value)
+    
+    return ", ".join(map(str, numerical_values))
