@@ -4,11 +4,14 @@ const EdgeTreeViewer = ({
   formattedEdges, 
   ubxyValue, 
   nomenclaturePreorderABC, 
+  nomenclaturePreorderJeff,
   strieterNomenclatureWoPreorder, 
   kummelstedtNomenclatureWPreorder,
+  jeffMultipleSymbols,
   jeffK48K63Nomenclature,
   jeffAllLysinesNomenclature,
   jeffNumericalNomenclature,
+  jeffMultipleSymbolsEricNumbering,
   outputJsonString,
   txtFileContent
 }) => {
@@ -73,7 +76,6 @@ const EdgeTreeViewer = ({
       border: '1px solid #ccc',
       borderRadius: '8px',
       padding: '16px',
-      margin: '16px 0',
       backgroundColor: '#f8f9fa',
       maxWidth: '800px',
       margin: '16px auto'
@@ -189,6 +191,33 @@ const EdgeTreeViewer = ({
             </div>
           )}
 
+          {/* Jeff Preorder Nomenclature */}
+          {nomenclaturePreorderJeff && (
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ 
+                margin: '0 0 8px 0', 
+                color: '#333',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}>
+                Jeff Preorder Nomenclature
+              </h4>
+              <div style={{
+                color: '#1976d2',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                textAlign: 'center',
+                padding: '8px',
+                backgroundColor: '#e3f2fd',
+                borderRadius: '4px',
+                border: '1px solid #1976d2'
+              }}>
+                {nomenclaturePreorderJeff}
+              </div>
+            </div>
+          )}
+
           {/* Strieter Nomenclature (without preorder) */}
           {strieterNomenclatureWoPreorder && (
             <div style={{ marginBottom: '16px' }}>
@@ -266,6 +295,60 @@ const EdgeTreeViewer = ({
                 border: '1px solid #ff6f00'
               }}>
                 {jeffK48K63Nomenclature}
+              </div>
+            </div>
+          )}
+
+          {/* Jeff Multiple Symbols Nomenclature */}
+          {jeffMultipleSymbols && (
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ 
+                margin: '0 0 8px 0', 
+                color: '#333',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}>
+                Jeff Multiple Symbols Nomenclature
+              </h4>
+              <div style={{
+                color: '#e91e63',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                textAlign: 'center',
+                padding: '8px',
+                backgroundColor: '#fce4ec',
+                borderRadius: '4px',
+                border: '1px solid #e91e63'
+              }}>
+                {jeffMultipleSymbols}
+              </div>
+            </div>
+          )}
+
+          {/* Jeff Multiple Symbols Eric Numbering */}
+          {jeffMultipleSymbolsEricNumbering && (
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ 
+                margin: '0 0 8px 0', 
+                color: '#333',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}>
+                Jeff Multiple Symbols Eric Numbering
+              </h4>
+              <div style={{
+                color: '#ff5722',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                textAlign: 'center',
+                padding: '8px',
+                backgroundColor: '#fbe9e7',
+                borderRadius: '4px',
+                border: '1px solid #ff5722'
+              }}>
+                {jeffMultipleSymbolsEricNumbering}
               </div>
             </div>
           )}

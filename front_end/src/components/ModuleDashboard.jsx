@@ -59,11 +59,14 @@ const ModuleDashboard = () => {
   const [formattedEdges, setFormattedEdges] = useState(null); // Store formatted edges from API
   const [ubxyValue, setUbxyValue] = useState(null); // Store UbX_Y value from API
   const [nomenclaturePreorderABC, setNomenclaturePreorderABC] = useState(null); // Store nomenclature value from API
+  const [nomenclaturePreorderJeff, setNomenclaturePreorderJeff] = useState(null); // Store Jeff's preorder nomenclature
   const [strieterNomenclatureWoPreorder, setStrieterNomenclatureWoPreorder] = useState(null); // Store strieter nomenclature (without preorder)
   const [kummelstedtNomenclatureWPreorder, setKummelstedtNomenclatureWPreorder] = useState(null); // Store kummelstedt nomenclature (with preorder)
   const [jeffK48K63Nomenclature, setJeffK48K63Nomenclature] = useState(null); // Store jeff K48/K63 nomenclature
+  const [jeffMultipleSymbols, setJeffMultipleSymbols] = useState(null); // Store jeff multiple symbols nomenclature
   const [jeffAllLysinesNomenclature, setJeffAllLysinesNomenclature] = useState(null); // Store jeff all lysines nomenclature
   const [jeffNumericalNomenclature, setJeffNumericalNomenclature] = useState(null); // Store jeff numerical nomenclature
+  const [jeffMultipleSymbolsEricNumbering, setJeffMultipleSymbolsEricNumbering] = useState(null); // Store jeff multiple symbols eric numbering
   const [outputJsonString, setOutputJsonString] = useState(null); // Store output JSON from nomenclature API
   const [txtFileContent, setTxtFileContent] = useState(null); // Store txt file content from nomenclature API
   const [inputNodes, setInputNodes] = useState({
@@ -83,11 +86,14 @@ const ModuleDashboard = () => {
     setFormattedEdges(null);
     setUbxyValue(null);
     setNomenclaturePreorderABC(null);
+    setNomenclaturePreorderJeff(null);
     setStrieterNomenclatureWoPreorder(null);
     setKummelstedtNomenclatureWPreorder(null);
     setJeffK48K63Nomenclature(null);
+    setJeffMultipleSymbols(null);
     setJeffAllLysinesNomenclature(null);
     setJeffNumericalNomenclature(null);
+    setJeffMultipleSymbolsEricNumbering(null);
     setOutputJsonString(null);
     setTxtFileContent(null);
   }, [page]);
@@ -234,17 +240,26 @@ const ModuleDashboard = () => {
                       if (result.nomenclature_preorder_ABC) {
                         setNomenclaturePreorderABC(result.nomenclature_preorder_ABC);
                       }
+                      if (result.nomenclature_preorder_jeff) {
+                        setNomenclaturePreorderJeff(result.nomenclature_preorder_jeff);
+                      }
                       if (result.strieter_nomenclature_wo_preorder) {
                         setStrieterNomenclatureWoPreorder(result.strieter_nomenclature_wo_preorder);
                       }
                       if (result.kummelstedt_nomenclature_w_preorder) {
                         setKummelstedtNomenclatureWPreorder(result.kummelstedt_nomenclature_w_preorder);
                       }
+                      if (result.jeff_multiple_symbols) {
+                        setJeffMultipleSymbols(result.jeff_multiple_symbols);
+                      }
                       if (result.jeff_all_lysines_nomenclature) {
                         setJeffAllLysinesNomenclature(result.jeff_all_lysines_nomenclature);
                       }
                       if (result.jeff_numerical_nomenclature) {
                         setJeffNumericalNomenclature(result.jeff_numerical_nomenclature);
+                      }
+                      if (result.jeff_multiple_symbols_eric_numbering) {
+                        setJeffMultipleSymbolsEricNumbering(result.jeff_multiple_symbols_eric_numbering);
                       }
                       if (result.output_json) {
                         setOutputJsonString(result.output_json);
@@ -284,10 +299,13 @@ const ModuleDashboard = () => {
                   formattedEdges={formattedEdges} 
                   ubxyValue={ubxyValue} 
                   nomenclaturePreorderABC={nomenclaturePreorderABC}
+                  nomenclaturePreorderJeff={nomenclaturePreorderJeff}
                   strieterNomenclatureWoPreorder={strieterNomenclatureWoPreorder}
                   kummelstedtNomenclatureWPreorder={kummelstedtNomenclatureWPreorder}
+                  jeffMultipleSymbols={jeffMultipleSymbols}
                   jeffAllLysinesNomenclature={jeffAllLysinesNomenclature}
                   jeffNumericalNomenclature={jeffNumericalNomenclature}
+                  jeffMultipleSymbolsEricNumbering={jeffMultipleSymbolsEricNumbering}
                   outputJsonString={outputJsonString}
                   txtFileContent={txtFileContent}
                 />
@@ -350,11 +368,17 @@ const ModuleDashboard = () => {
                               if (result.nomenclature_preorder_ABC) {
                                 setNomenclaturePreorderABC(result.nomenclature_preorder_ABC);
                               }
+                              if (result.nomenclature_preorder_jeff) {
+                                setNomenclaturePreorderJeff(result.nomenclature_preorder_jeff);
+                              }
                               if (result.strieter_nomenclature_wo_preorder) {
                                 setStrieterNomenclatureWoPreorder(result.strieter_nomenclature_wo_preorder);
                               }
                               if (result.kummelstedt_nomenclature_w_preorder) {
                                 setKummelstedtNomenclatureWPreorder(result.kummelstedt_nomenclature_w_preorder);
+                              }
+                              if (result.jeff_multiple_symbols) {
+                                setJeffMultipleSymbols(result.jeff_multiple_symbols);
                               }
                               if (result.jeff_K48_K63_nomenclature) {
                                 setJeffK48K63Nomenclature(result.jeff_K48_K63_nomenclature);
@@ -364,6 +388,9 @@ const ModuleDashboard = () => {
                               }
                               if (result.jeff_numerical_nomenclature) {
                                 setJeffNumericalNomenclature(result.jeff_numerical_nomenclature);
+                              }
+                              if (result.jeff_multiple_symbols_eric_numbering) {
+                                setJeffMultipleSymbolsEricNumbering(result.jeff_multiple_symbols_eric_numbering);
                               }
                               
                               const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
@@ -476,11 +503,17 @@ const ModuleDashboard = () => {
                             if (result.nomenclature_preorder_ABC) {
                               setNomenclaturePreorderABC(result.nomenclature_preorder_ABC);
                             }
+                            if (result.nomenclature_preorder_jeff) {
+                              setNomenclaturePreorderJeff(result.nomenclature_preorder_jeff);
+                            }
                             if (result.strieter_nomenclature_wo_preorder) {
                               setStrieterNomenclatureWoPreorder(result.strieter_nomenclature_wo_preorder);
                             }
                             if (result.kummelstedt_nomenclature_w_preorder) {
                               setKummelstedtNomenclatureWPreorder(result.kummelstedt_nomenclature_w_preorder);
+                            }
+                            if (result.jeff_multiple_symbols) {
+                              setJeffMultipleSymbols(result.jeff_multiple_symbols);
                             }
                             if (result.jeff_K48_K63_nomenclature) {
                               setJeffK48K63Nomenclature(result.jeff_K48_K63_nomenclature);
@@ -490,6 +523,9 @@ const ModuleDashboard = () => {
                             }
                             if (result.jeff_numerical_nomenclature) {
                               setJeffNumericalNomenclature(result.jeff_numerical_nomenclature);
+                            }
+                            if (result.jeff_multiple_symbols_eric_numbering) {
+                              setJeffMultipleSymbolsEricNumbering(result.jeff_multiple_symbols_eric_numbering);
                             }
                             
                             const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
@@ -508,11 +544,14 @@ const ModuleDashboard = () => {
                           formattedEdges={formattedEdges} 
                           ubxyValue={ubxyValue} 
                           nomenclaturePreorderABC={nomenclaturePreorderABC}
+                          nomenclaturePreorderJeff={nomenclaturePreorderJeff}
                           strieterNomenclatureWoPreorder={strieterNomenclatureWoPreorder}
                           kummelstedtNomenclatureWPreorder={kummelstedtNomenclatureWPreorder}
+                          jeffMultipleSymbols={jeffMultipleSymbols}
                           jeffK48K63Nomenclature={jeffK48K63Nomenclature}
                           jeffAllLysinesNomenclature={jeffAllLysinesNomenclature}
                           jeffNumericalNomenclature={jeffNumericalNomenclature}
+                          jeffMultipleSymbolsEricNumbering={jeffMultipleSymbolsEricNumbering}
                         />
                       </div>
                     )}

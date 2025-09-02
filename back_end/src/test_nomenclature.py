@@ -18,13 +18,15 @@ local_path = project_root / 'back_end'
 sys.path.insert(0, str(local_path))
 
 from src.nomenclature import (
-    format_edges,
     parse_compact_edges,
     build_polyubiquitin_from_edges,
     multimer_length_from_nomenclature,
     conjugated_lysines_to_jeff_K48_K63_nomenclature,
     conjugated_lysines_to_jeff_all_lysines_nomenclature,
+    conjugated_lysines_to_jeffs_multiple_symbols,
     tree_nomenclature_to_numerical_system,
+    format_nomenclature_preorder_ABC,
+    format_nomenclature_preorder_jeff,
     LETTER_TO_LYS
 )
 
@@ -33,28 +35,28 @@ from src.nomenclature import (
 # ===================================
 
 def test_01_format_edges_simple_chain():
-    """Test format_edges with simple linear chain"""
+    """Test format_nomenclature_preorder_ABC with simple linear chain"""
     edges = [[1, 'K63', 2], [2, 'K63', 3]]
-    result = format_edges(edges)
+    result = format_nomenclature_preorder_ABC(edges)
     expected = "1A2-2A3"
     assert result == expected
 
 
 def test_02_format_edges_mixed_lysines():
-    """Test format_edges with multiple lysine types"""
+    """Test format_nomenclature_preorder_ABC with multiple lysine types"""
     edges = [[1, 'K63', 2], [1, 'K48', 3], [2, 'K33', 4]]
-    result = format_edges(edges)
+    result = format_nomenclature_preorder_ABC(edges)
     expected = "1A2-1B3-2C4"
     assert result == expected
 
 
 def test_03_format_edges_all_seven_lysines():
-    """Test format_edges with all seven lysine types"""
+    """Test format_nomenclature_preorder_ABC with all seven lysine types"""
     edges = [
         [1, 'K63', 2], [1, 'K48', 3], [1, 'K33', 4], 
         [1, 'K29', 5], [1, 'K27', 6], [1, 'K11', 7], [1, 'K6', 8]
     ]
-    result = format_edges(edges)
+    result = format_nomenclature_preorder_ABC(edges)
     expected = "1A2-1B3-1C4-1D5-1E6-1F7-1G8"
     assert result == expected
 
@@ -325,8 +327,8 @@ def test_20_edge_cases_and_error_handling():
     result = parse_compact_edges("   ")
     assert result == []
     
-    # Test format_edges with empty list
-    result = format_edges([])
+    # Test format_nomenclature_preorder_ABC with empty list
+    result = format_nomenclature_preorder_ABC([])
     assert result == ""
     
     # Test multimer_length with no matches
@@ -349,7 +351,7 @@ def test_round_trip_conversion():
     original_edges = [[1, 'K63', 2], [2, 'K48', 3], [1, 'K33', 4]]
     
     # Convert to compact format
-    compact = format_edges(original_edges)
+    compact = format_nomenclature_preorder_ABC(original_edges)
     
     # Parse back to edges
     parsed_edges = parse_compact_edges(compact)
@@ -374,3 +376,355 @@ def test_nomenclature_consistency():
     assert isinstance(all_lysines_result, str)
     assert len(k48_k63_result) > 0
     assert len(all_lysines_result) > 0
+
+
+# ===================================
+# Format Nomenclature ABC Tests
+# ===================================
+
+def test_26_format_nomenclature_preorder_ABC_simple():
+    """Test format_nomenclature_preorder_ABC with simple chain"""
+    edges = [[1, 'K63', 2], [2, 'K63', 3]]
+    result = format_nomenclature_preorder_ABC(edges)
+    expected = "1A2-2A3"
+    assert result == expected
+
+
+def test_27_format_nomenclature_preorder_ABC_all_lysines():
+    """Test format_nomenclature_preorder_ABC with all seven lysine types"""
+    edges = [
+        [1, 'K63', 2], [1, 'K48', 3], [1, 'K33', 4], 
+        [1, 'K29', 5], [1, 'K27', 6], [1, 'K11', 7], [1, 'K6', 8]
+    ]
+    result = format_nomenclature_preorder_ABC(edges)
+    expected = "1A2-1B3-1C4-1D5-1E6-1F7-1G8"
+    assert result == expected
+
+
+def test_28_format_nomenclature_preorder_ABC_branched():
+    """Test format_nomenclature_preorder_ABC with branched structure"""
+    edges = [[1, 'K63', 2], [1, 'K48', 3], [2, 'K33', 4]]
+    result = format_nomenclature_preorder_ABC(edges)
+    expected = "1A2-1B3-2C4"
+    assert result == expected
+
+
+def test_29_format_nomenclature_preorder_ABC_unknown_lysine():
+    """Test format_nomenclature_preorder_ABC with unknown lysine type"""
+    edges = [[1, 'K999', 2]]
+    result = format_nomenclature_preorder_ABC(edges)
+    expected = "1?2"
+    assert result == expected
+
+
+def test_30_format_nomenclature_preorder_ABC_empty():
+    """Test format_nomenclature_preorder_ABC with empty input"""
+    edges = []
+    result = format_nomenclature_preorder_ABC(edges)
+    expected = ""
+    assert result == expected
+
+
+# ===================================
+# Format Nomenclature Jeff Tests
+# ===================================
+
+def test_31_format_nomenclature_preorder_jeff_simple():
+    """Test format_nomenclature_preorder_jeff with simple chain"""
+    edges = [[1, 'K63', 2], [2, 'K63', 3]]
+    result = format_nomenclature_preorder_jeff(edges)
+    expected = "A63B-B63C"
+    assert result == expected
+
+
+def test_32_format_nomenclature_preorder_jeff_mixed_lysines():
+    """Test format_nomenclature_preorder_jeff with mixed lysine types"""
+    edges = [[1, 'K63', 2], [1, 'K48', 3], [2, 'K33', 4]]
+    result = format_nomenclature_preorder_jeff(edges)
+    expected = "A63B-A48C-B33D"
+    assert result == expected
+
+
+def test_33_format_nomenclature_preorder_jeff_all_lysines():
+    """Test format_nomenclature_preorder_jeff with all seven lysine types"""
+    edges = [
+        [1, 'K63', 2], [1, 'K48', 3], [1, 'K33', 4], 
+        [1, 'K29', 5], [1, 'K27', 6], [1, 'K11', 7], [1, 'K6', 8]
+    ]
+    result = format_nomenclature_preorder_jeff(edges)
+    expected = "A63B-A48C-A33D-A29E-A27F-A11G-A6H"
+    assert result == expected
+
+
+def test_34_format_nomenclature_preorder_jeff_large_numbers():
+    """Test format_nomenclature_preorder_jeff with larger node numbers"""
+    edges = [[10, 'K63', 11], [11, 'K48', 12]]
+    result = format_nomenclature_preorder_jeff(edges)
+    expected = "J63K-K48L"
+    assert result == expected
+
+
+def test_35_format_nomenclature_preorder_jeff_unknown_lysine():
+    """Test format_nomenclature_preorder_jeff with unknown lysine type"""
+    edges = [[1, 'K999', 2]]
+    result = format_nomenclature_preorder_jeff(edges)
+    expected = "A?B"
+    assert result == expected
+
+
+def test_36_format_nomenclature_preorder_jeff_empty():
+    """Test format_nomenclature_preorder_jeff with empty input"""
+    edges = []
+    result = format_nomenclature_preorder_jeff(edges)
+    expected = ""
+    assert result == expected
+
+
+# ===================================
+# Jeff Shorthand Nomenclature Tests
+# ===================================
+
+def test_37_jeff_shorthand_nomenclature_empty():
+    """Test Jeff shorthand nomenclature with empty input"""
+    result = conjugated_lysines_to_jeffs_multiple_symbols([])
+    expected = "A1"
+    assert result == expected
+
+
+def test_38_jeff_shorthand_nomenclature_simple_k63():
+    """Test Jeff shorthand nomenclature with simple K63 chain"""
+    conjugated_lysines = [[1, 'K63', 2], [2, 'K63', 3]]
+    result = conjugated_lysines_to_jeffs_multiple_symbols(conjugated_lysines)
+    # K63 uses uppercase letters with even positions
+    assert "A1" in result
+    assert result.startswith("A1")
+
+
+def test_39_jeff_shorthand_nomenclature_k48_chain():
+    """Test Jeff shorthand nomenclature with K48 chain"""
+    conjugated_lysines = [[1, 'K48', 2], [2, 'K48', 3]]
+    result = conjugated_lysines_to_jeffs_multiple_symbols(conjugated_lysines)
+    # K48 uses uppercase letters with odd positions
+    assert "A1" in result
+    assert result.startswith("A1")
+
+
+def test_40_jeff_shorthand_nomenclature_mixed_lysines():
+    """Test Jeff shorthand nomenclature with various lysine types"""
+    conjugated_lysines = [
+        [1, 'K63', 2],  # uppercase, even
+        [1, 'K48', 3],  # uppercase, odd
+        [1, 'K33', 4],  # uppercase+asterisk, even
+        [1, 'K29', 5]   # uppercase+asterisk, odd
+    ]
+    result = conjugated_lysines_to_jeffs_multiple_symbols(conjugated_lysines)
+    assert "A1" in result
+    # Should contain various case and asterisk combinations
+
+
+def test_41_jeff_shorthand_nomenclature_lowercase_lysines():
+    """Test Jeff shorthand nomenclature with lowercase lysine types"""
+    conjugated_lysines = [
+        [1, 'K11', 2],  # lowercase, even
+        [1, 'K6', 3],   # lowercase, odd
+        [1, 'K27', 4],  # lowercase+asterisk, even
+        [1, 'M1', 5]    # lowercase+asterisk, odd
+    ]
+    result = conjugated_lysines_to_jeffs_multiple_symbols(conjugated_lysines)
+    assert "A1" in result
+    # Should contain lowercase letters and asterisks
+
+
+def test_42_jeff_shorthand_nomenclature_complex_tree():
+    """Test Jeff shorthand nomenclature with complex branched structure"""
+    conjugated_lysines = [
+        [1, 'K63', 2], [2, 'K48', 3], [1, 'K33', 4], [4, 'K11', 5]
+    ]
+    result = conjugated_lysines_to_jeffs_multiple_symbols(conjugated_lysines)
+    expected = "A1,B2,C9,B*2,c26"
+    assert result == expected
+    # Should handle multiple levels with different case/asterisk combinations
+
+
+def test_42a_jeff_shorthand_nomenclature_user_example():
+    """Test Jeff shorthand nomenclature with user-provided example edges"""
+    # Test case: 1 -> K63 -> 2, 1 -> K48 -> 3, 3 -> K63 -> 4, 3 -> K48 -> 5
+    conjugated_lysines = [[1, 'K63', 2], [1, 'K48', 3], [3, 'K63', 4], [3, 'K48', 5]]
+    result = conjugated_lysines_to_jeffs_multiple_symbols(conjugated_lysines)
+    expected = "A1,B2,B1,C2,C1"
+    assert result == expected
+
+
+# ===================================
+# Advanced Integration Tests
+# ===================================
+
+def test_43_all_nomenclature_functions_consistency():
+    """Test that all nomenclature functions handle the same input without errors"""
+    # Test edges with all lysine types for general functions
+    test_edges_all = [[1, 'K63', 2], [1, 'K48', 3], [2, 'K33', 4]]
+    
+    # Test edges with only K48/K63 for the restricted function
+    test_edges_k48_k63 = [[1, 'K63', 2], [1, 'K48', 3], [2, 'K63', 4]]
+    
+    # Test general nomenclature functions that accept all lysine types
+    abc_result = format_nomenclature_preorder_ABC(test_edges_all)
+    jeff_result = format_nomenclature_preorder_jeff(test_edges_all)
+    all_lysines_result = conjugated_lysines_to_jeff_all_lysines_nomenclature(test_edges_all)
+    shorthand_result = conjugated_lysines_to_jeffs_multiple_symbols(test_edges_all)
+    
+    # Test K48-K63 specific function with compatible input
+    k48_k63_result = conjugated_lysines_to_jeff_K48_K63_nomenclature(test_edges_k48_k63)
+    
+    # All should return valid strings
+    assert isinstance(abc_result, str)
+    assert isinstance(jeff_result, str)
+    assert isinstance(k48_k63_result, str)
+    assert isinstance(all_lysines_result, str)
+    assert isinstance(shorthand_result, str)
+    
+    # All should contain some content
+    assert len(abc_result) > 0
+    assert len(jeff_result) > 0
+    assert len(k48_k63_result) > 0
+    assert len(all_lysines_result) > 0
+    assert len(shorthand_result) > 0
+
+
+def test_44_edge_cases_malformed_inputs():
+    """Test edge cases with malformed inputs"""
+    # Test with invalid edge structure
+    malformed_edges = [
+        [1],  # Too few elements
+        [1, 'K63'],  # Missing destination
+        ['invalid', 'K63', 2],  # Non-numeric source
+        [1, 'K63', 'invalid'],  # Non-numeric destination
+    ]
+    
+    for bad_edge in malformed_edges:
+        # Functions should handle gracefully without crashing
+        try:
+            format_nomenclature_preorder_ABC([bad_edge])
+            format_nomenclature_preorder_jeff([bad_edge])
+            conjugated_lysines_to_jeff_all_lysines_nomenclature([bad_edge])
+            conjugated_lysines_to_jeffs_multiple_symbols([bad_edge])
+        except (ValueError, IndexError, TypeError):
+            # Expected behavior for malformed input
+            pass
+
+
+def test_45_large_multimer_structures():
+    """Test nomenclature functions with larger multimer structures"""
+    # Create a larger chain structure (10-mer)
+    large_chain = []
+    for i in range(1, 10):
+        large_chain.append([i, 'K63', i + 1])
+    
+    # Test all nomenclature functions
+    abc_result = format_nomenclature_preorder_ABC(large_chain)
+    jeff_result = format_nomenclature_preorder_jeff(large_chain)
+    all_lysines_result = conjugated_lysines_to_jeff_all_lysines_nomenclature(large_chain)
+    shorthand_result = conjugated_lysines_to_jeffs_multiple_symbols(large_chain)
+    
+    # All should handle large structures
+    assert len(abc_result) > 0
+    assert len(jeff_result) > 0
+    assert len(all_lysines_result) > 0
+    assert len(shorthand_result) > 0
+    
+    # Should contain multiple levels
+    assert 'A' in all_lysines_result
+    assert 'B' in all_lysines_result
+
+
+def test_46_highly_branched_structures():
+    """Test nomenclature functions with highly branched structures"""
+    # Create a star-like structure where node 1 connects to many others
+    branched_structure = []
+    lysines = ['K63', 'K48', 'K33', 'K29', 'K27', 'K11', 'K6']
+    
+    for i, lysine in enumerate(lysines, 2):
+        branched_structure.append([1, lysine, i])
+    
+    # Test all nomenclature functions
+    abc_result = format_nomenclature_preorder_ABC(branched_structure)
+    jeff_result = format_nomenclature_preorder_jeff(branched_structure)
+    all_lysines_result = conjugated_lysines_to_jeff_all_lysines_nomenclature(branched_structure)
+    shorthand_result = conjugated_lysines_to_jeffs_multiple_symbols(branched_structure)
+    
+    # All should handle branched structures
+    assert len(abc_result) > 0
+    assert len(jeff_result) > 0
+    assert len(all_lysines_result) > 0
+    assert len(shorthand_result) > 0
+    
+    # Should show branching from root
+    assert all_lysines_result.startswith('A1')
+    assert shorthand_result.startswith('A1')
+
+
+def test_47_numerical_system_advanced():
+    """Test tree nomenclature to numerical system with advanced cases"""
+    # Test high-level nomenclature
+    test_cases = [
+        ("A1", "1"),
+        ("A1B1", "1, 8"),
+        ("A1B1C1", "1, 8, 50"),
+        ("A1B1C1D1", "1, 8, 50, 344"),
+        ("A1B1C1D1E1", "1, 8, 50, 344, 2402"),
+        ("A5B10C20", "5, 17, 69"),  # Higher positions
+        ("A1B7C49", "1, 14, 98"),   # Maximum positions per level
+    ]
+    
+    for input_nom, expected in test_cases:
+        result = tree_nomenclature_to_numerical_system(input_nom)
+        assert result == expected, f"Failed for {input_nom}: got {result}, expected {expected}"
+
+
+def test_48_mixed_k48_k63_validation():
+    """Test that K48-K63 nomenclature properly validates input"""
+    # Valid K48-K63 inputs
+    valid_inputs = [
+        [[1, 'K63', 2]],
+        [[1, 'K48', 2]],
+        [[1, 'K63', 2], [1, 'K48', 3]],
+        [[1, 'K63', 2], [2, 'K63', 3], [1, 'K48', 4]],
+    ]
+    
+    for edges in valid_inputs:
+        result = conjugated_lysines_to_jeff_K48_K63_nomenclature(edges)
+        assert isinstance(result, str)
+        assert len(result) > 0
+    
+    # Invalid K48-K63 inputs (should raise ValueError)
+    invalid_inputs = [
+        [[1, 'K33', 2]],  # K33 not allowed
+        [[1, 'K63', 2], [2, 'K29', 3]],  # K29 not allowed
+        [[1, 'K48', 2], [2, 'K11', 3]],  # K11 not allowed
+        [[1, 'K63', 2], [2, 'K6', 3]],   # K6 not allowed
+    ]
+    
+    for edges in invalid_inputs:
+        with pytest.raises(ValueError):
+            conjugated_lysines_to_jeff_K48_K63_nomenclature(edges)
+
+
+def test_49_round_trip_all_formats():
+    """Test round-trip conversions through various formats"""
+    original_edges = [[1, 'K63', 2], [1, 'K48', 3], [2, 'K33', 4]]
+    
+    # Convert to compact format and back
+    compact = format_nomenclature_preorder_ABC(original_edges)
+    parsed_edges = parse_compact_edges(compact)
+    assert parsed_edges == original_edges
+    
+    # Test multimer length consistency
+    length1 = multimer_length_from_nomenclature(compact)
+    all_nodes = set()
+    for src, _, dst in original_edges:
+        all_nodes.add(src)
+        all_nodes.add(dst)
+    length2 = len(all_nodes)
+    assert length1 == length2
+
+

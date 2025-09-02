@@ -270,7 +270,11 @@ async def submit_ubxy(request: Request):
         formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
         
         # New version - pre-order with A, B, C
-        nomenclature_preorder_ABC = nomenclature.format_edges(edges)
+        nomenclature_preorder_ABC = nomenclature.format_nomenclature_preorder_ABC(edges)
+
+        # New version - Jeffs pre-order with K63, K48, K33, K29, K27, K11, K6 and A, B ,C as nodes
+        nomenclature_preorder_jeff = nomenclature.format_nomenclature_preorder_jeff(edges)
+        # ========== 
 
         # Correct nomenclature assignments
         strieter_nomenclature_wo_preorder = output_context['nomenclature_wo_preorder']
@@ -281,8 +285,12 @@ async def submit_ubxy(request: Request):
         jeff_K48_K63_nomenclature = nomenclature.conjugated_lysines_to_jeff_K48_K63_nomenclature(edges)
         # jeff_full_nomenclature_ABC = ....
         jeff_all_lysines_nomenclature = nomenclature.conjugated_lysines_to_jeff_all_lysines_nomenclature(edges)
+        # jeff_multiple_symbols = ....
+        jeff_multiple_symbols = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols(edges)
         # jeff_full_nomenclature_numbered = ....
         jeff_numerical_nomenclature = nomenclature.tree_nomenclature_to_numerical_system(jeff_all_lysines_nomenclature)
+        # jeff_multiple_symbols_eric_numbering
+        jeff_multiple_symbols_eric_numbering = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols_eric_numbering(edges)
 
         # Convert reaction_sequences_dicts to bytes
         reaction_sequences_dicts = plotting.build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size)
@@ -297,11 +305,14 @@ async def submit_ubxy(request: Request):
             "reaction_sequences_b64": reaction_sequences_b64,
             "formatted_edges": formatted_edges,
             "nomenclature_preorder_ABC": nomenclature_preorder_ABC,
+            "nomenclature_preorder_jeff": nomenclature_preorder_jeff,
             "strieter_nomenclature_wo_preorder": strieter_nomenclature_wo_preorder,
             "kummelstedt_nomenclature_w_preorder": kummelstedt_nomenclature_w_preorder,
             "jeff_K48_K63_nomenclature": jeff_K48_K63_nomenclature,
             "jeff_all_lysines_nomenclature": jeff_all_lysines_nomenclature,
-            "jeff_numerical_nomenclature": jeff_numerical_nomenclature
+            "jeff_multiple_symbols": jeff_multiple_symbols,
+            "jeff_numerical_nomenclature": jeff_numerical_nomenclature,
+            "jeff_multiple_symbols_eric_numbering": jeff_multiple_symbols_eric_numbering
             })
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
@@ -377,8 +388,11 @@ async def submit_json_output(request: Request):
         formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
         
         # New version - pre-order with A, B, C
-        nomenclature_preorder_ABC = nomenclature.format_edges(edges)
+        nomenclature_preorder_ABC = nomenclature.format_nomenclature_preorder_ABC(edges)
 
+        # New version - Jeffs pre-order with K63, K48, K33, K29, K27, K11, K6 and A, B ,C as nodes
+        nomenclature_preorder_jeff = nomenclature.format_nomenclature_preorder_jeff(edges)
+        
         # Correct nomenclature assignments
         strieter_nomenclature_wo_preorder = output_context['nomenclature_wo_preorder']
         kummelstedt_nomenclature_w_preorder = output_context['nomenclature_w_preorder']
@@ -388,8 +402,12 @@ async def submit_json_output(request: Request):
         jeff_K48_K63_nomenclature = nomenclature.conjugated_lysines_to_jeff_K48_K63_nomenclature(edges)
         # jeff_full_nomenclature_ABC = ....
         jeff_all_lysines_nomenclature = nomenclature.conjugated_lysines_to_jeff_all_lysines_nomenclature(edges)
+        # jeff_multiple_symbols = ....
+        jeff_multiple_symbols = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols(edges)
         # jeff_full_nomenclature_numbered = ....
         jeff_numerical_nomenclature = nomenclature.tree_nomenclature_to_numerical_system(jeff_all_lysines_nomenclature)
+        # jeff_multiple_symbols_eric_numbering
+        jeff_multiple_symbols_eric_numbering = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols_eric_numbering(edges)
 
         # Convert reaction_sequences_dicts to bytes
         reaction_sequences_dicts = plotting.build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size)
@@ -398,20 +416,20 @@ async def submit_json_output(request: Request):
         reaction_sequences_bytes.seek(0)
         reaction_sequences_b64 = base64.b64encode(reaction_sequences_bytes.read()).decode('utf-8')
 
-        print("strieter_nomenclature_wo_preorder", strieter_nomenclature_wo_preorder)
-        print("kummelstedt_nomenclature_w_preorder", kummelstedt_nomenclature_w_preorder)
-
         # Return the entered UbX_Y value
         return JSONResponse(content={
             "status": "ok", "ubxy": ubxy_value, 
             "reaction_sequences_b64": reaction_sequences_b64,
             "formatted_edges": formatted_edges,
             "nomenclature_preorder_ABC": nomenclature_preorder_ABC,
+            "nomenclature_preorder_jeff": nomenclature_preorder_jeff,
             "strieter_nomenclature_wo_preorder": strieter_nomenclature_wo_preorder,
             "kummelstedt_nomenclature_w_preorder": kummelstedt_nomenclature_w_preorder,
             "jeff_K48_K63_nomenclature": jeff_K48_K63_nomenclature,
             "jeff_all_lysines_nomenclature": jeff_all_lysines_nomenclature,
-            "jeff_numerical_nomenclature": jeff_numerical_nomenclature
+            "jeff_multiple_symbols": jeff_multiple_symbols,
+            "jeff_numerical_nomenclature": jeff_numerical_nomenclature,
+            "jeff_multiple_symbols_eric_numbering": jeff_multiple_symbols_eric_numbering
             })
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
@@ -859,8 +877,11 @@ async def submit_nomenclature_request(request: Request):
         formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
 
         # New version - pre-order with A, B, C
-        nomenclature_preorder_ABC = nomenclature.format_edges(edges)
+        nomenclature_preorder_ABC = nomenclature.format_nomenclature_preorder_ABC(edges)
 
+        # New version - Jeffs pre-order with K63, K48, K33, K29, K27, K11, K6 and A, B ,C as nodes
+        nomenclature_preorder_jeff = nomenclature.format_nomenclature_preorder_jeff(edges)
+        
         # Correct nomenclature assignments
         strieter_nomenclature_wo_preorder = output_context['nomenclature_wo_preorder']
         kummelstedt_nomenclature_w_preorder = output_context['nomenclature_w_preorder']
@@ -881,12 +902,16 @@ async def submit_nomenclature_request(request: Request):
         txt_file_content += f">Isf\n{ubxy_value};{strieter_nomenclature_wo_preorder}\n"
         
         # ======== End of Strieter-style FASTA generation =======
-
+        
         # Old version - Jeffs without pre-order 
         # jeff_full_nomenclature_ABC = ....
         jeff_all_lysines_nomenclature = nomenclature.conjugated_lysines_to_jeff_all_lysines_nomenclature(edges)
         # jeff_full_nomenclature_numbered = ....
         jeff_numerical_nomenclature = nomenclature.tree_nomenclature_to_numerical_system(jeff_all_lysines_nomenclature)
+        # jeff_multiple_symbols = ....
+        jeff_multiple_symbols = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols(edges)
+        # jeff_multiple_symbols_eric_numbering
+        jeff_multiple_symbols_eric_numbering = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols_eric_numbering(edges)
 
         # Return the entered UbX_Y value
         return JSONResponse(content={
@@ -895,10 +920,13 @@ async def submit_nomenclature_request(request: Request):
             "txt_file_content": txt_file_content,
             "formatted_edges": formatted_edges,
             "nomenclature_preorder_ABC": nomenclature_preorder_ABC,
+            "nomenclature_preorder_jeff": nomenclature_preorder_jeff,
             "strieter_nomenclature_wo_preorder": strieter_nomenclature_wo_preorder,
             "kummelstedt_nomenclature_w_preorder": kummelstedt_nomenclature_w_preorder,
             "jeff_all_lysines_nomenclature": jeff_all_lysines_nomenclature,
-            "jeff_numerical_nomenclature": jeff_numerical_nomenclature
+            "jeff_numerical_nomenclature": jeff_numerical_nomenclature,
+            "jeff_multiple_symbols": jeff_multiple_symbols,
+            "jeff_multiple_symbols_eric_numbering": jeff_multiple_symbols_eric_numbering
             })
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
