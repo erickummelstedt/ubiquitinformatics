@@ -929,59 +929,6 @@ def conjugated_lysines_to_jeffs_multiple_symbols_eric_numbering(conjugated_lysin
 # ==== Numerical System Conversion
 # ====================================
 
-def tree_nomenclature_to_numerical_system(tree_nomenclature):
-    """
-    Convert tree nomenclature to a purely numerical system using base-7 hierarchy.
-    
-    Args:
-        tree_nomenclature (str): Tree nomenclature string (e.g., 'A1B1B2C1C4')
-    
-    Returns:
-        str: Comma-separated string of numerical values where each position is converted using:
-             A = 0, B = 7, C = 7*7 = 49, D = 7*7*7 = 343, etc.
-             Final value = level_multiplier + position_number
-             Example: D9 = 7*7*7 + 9 = 343 + 9 = 352
-    
-    Example:
-        'A1B1B2C1C4' -> "1, 8, 9, 50, 53"
-        (A1=0+1=1, B1=7+1=8, B2=7+2=9, C1=49+1=50, C4=49+4=53)
-    """
-    if not tree_nomenclature:
-        return ""
-    
-    import re
-    
-    # Find all level-position pairs (e.g., 'A1', 'B2', 'C4')
-    # Only accept letters A-Z followed by digits
-    pattern = r'([A-Z])(\d+)'
-    matches = re.findall(pattern, tree_nomenclature)
-    
-    if not matches:
-        return ""
-    
-    # Validate that the entire string consists only of valid nomenclature parts
-    # Reconstruct what should be the input from the matches
-    reconstructed = ''.join(f"{letter}{number}" for letter, number in matches)
-    if reconstructed != tree_nomenclature:
-        return ""  # Invalid format - contains extra characters
-    
-    numerical_values = []
-    
-    for level_letter, position_str in matches:
-        # Calculate level multiplier: A=0, B=7^1, C=7^2, D=7^3, etc.
-        level_index = ord(level_letter) - ord('A')
-        level_multiplier = 7 ** level_index if level_index > 0 else 0
-        
-        # Get position number
-        position_number = int(position_str)
-        
-        # Calculate final numerical value
-        numerical_value = level_multiplier + position_number
-        numerical_values.append(numerical_value)
-    
-    return ", ".join(map(str, numerical_values))
-
-
 # ========= new nomenclature function - jeff branches defined
 
 

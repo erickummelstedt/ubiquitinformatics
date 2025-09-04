@@ -65,7 +65,6 @@ const ModuleDashboard = () => {
   const [jeffK48K63Nomenclature, setJeffK48K63Nomenclature] = useState(null); // Store jeff K48/K63 nomenclature
   const [jeffMultipleSymbols, setJeffMultipleSymbols] = useState(null); // Store jeff multiple symbols nomenclature
   const [jeffAllLysinesNomenclature, setJeffAllLysinesNomenclature] = useState(null); // Store jeff all lysines nomenclature
-  const [jeffNumericalNomenclature, setJeffNumericalNomenclature] = useState(null); // Store jeff numerical nomenclature
   const [jeffMultipleSymbolsEricNumbering, setJeffMultipleSymbolsEricNumbering] = useState(null); // Store jeff multiple symbols eric numbering
   const [outputJsonString, setOutputJsonString] = useState(null); // Store output JSON from nomenclature API
   const [txtFileContent, setTxtFileContent] = useState(null); // Store txt file content from nomenclature API
@@ -92,7 +91,6 @@ const ModuleDashboard = () => {
     setJeffK48K63Nomenclature(null);
     setJeffMultipleSymbols(null);
     setJeffAllLysinesNomenclature(null);
-    setJeffNumericalNomenclature(null);
     setJeffMultipleSymbolsEricNumbering(null);
     setOutputJsonString(null);
     setTxtFileContent(null);
@@ -128,7 +126,6 @@ const ModuleDashboard = () => {
       setKummelstedtNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
       setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
       setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
-      setJeffNumericalNomenclature(null); // Clear jeff numerical nomenclature
 
       const response = await fetch('/api/submit-selection', {
         method: 'POST',
@@ -218,7 +215,6 @@ const ModuleDashboard = () => {
                       setStrieterNomenclatureWoPreorder(null);
                       setKummelstedtNomenclatureWPreorder(null);
                       setJeffAllLysinesNomenclature(null);
-                      setJeffNumericalNomenclature(null);
                       setOutputJsonString(null);
                       setTxtFileContent(null);
 
@@ -254,9 +250,6 @@ const ModuleDashboard = () => {
                       }
                       if (result.jeff_all_lysines_nomenclature) {
                         setJeffAllLysinesNomenclature(result.jeff_all_lysines_nomenclature);
-                      }
-                      if (result.jeff_numerical_nomenclature) {
-                        setJeffNumericalNomenclature(result.jeff_numerical_nomenclature);
                       }
                       if (result.jeff_multiple_symbols_eric_numbering) {
                         setJeffMultipleSymbolsEricNumbering(result.jeff_multiple_symbols_eric_numbering);
@@ -304,7 +297,6 @@ const ModuleDashboard = () => {
                   kummelstedtNomenclatureWPreorder={kummelstedtNomenclatureWPreorder}
                   jeffMultipleSymbols={jeffMultipleSymbols}
                   jeffAllLysinesNomenclature={jeffAllLysinesNomenclature}
-                  jeffNumericalNomenclature={jeffNumericalNomenclature}
                   jeffMultipleSymbolsEricNumbering={jeffMultipleSymbolsEricNumbering}
                   outputJsonString={outputJsonString}
                   txtFileContent={txtFileContent}
@@ -341,7 +333,6 @@ const ModuleDashboard = () => {
                               setKummelstedtNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
                               setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
                               setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
-                              setJeffNumericalNomenclature(null); // Clear jeff numerical nomenclature
                               setInputNodes({
                                 nodes: DEFAULT_NODES,
                                 arrows: [],
@@ -385,9 +376,6 @@ const ModuleDashboard = () => {
                               }
                               if (result.jeff_all_lysines_nomenclature) {
                                 setJeffAllLysinesNomenclature(result.jeff_all_lysines_nomenclature);
-                              }
-                              if (result.jeff_numerical_nomenclature) {
-                                setJeffNumericalNomenclature(result.jeff_numerical_nomenclature);
                               }
                               if (result.jeff_multiple_symbols_eric_numbering) {
                                 setJeffMultipleSymbolsEricNumbering(result.jeff_multiple_symbols_eric_numbering);
@@ -477,7 +465,6 @@ const ModuleDashboard = () => {
                           setKummelstedtNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
                           setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
                           setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
-                          setJeffNumericalNomenclature(null); // Clear jeff numerical nomenclature
                           // Don't reset inputNodes here to preserve the arrows and scaffold state
 
                           setJsonOutput(jsonOutput);
@@ -521,9 +508,6 @@ const ModuleDashboard = () => {
                             if (result.jeff_all_lysines_nomenclature) {
                               setJeffAllLysinesNomenclature(result.jeff_all_lysines_nomenclature);
                             }
-                            if (result.jeff_numerical_nomenclature) {
-                              setJeffNumericalNomenclature(result.jeff_numerical_nomenclature);
-                            }
                             if (result.jeff_multiple_symbols_eric_numbering) {
                               setJeffMultipleSymbolsEricNumbering(result.jeff_multiple_symbols_eric_numbering);
                             }
@@ -550,7 +534,6 @@ const ModuleDashboard = () => {
                           jeffMultipleSymbols={jeffMultipleSymbols}
                           jeffK48K63Nomenclature={jeffK48K63Nomenclature}
                           jeffAllLysinesNomenclature={jeffAllLysinesNomenclature}
-                          jeffNumericalNomenclature={jeffNumericalNomenclature}
                           jeffMultipleSymbolsEricNumbering={jeffMultipleSymbolsEricNumbering}
                         />
                       </div>

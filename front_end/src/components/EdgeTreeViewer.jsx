@@ -10,7 +10,6 @@ const EdgeTreeViewer = ({
   jeffMultipleSymbols,
   jeffK48K63Nomenclature,
   jeffAllLysinesNomenclature,
-  jeffNumericalNomenclature,
   jeffMultipleSymbolsEricNumbering,
   outputJsonString,
   txtFileContent
@@ -376,33 +375,6 @@ const EdgeTreeViewer = ({
                 border: '1px solid #9c27b0'
               }}>
                 {jeffAllLysinesNomenclature}
-              </div>
-            </div>
-          )}
-
-          {/* Jeff Numerical Nomenclature */}
-          {jeffNumericalNomenclature && (
-            <div style={{ marginBottom: '16px' }}>
-              <h4 style={{ 
-                margin: '0 0 8px 0', 
-                color: '#333',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}>
-                Jeff Numerical Nomenclature (base-7 numerical system)
-              </h4>
-              <div style={{
-                color: '#795548',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                fontFamily: 'monospace',
-                textAlign: 'center',
-                padding: '8px',
-                backgroundColor: '#efebe9',
-                borderRadius: '4px',
-                border: '1px solid #795548'
-              }}>
-                {jeffNumericalNomenclature}
               </div>
             </div>
           )}

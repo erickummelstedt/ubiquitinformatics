@@ -24,7 +24,6 @@ from src.nomenclature import (
     conjugated_lysines_to_jeff_K48_K63_nomenclature,
     conjugated_lysines_to_jeff_all_lysines_nomenclature,
     conjugated_lysines_to_jeffs_multiple_symbols,
-    tree_nomenclature_to_numerical_system,
     format_nomenclature_preorder_ABC,
     format_nomenclature_preorder_jeff,
     LETTER_TO_LYS
@@ -237,71 +236,6 @@ def test_18_jeff_all_lysines_nomenclature_cyclic_positions():
     # Should have multiple levels with K63 connections
     assert "A1" in result
     # Exact positions depend on binding rules, but should be valid
-
-
-# ===================================
-# Numerical System Tests
-# ===================================
-
-def test_21_tree_nomenclature_to_numerical_simple():
-    """Test tree nomenclature to numerical conversion for simple cases"""
-    # A1 = 0 + 1 = 1
-    result = tree_nomenclature_to_numerical_system("A1")
-    expected = "1"
-    assert result == expected
-
-
-def test_22_tree_nomenclature_to_numerical_basic_levels():
-    """Test basic level multipliers: A=0, B=7, C=49, D=343"""
-    # A1 = 0+1=1, B1 = 7+1=8, C1 = 49+1=50, D1 = 343+1=344
-    result = tree_nomenclature_to_numerical_system("A1B1C1D1")
-    expected = "1, 8, 50, 344"
-    assert result == expected
-
-
-def test_23_tree_nomenclature_to_numerical_complex():
-    """Test complex tree nomenclature conversion"""
-    # A1B1B2C1C4 -> "1, 8, 9, 50, 53"
-    # A1 = 0+1=1, B1 = 7+1=8, B2 = 7+2=9, C1 = 49+1=50, C4 = 49+4=53
-    result = tree_nomenclature_to_numerical_system("A1B1B2C1C4")
-    expected = "1, 8, 9, 50, 53"
-    assert result == expected
-
-
-def test_24_tree_nomenclature_to_numerical_edge_cases():
-    """Test edge cases for numerical conversion"""
-    # Empty string
-    result = tree_nomenclature_to_numerical_system("")
-    assert result == ""
-    
-    # Invalid format
-    result = tree_nomenclature_to_numerical_system("XYZ123")
-    assert result == ""
-    
-    # Single level with high position
-    result = tree_nomenclature_to_numerical_system("A10")
-    expected = "10"  # 0 + 10 = 10
-    assert result == expected
-    
-    # High level test: E5 = 7^4 + 5 = 2401 + 5 = 2406
-    result = tree_nomenclature_to_numerical_system("E5")
-    expected = "2406"
-    assert result == expected
-
-
-def test_25_tree_nomenclature_to_numerical_integration():
-    """Test integration with actual nomenclature function output"""
-    # Generate nomenclature first, then convert to numerical
-    conjugated_lysines = [[1, 'K63', 2], [1, 'K48', 3]]
-    nomenclature = conjugated_lysines_to_jeff_all_lysines_nomenclature(conjugated_lysines)
-    numerical = tree_nomenclature_to_numerical_system(nomenclature)
-    
-    # Should return a comma-separated string of positive integers
-    assert isinstance(numerical, str)
-    assert len(numerical) > 0
-    # Check that it contains numbers separated by commas
-    numbers = [int(x.strip()) for x in numerical.split(',')]
-    assert all(x > 0 for x in numbers)
 
 
 # ===================================
@@ -661,24 +595,6 @@ def test_46_highly_branched_structures():
     # Should show branching from root
     assert all_lysines_result.startswith('A1')
     assert shorthand_result.startswith('A1')
-
-
-def test_47_numerical_system_advanced():
-    """Test tree nomenclature to numerical system with advanced cases"""
-    # Test high-level nomenclature
-    test_cases = [
-        ("A1", "1"),
-        ("A1B1", "1, 8"),
-        ("A1B1C1", "1, 8, 50"),
-        ("A1B1C1D1", "1, 8, 50, 344"),
-        ("A1B1C1D1E1", "1, 8, 50, 344, 2402"),
-        ("A5B10C20", "5, 17, 69"),  # Higher positions
-        ("A1B7C49", "1, 14, 98"),   # Maximum positions per level
-    ]
-    
-    for input_nom, expected in test_cases:
-        result = tree_nomenclature_to_numerical_system(input_nom)
-        assert result == expected, f"Failed for {input_nom}: got {result}, expected {expected}"
 
 
 def test_48_mixed_k48_k63_validation():

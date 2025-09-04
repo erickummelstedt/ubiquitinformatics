@@ -287,8 +287,6 @@ async def submit_ubxy(request: Request):
         jeff_all_lysines_nomenclature = nomenclature.conjugated_lysines_to_jeff_all_lysines_nomenclature(edges)
         # jeff_multiple_symbols = ....
         jeff_multiple_symbols = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols(edges)
-        # jeff_full_nomenclature_numbered = ....
-        jeff_numerical_nomenclature = nomenclature.tree_nomenclature_to_numerical_system(jeff_all_lysines_nomenclature)
         # jeff_multiple_symbols_eric_numbering
         jeff_multiple_symbols_eric_numbering = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols_eric_numbering(edges)
 
@@ -311,7 +309,7 @@ async def submit_ubxy(request: Request):
             "jeff_K48_K63_nomenclature": jeff_K48_K63_nomenclature,
             "jeff_all_lysines_nomenclature": jeff_all_lysines_nomenclature,
             "jeff_multiple_symbols": jeff_multiple_symbols,
-            "jeff_numerical_nomenclature": jeff_numerical_nomenclature,
+
             "jeff_multiple_symbols_eric_numbering": jeff_multiple_symbols_eric_numbering
             })
     except Exception as e:
@@ -404,8 +402,6 @@ async def submit_json_output(request: Request):
         jeff_all_lysines_nomenclature = nomenclature.conjugated_lysines_to_jeff_all_lysines_nomenclature(edges)
         # jeff_multiple_symbols = ....
         jeff_multiple_symbols = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols(edges)
-        # jeff_full_nomenclature_numbered = ....
-        jeff_numerical_nomenclature = nomenclature.tree_nomenclature_to_numerical_system(jeff_all_lysines_nomenclature)
         # jeff_multiple_symbols_eric_numbering
         jeff_multiple_symbols_eric_numbering = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols_eric_numbering(edges)
 
@@ -428,7 +424,6 @@ async def submit_json_output(request: Request):
             "jeff_K48_K63_nomenclature": jeff_K48_K63_nomenclature,
             "jeff_all_lysines_nomenclature": jeff_all_lysines_nomenclature,
             "jeff_multiple_symbols": jeff_multiple_symbols,
-            "jeff_numerical_nomenclature": jeff_numerical_nomenclature,
             "jeff_multiple_symbols_eric_numbering": jeff_multiple_symbols_eric_numbering
             })
     except Exception as e:
@@ -906,8 +901,6 @@ async def submit_nomenclature_request(request: Request):
         # Old version - Jeffs without pre-order 
         # jeff_full_nomenclature_ABC = ....
         jeff_all_lysines_nomenclature = nomenclature.conjugated_lysines_to_jeff_all_lysines_nomenclature(edges)
-        # jeff_full_nomenclature_numbered = ....
-        jeff_numerical_nomenclature = nomenclature.tree_nomenclature_to_numerical_system(jeff_all_lysines_nomenclature)
         # jeff_multiple_symbols = ....
         jeff_multiple_symbols = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols(edges)
         # jeff_multiple_symbols_eric_numbering
@@ -924,7 +917,6 @@ async def submit_nomenclature_request(request: Request):
             "strieter_nomenclature_wo_preorder": strieter_nomenclature_wo_preorder,
             "kummelstedt_nomenclature_w_preorder": kummelstedt_nomenclature_w_preorder,
             "jeff_all_lysines_nomenclature": jeff_all_lysines_nomenclature,
-            "jeff_numerical_nomenclature": jeff_numerical_nomenclature,
             "jeff_multiple_symbols": jeff_multiple_symbols,
             "jeff_multiple_symbols_eric_numbering": jeff_multiple_symbols_eric_numbering
             })
