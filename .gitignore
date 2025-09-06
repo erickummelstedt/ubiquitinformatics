@@ -78,6 +78,10 @@ coverage.xml
 
 /back_end/data/
 /back_end/src/original_data/
+/back_end/LaTeX/
+
+# Project files
+next_steps.txt
 
 node_modules
 dist
@@ -94,3 +98,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Backend test files (excluding test_data.py and __init__.py)
+/back_end/tests/test_main.py
+/back_end/tests/test_nomenclature.py
+/back_end/tests/test_simulation.py
+/back_end/tests/test_utils.py
+/back_end/tests/testing.ipynb
+
+# Frontend test files
+/front_end/tests/

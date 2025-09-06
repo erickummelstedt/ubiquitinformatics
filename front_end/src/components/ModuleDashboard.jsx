@@ -47,6 +47,7 @@ const PAGE_CONFIG = {
   pentamers: { count: 42, label: 'Pentamers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
   reactionStats: { count: 1, label: 'Reaction Path Metrics', panelWidth: 570, panelHeight: 500 },
   subgraph: { count: 1, label: 'Ubiquitin Isomorphism', panelWidth: 570, panelHeight: 500 },
+  nomenclature: { count: 1, label: 'Nomenclature Explorer', panelWidth: 570, panelHeight: 370 },
 };
 
 const ModuleDashboard = () => {
@@ -57,7 +58,16 @@ const ModuleDashboard = () => {
   const [jsonOutput, setJsonOutput] = useState(null);
   const [formattedEdges, setFormattedEdges] = useState(null); // Store formatted edges from API
   const [ubxyValue, setUbxyValue] = useState(null); // Store UbX_Y value from API
-  const [nomenclatureValue, setNomenclatureValue] = useState(null); // Store nomenclature value from API
+  const [nomenclaturePreorderABC, setNomenclaturePreorderABC] = useState(null); // Store nomenclature value from API
+  const [nomenclaturePreorderJeff, setNomenclaturePreorderJeff] = useState(null); // Store Jeff's preorder nomenclature
+  const [strieterNomenclatureWoPreorder, setStrieterNomenclatureWoPreorder] = useState(null); // Store strieter nomenclature (without preorder)
+  const [kummelstedtNomenclatureWPreorder, setKummelstedtNomenclatureWPreorder] = useState(null); // Store kummelstedt nomenclature (with preorder)
+  const [jeffK48K63Nomenclature, setJeffK48K63Nomenclature] = useState(null); // Store jeff K48/K63 nomenclature
+  const [jeffMultipleSymbols, setJeffMultipleSymbols] = useState(null); // Store jeff multiple symbols nomenclature
+  const [jeffAllLysinesNomenclature, setJeffAllLysinesNomenclature] = useState(null); // Store jeff all lysines nomenclature
+  const [jeffMultipleSymbolsEricNumbering, setJeffMultipleSymbolsEricNumbering] = useState(null); // Store jeff multiple symbols eric numbering
+  const [outputJsonString, setOutputJsonString] = useState(null); // Store output JSON from nomenclature API
+  const [txtFileContent, setTxtFileContent] = useState(null); // Store txt file content from nomenclature API
   const [inputNodes, setInputNodes] = useState({
     nodes: DEFAULT_NODES,
     arrows: [],
@@ -74,7 +84,16 @@ const ModuleDashboard = () => {
     setFigures(null);
     setFormattedEdges(null);
     setUbxyValue(null);
-    setNomenclatureValue(null);
+    setNomenclaturePreorderABC(null);
+    setNomenclaturePreorderJeff(null);
+    setStrieterNomenclatureWoPreorder(null);
+    setKummelstedtNomenclatureWPreorder(null);
+    setJeffK48K63Nomenclature(null);
+    setJeffMultipleSymbols(null);
+    setJeffAllLysinesNomenclature(null);
+    setJeffMultipleSymbolsEricNumbering(null);
+    setOutputJsonString(null);
+    setTxtFileContent(null);
   }, [page]);
 
   // Count selections for each label
@@ -102,7 +121,11 @@ const ModuleDashboard = () => {
       setJsonOutput(null); // Clear previously rendered scaffold
       setFormattedEdges(null); // Clear formatted edges
       setUbxyValue(null); // Clear UbX_Y value
-      setNomenclatureValue(null); // Clear nomenclature value
+      setNomenclaturePreorderABC(null); // Clear nomenclature value
+      setStrieterNomenclatureWoPreorder(null); // Clear strieter nomenclature
+      setKummelstedtNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
+      setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
+      setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
 
       const response = await fetch('/api/submit-selection', {
         method: 'POST',
@@ -145,6 +168,7 @@ const ModuleDashboard = () => {
           <option value="pentamers">Pentamers</option>
           <option value="reactionStats">Reaction Path Metrics</option>
           <option value="subgraph">Ubiquitin Isomorphism</option>
+          <option value="nomenclature">Nomenclature Explorer</option>
         </select>
       </div>
       <div style={{
@@ -152,9 +176,9 @@ const ModuleDashboard = () => {
         flexWrap: 'wrap',
         alignItems: 'flex-start',
         justifyContent: 'center',
-        gap: page === 'draw' ? '0' : '8px',
-        rowGap: page === 'draw' ? '0' : '8px',
-        columnGap: page === 'draw' ? '0' : '8px',
+        gap: (page === 'draw' || page === 'nomenclature') ? '0' : '8px',
+        rowGap: (page === 'draw' || page === 'nomenclature') ? '0' : '8px',
+        columnGap: (page === 'draw' || page === 'nomenclature') ? '0' : '8px',
       }}>
         {page === 'reactionStats' ? (
           <div style={{ 
@@ -174,6 +198,112 @@ const ModuleDashboard = () => {
           }}>
             <SubgraphAnalysisPage />
           </div>
+        ) : page === 'nomenclature' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
+            <input
+              type="text"
+              placeholder="Enter UbX_Y e.g.(Ub5_31)"
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter') {
+                  const value = e.target.value;
+                  if (value) {
+                    try {
+                      // Clear previous data
+                      setFormattedEdges(null);
+                      setUbxyValue(null);
+                      setNomenclaturePreorderABC(null);
+                      setStrieterNomenclatureWoPreorder(null);
+                      setKummelstedtNomenclatureWPreorder(null);
+                      setJeffAllLysinesNomenclature(null);
+                      setOutputJsonString(null);
+                      setTxtFileContent(null);
+
+                      const response = await fetch('/api/submit_nomenclature_request', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ubxy: value }),
+                      });
+                      if (!response.ok) throw new Error('Failed to fetch nomenclature data');
+                      const result = await response.json();
+                      
+                      // Store formatted edges and nomenclature values if available
+                      if (result.formatted_edges) {
+                        setFormattedEdges(result.formatted_edges);
+                      }
+                      if (result.ubxy) {
+                        setUbxyValue(result.ubxy);
+                      }
+                      if (result.nomenclature_preorder_ABC) {
+                        setNomenclaturePreorderABC(result.nomenclature_preorder_ABC);
+                      }
+                      if (result.nomenclature_preorder_jeff) {
+                        setNomenclaturePreorderJeff(result.nomenclature_preorder_jeff);
+                      }
+                      if (result.strieter_nomenclature_wo_preorder) {
+                        setStrieterNomenclatureWoPreorder(result.strieter_nomenclature_wo_preorder);
+                      }
+                      if (result.kummelstedt_nomenclature_w_preorder) {
+                        setKummelstedtNomenclatureWPreorder(result.kummelstedt_nomenclature_w_preorder);
+                      }
+                      if (result.jeff_multiple_symbols) {
+                        setJeffMultipleSymbols(result.jeff_multiple_symbols);
+                      }
+                      if (result.jeff_all_lysines_nomenclature) {
+                        setJeffAllLysinesNomenclature(result.jeff_all_lysines_nomenclature);
+                      }
+                      if (result.jeff_multiple_symbols_eric_numbering) {
+                        setJeffMultipleSymbolsEricNumbering(result.jeff_multiple_symbols_eric_numbering);
+                      }
+                      if (result.output_json) {
+                        setOutputJsonString(result.output_json);
+                      }
+                      if (result.txt_file_content) {
+                        setTxtFileContent(result.txt_file_content);
+                      }
+
+                    } catch (err) {
+                      alert('Failed to fetch nomenclature data: ' + err.message);
+                    }
+                  }
+                }
+              }}
+              style={{
+                width: '300px',
+                padding: '8px',
+                borderRadius: '6px',
+                border: '1px solid #ccc',
+                fontSize: '16px',
+                marginBottom: '12px',
+              }}
+            />
+            <div style={{
+              fontSize: '14px',
+              color: '#666',
+              marginBottom: '-5px',
+              textAlign: 'center',
+              fontStyle: 'italic'
+            }}>
+              X = 4 or 5, Y = 1-819 for Ub4, 1-10472 for Ub5
+            </div>
+            {/* Display EdgeTreeViewer if available */}
+            {formattedEdges && ubxyValue && (
+              <div style={{ marginTop: '16px', width: '100%', maxWidth: '800px' }}>
+                <EdgeTreeViewer 
+                  formattedEdges={formattedEdges} 
+                  ubxyValue={ubxyValue} 
+                  nomenclaturePreorderABC={nomenclaturePreorderABC}
+                  nomenclaturePreorderJeff={nomenclaturePreorderJeff}
+                  strieterNomenclatureWoPreorder={strieterNomenclatureWoPreorder}
+                  kummelstedtNomenclatureWPreorder={kummelstedtNomenclatureWPreorder}
+                  jeffMultipleSymbols={jeffMultipleSymbols}
+                  jeffAllLysinesNomenclature={jeffAllLysinesNomenclature}
+                  jeffMultipleSymbolsEricNumbering={jeffMultipleSymbolsEricNumbering}
+                  outputJsonString={outputJsonString}
+                  txtFileContent={txtFileContent}
+                />
+              </div>
+            )}
+          </div>
         ) : (
           [...Array(count)].map((_, i) => {
             const isSelected = selectedPanels.includes(i);
@@ -186,7 +316,7 @@ const ModuleDashboard = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
                     <input
                       type="text"
-                      placeholder="Enter UbX_Y e.g.(Ub5_31) or A1B1B2..."
+                      placeholder="Enter UbX_Y e.g.(Ub5_31)"
                       onKeyDown={async (e) => {
                         if (e.key === 'Enter') {
                           const value = e.target.value;
@@ -198,7 +328,11 @@ const ModuleDashboard = () => {
                               setJsonOutput(null); // Clear previously rendered scaffold
                               setFormattedEdges(null); // Clear formatted edges
                               setUbxyValue(null); // Clear UbX_Y value
-                              setNomenclatureValue(null); // Clear nomenclature value
+                              setNomenclaturePreorderABC(null); // Clear nomenclature value
+                              setStrieterNomenclatureWoPreorder(null); // Clear strieter nomenclature
+                              setKummelstedtNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
+                              setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
+                              setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
                               setInputNodes({
                                 nodes: DEFAULT_NODES,
                                 arrows: [],
@@ -222,8 +356,29 @@ const ModuleDashboard = () => {
                               if (result.ubxy) {
                                 setUbxyValue(result.ubxy);
                               }
-                              if (result.nomenclature_value) {
-                                setNomenclatureValue(result.nomenclature_value);
+                              if (result.nomenclature_preorder_ABC) {
+                                setNomenclaturePreorderABC(result.nomenclature_preorder_ABC);
+                              }
+                              if (result.nomenclature_preorder_jeff) {
+                                setNomenclaturePreorderJeff(result.nomenclature_preorder_jeff);
+                              }
+                              if (result.strieter_nomenclature_wo_preorder) {
+                                setStrieterNomenclatureWoPreorder(result.strieter_nomenclature_wo_preorder);
+                              }
+                              if (result.kummelstedt_nomenclature_w_preorder) {
+                                setKummelstedtNomenclatureWPreorder(result.kummelstedt_nomenclature_w_preorder);
+                              }
+                              if (result.jeff_multiple_symbols) {
+                                setJeffMultipleSymbols(result.jeff_multiple_symbols);
+                              }
+                              if (result.jeff_K48_K63_nomenclature) {
+                                setJeffK48K63Nomenclature(result.jeff_K48_K63_nomenclature);
+                              }
+                              if (result.jeff_all_lysines_nomenclature) {
+                                setJeffAllLysinesNomenclature(result.jeff_all_lysines_nomenclature);
+                              }
+                              if (result.jeff_multiple_symbols_eric_numbering) {
+                                setJeffMultipleSymbolsEricNumbering(result.jeff_multiple_symbols_eric_numbering);
                               }
                               
                               const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
@@ -272,6 +427,15 @@ const ModuleDashboard = () => {
                       }}
                     />
                     <div style={{
+                      fontSize: '14px',
+                      color: '#666',
+                      marginBottom: '10px',
+                      textAlign: 'center',
+                      fontStyle: 'italic'
+                    }}>
+                      X = 4 or 5, Y = 1-14 for Ub4, 1-42 for Ub5
+                    </div>
+                    <div style={{
                       display: 'flex',
                       justifyContent: 'center',
                       alignItems: 'center',
@@ -296,7 +460,11 @@ const ModuleDashboard = () => {
                           setJsonOutput(null);
                           setFormattedEdges(null); // Clear formatted edges
                           setUbxyValue(null); // Clear UbX_Y value
-                          setNomenclatureValue(null); // Clear nomenclature value
+                          setNomenclaturePreorderABC(null); // Clear nomenclature value
+                          setStrieterNomenclatureWoPreorder(null); // Clear strieter nomenclature
+                          setKummelstedtNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
+                          setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
+                          setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
                           // Don't reset inputNodes here to preserve the arrows and scaffold state
 
                           setJsonOutput(jsonOutput);
@@ -319,8 +487,29 @@ const ModuleDashboard = () => {
                             if (result.ubxy) {
                               setUbxyValue(result.ubxy);
                             }
-                            if (result.nomenclature_value) {
-                              setNomenclatureValue(result.nomenclature_value);
+                            if (result.nomenclature_preorder_ABC) {
+                              setNomenclaturePreorderABC(result.nomenclature_preorder_ABC);
+                            }
+                            if (result.nomenclature_preorder_jeff) {
+                              setNomenclaturePreorderJeff(result.nomenclature_preorder_jeff);
+                            }
+                            if (result.strieter_nomenclature_wo_preorder) {
+                              setStrieterNomenclatureWoPreorder(result.strieter_nomenclature_wo_preorder);
+                            }
+                            if (result.kummelstedt_nomenclature_w_preorder) {
+                              setKummelstedtNomenclatureWPreorder(result.kummelstedt_nomenclature_w_preorder);
+                            }
+                            if (result.jeff_multiple_symbols) {
+                              setJeffMultipleSymbols(result.jeff_multiple_symbols);
+                            }
+                            if (result.jeff_K48_K63_nomenclature) {
+                              setJeffK48K63Nomenclature(result.jeff_K48_K63_nomenclature);
+                            }
+                            if (result.jeff_all_lysines_nomenclature) {
+                              setJeffAllLysinesNomenclature(result.jeff_all_lysines_nomenclature);
+                            }
+                            if (result.jeff_multiple_symbols_eric_numbering) {
+                              setJeffMultipleSymbolsEricNumbering(result.jeff_multiple_symbols_eric_numbering);
                             }
                             
                             const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
@@ -335,7 +524,18 @@ const ModuleDashboard = () => {
                     {/* Display formatted edges and tree structure if available */}
                     {formattedEdges && ubxyValue && (
                       <div style={{ marginTop: '16px', width: '100%', maxWidth: '800px' }}>
-                        <EdgeTreeViewer formattedEdges={formattedEdges} ubxyValue={ubxyValue} nomenclatureValue={nomenclatureValue} />
+                        <EdgeTreeViewer 
+                          formattedEdges={formattedEdges} 
+                          ubxyValue={ubxyValue} 
+                          nomenclaturePreorderABC={nomenclaturePreorderABC}
+                          nomenclaturePreorderJeff={nomenclaturePreorderJeff}
+                          strieterNomenclatureWoPreorder={strieterNomenclatureWoPreorder}
+                          kummelstedtNomenclatureWPreorder={kummelstedtNomenclatureWPreorder}
+                          jeffMultipleSymbols={jeffMultipleSymbols}
+                          jeffK48K63Nomenclature={jeffK48K63Nomenclature}
+                          jeffAllLysinesNomenclature={jeffAllLysinesNomenclature}
+                          jeffMultipleSymbolsEricNumbering={jeffMultipleSymbolsEricNumbering}
+                        />
                       </div>
                     )}
                     <div style={{ marginTop: '24px' }}> {/* Add space between ClickableScaffoldPanel and ReactionSequencesPaneled */}

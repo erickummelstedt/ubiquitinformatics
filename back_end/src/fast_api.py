@@ -182,15 +182,15 @@ async def submit_ubxy(request: Request):
             return JSONResponse(content={"status": "error", "message": "No UbX_Y value provided"}, status_code=400)
 
         # Validate that ubxy_value begins with 'U' or 'A'
-        if not (ubxy_value.startswith('U') or ubxy_value.startswith('A')):
-            return JSONResponse(content={"status": "error", "message": "UbX_Y value must begin with 'U' or 'A'"}, status_code=400)
+        if not (ubxy_value.startswith('U') or ubxy_value.startswith('1')):
+            return JSONResponse(content={"status": "error", "message": "UbX_Y value must begin with 'U' or '1'"}, status_code=400)
 
         logger.info(f"Received UbX_Y value: {ubxy_value}")
 
         # If it starts with 'A', fix the nomenclature
-        if ubxy_value.startswith('A'):
+        if ubxy_value.startswith('1'):
             # Original UbX_Y processing for values starting with 'U'
-            multimer_size = int(len(ubxy_value)/2)  # Rough estimate based on length
+            multimer_size = int(nomenclature.multimer_length_from_nomenclature(ubxy_value))  # Rough estimate based on length
         else:
             # Original UbX_Y processing for values starting with 'U'
             multimer_size = int(ubxy_value.replace("Ub", "").split('_')[0])
@@ -220,27 +220,34 @@ async def submit_ubxy(request: Request):
         ubiquitin_history = data_dict['ubiquitin_history']
 
         # If it starts with 'A', convert from nomenclature format to UbX_Y format 
-        if ubxy_value.startswith('A'):
+        if ubxy_value.startswith('1'):
             # Convert 'A1B2C3' style to 'U4_1' style
             try:
                 nomenclature_value = ubxy_value  # e.g., 'A1B2C3'
                 
-                output_ubiG_json, connections  = nomenclature.build_polyubiquitin_from_nomenclature(ubxy_value)
+                parsed_edges = nomenclature.parse_compact_edges(ubxy_value)
+                print("parsed_edges: ", parsed_edges)   
+                output_ubiG_json = nomenclature.build_polyubiquitin_from_edges(parsed_edges)
+                print("output_ubiG_json: ", output_ubiG_json )
                 # Load multimers JSON file and convert to dictionary
-                file_path1 = f"/Users/ekummelstedt/le_code_base/ubiquitinformatics/front_end/src/data/multimer_id_to_json{multimer_size}.json"
+                file_path1 = project_root / 'front_end' / 'src' / 'data' / f'multimer_id_to_json{multimer_size}.json'
                 with open(file_path1, 'r') as f:
                     multimers_dict = json.load(f)
 
                 # Find the key in multimers_dict that corresponds to output_ubiG_json
+                print("output_ubiG_json: ", output_ubiG_json )
+                print("ubxy_value found:", ubxy_value)
+
                 ubxy_value = None
                 for key, value in multimers_dict.items():
                     if value == str(output_ubiG_json):
                         ubxy_value = key
                         break
-                
                 if ubxy_value is None:
                     return JSONResponse(content={"status": "error", "message": "Generated structure not found in multimers database"}, status_code=404)
                     
+                print("ubxy_value found:", ubxy_value)
+
                 logger.info(f"Converted {nomenclature_value} to {ubxy_value}")  # Debug print
             except Exception as e:
                 return JSONResponse(content={"status": "error", "message": f"Error in nomenclature conversion: {str(e)}"}, status_code=400)
@@ -261,7 +268,27 @@ async def submit_ubxy(request: Request):
         # Pull formatted edges
         edges = output_context['conjugated_lysines']
         formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
-        nomenclature_value = nomenclature.conjugated_lysines_to_nomenclature(edges)
+        
+        # New version - pre-order with A, B, C
+        nomenclature_preorder_ABC = nomenclature.format_nomenclature_preorder_ABC(edges)
+
+        # New version - Jeffs pre-order with K63, K48, K33, K29, K27, K11, K6 and A, B ,C as nodes
+        nomenclature_preorder_jeff = nomenclature.format_nomenclature_preorder_jeff(edges)
+        # ========== 
+
+        # Correct nomenclature assignments
+        strieter_nomenclature_wo_preorder = output_context['nomenclature_wo_preorder']
+        kummelstedt_nomenclature_w_preorder = output_context['nomenclature_w_preorder']
+        
+        # Old version - Jeffs without pre-order - NEED TO FIX AGAIN
+        # jeff_k48_k63_nomenclature = nomenclature.conjugated_lysines_to_nomenclature(edges)
+        jeff_K48_K63_nomenclature = nomenclature.conjugated_lysines_to_jeff_K48_K63_nomenclature(edges)
+        # jeff_full_nomenclature_ABC = ....
+        jeff_all_lysines_nomenclature = nomenclature.conjugated_lysines_to_jeff_all_lysines_nomenclature(edges)
+        # jeff_multiple_symbols = ....
+        jeff_multiple_symbols = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols(edges)
+        # jeff_multiple_symbols_eric_numbering
+        jeff_multiple_symbols_eric_numbering = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols_eric_numbering(edges)
 
         # Convert reaction_sequences_dicts to bytes
         reaction_sequences_dicts = plotting.build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size)
@@ -275,7 +302,15 @@ async def submit_ubxy(request: Request):
             "status": "ok", "ubxy": ubxy_value, 
             "reaction_sequences_b64": reaction_sequences_b64,
             "formatted_edges": formatted_edges,
-            "nomenclature_value": nomenclature_value
+            "nomenclature_preorder_ABC": nomenclature_preorder_ABC,
+            "nomenclature_preorder_jeff": nomenclature_preorder_jeff,
+            "strieter_nomenclature_wo_preorder": strieter_nomenclature_wo_preorder,
+            "kummelstedt_nomenclature_w_preorder": kummelstedt_nomenclature_w_preorder,
+            "jeff_K48_K63_nomenclature": jeff_K48_K63_nomenclature,
+            "jeff_all_lysines_nomenclature": jeff_all_lysines_nomenclature,
+            "jeff_multiple_symbols": jeff_multiple_symbols,
+
+            "jeff_multiple_symbols_eric_numbering": jeff_multiple_symbols_eric_numbering
             })
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
@@ -349,7 +384,26 @@ async def submit_json_output(request: Request):
         # Pull formatted edges
         edges = output_context['conjugated_lysines']
         formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
-        nomenclature_value = nomenclature.conjugated_lysines_to_nomenclature(edges)
+        
+        # New version - pre-order with A, B, C
+        nomenclature_preorder_ABC = nomenclature.format_nomenclature_preorder_ABC(edges)
+
+        # New version - Jeffs pre-order with K63, K48, K33, K29, K27, K11, K6 and A, B ,C as nodes
+        nomenclature_preorder_jeff = nomenclature.format_nomenclature_preorder_jeff(edges)
+        
+        # Correct nomenclature assignments
+        strieter_nomenclature_wo_preorder = output_context['nomenclature_wo_preorder']
+        kummelstedt_nomenclature_w_preorder = output_context['nomenclature_w_preorder']
+        
+        # Old version - Jeffs without pre-order - NEED TO FIX AGAIN
+        # jeff_k48_k63_nomenclature = nomenclature.conjugated_lysines_to_nomenclature(edges)
+        jeff_K48_K63_nomenclature = nomenclature.conjugated_lysines_to_jeff_K48_K63_nomenclature(edges)
+        # jeff_full_nomenclature_ABC = ....
+        jeff_all_lysines_nomenclature = nomenclature.conjugated_lysines_to_jeff_all_lysines_nomenclature(edges)
+        # jeff_multiple_symbols = ....
+        jeff_multiple_symbols = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols(edges)
+        # jeff_multiple_symbols_eric_numbering
+        jeff_multiple_symbols_eric_numbering = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols_eric_numbering(edges)
 
         # Convert reaction_sequences_dicts to bytes
         reaction_sequences_dicts = plotting.build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size)
@@ -360,11 +414,17 @@ async def submit_json_output(request: Request):
 
         # Return the entered UbX_Y value
         return JSONResponse(content={
-            "status": "ok", "json_output": json_output, 
+            "status": "ok", "ubxy": ubxy_value, 
             "reaction_sequences_b64": reaction_sequences_b64,
             "formatted_edges": formatted_edges,
-            "ubxy": ubxy_value,
-            "nomenclature_value": nomenclature_value
+            "nomenclature_preorder_ABC": nomenclature_preorder_ABC,
+            "nomenclature_preorder_jeff": nomenclature_preorder_jeff,
+            "strieter_nomenclature_wo_preorder": strieter_nomenclature_wo_preorder,
+            "kummelstedt_nomenclature_w_preorder": kummelstedt_nomenclature_w_preorder,
+            "jeff_K48_K63_nomenclature": jeff_K48_K63_nomenclature,
+            "jeff_all_lysines_nomenclature": jeff_all_lysines_nomenclature,
+            "jeff_multiple_symbols": jeff_multiple_symbols,
+            "jeff_multiple_symbols_eric_numbering": jeff_multiple_symbols_eric_numbering
             })
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
@@ -729,3 +789,136 @@ async def reaction_path_statistics_endpoint(request: Request):
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
+
+
+# New endpoint to handle UbX_Y submission
+@app.post("/api/submit_nomenclature_request")
+async def submit_nomenclature_request(request: Request):
+
+    import sys
+    from pathlib import Path
+    import pandas as pd
+    import copy
+
+    # Dynamically get the backend path relative to this file's location
+    current_path = Path(__file__).resolve()
+    project_root = current_path.parents[2]  # Go up to project root
+    sys.path.insert(0, str(project_root))
+    local_path = project_root / 'back_end'
+    sys.path.insert(0, str(local_path))
+
+    # Import project modules
+    import src.utils.utils
+    import src.utils.logging_utils
+    import src.main as main
+    import src.plotting as plotting
+    import src.nomenclature as nomenclature
+    
+    try:
+        data = await request.json()
+        ubxy_value = data.get("ubxy", None)
+        if not ubxy_value:
+            return JSONResponse(content={"status": "error", "message": "No UbX_Y value provided"}, status_code=400)
+
+        # Validate that ubxy_value begins with 'U' or 'A'
+        if not (ubxy_value.startswith('U') or ubxy_value.startswith('1')):
+            return JSONResponse(content={"status": "error", "message": "UbX_Y value must begin with 'U' or '1'"}, status_code=400)
+
+        logger.info(f"Received UbX_Y value: {ubxy_value}")
+
+        # Original UbX_Y processing for values starting with 'U'
+        # Split UbX_Y value into X and Y components
+        ubxy_parts = ubxy_value.replace("Ub", "").split('_')
+        X = int(ubxy_parts[0])  # Multimer size (4 or 5)
+        Y = int(ubxy_parts[1])  # Index number
+        multimer_size = X
+        
+        # Function to load JSON data
+        def download_jsons(multimer_size):
+            input_dir = project_root / 'back_end' / 'data' / 'all_jsons'
+            
+            # Load multimers JSON files
+            with open(input_dir / f'{multimer_size}_multimers_jsons.json', 'r') as f:
+                multimer_jsons = json.load(f)
+            
+            # Load contexts JSON files  
+            with open(input_dir / f'{multimer_size}_multimers_contexts.json', 'r') as f:
+                multimer_contexts = json.load(f)
+                
+            return {
+                'multimer_jsons': multimer_jsons,
+                'multimer_contexts': multimer_contexts
+            }
+
+        # Load the data
+        data_dict = download_jsons(multimer_size)
+        multimer_jsons = data_dict['multimer_jsons']
+        multimer_contexts = data_dict['multimer_contexts']
+
+        # Find the multimer in the JSON data
+        if str(Y) in multimer_jsons:
+            final_multimer = multimer_jsons[str(Y)]
+        else:
+            return JSONResponse(content={"status": "error", "message": f"Multimer {ubxy_value} not found in database"}, status_code=404)
+        
+        # Pull the final multimer json and context
+        output_json, output_context = main.iterate_through_ubiquitin(final_multimer)
+        
+        # Convert output_json dictionary to JSON string for saving
+        output_json_string = json.dumps(output_json, indent=2)
+
+        # Pull formatted edges
+        edges = output_context['conjugated_lysines']
+        formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
+
+        # New version - pre-order with A, B, C
+        nomenclature_preorder_ABC = nomenclature.format_nomenclature_preorder_ABC(edges)
+
+        # New version - Jeffs pre-order with K63, K48, K33, K29, K27, K11, K6 and A, B ,C as nodes
+        nomenclature_preorder_jeff = nomenclature.format_nomenclature_preorder_jeff(edges)
+        
+        # Correct nomenclature assignments
+        strieter_nomenclature_wo_preorder = output_context['nomenclature_wo_preorder']
+        kummelstedt_nomenclature_w_preorder = output_context['nomenclature_w_preorder']
+
+        # ======= Strieter-style FASTA generation =======
+        
+        # Add mass spec dictionary to output_json
+        FASTA_sequences = nomenclature.build_mass_spec_dictionary(output_json)
+
+        # Build the text file content
+        txt_file_content = ">Ppt"
+        
+        # Add >Ppt section with FASTA sequences
+        for key, fasta_sequence in FASTA_sequences.items():
+            txt_file_content += f"\n{key};{fasta_sequence}\n"
+        
+        # Add >Isf section with nomenclature
+        txt_file_content += f">Isf\n{ubxy_value};{strieter_nomenclature_wo_preorder}\n"
+        
+        # ======== End of Strieter-style FASTA generation =======
+        
+        # Old version - Jeffs without pre-order 
+        # jeff_full_nomenclature_ABC = ....
+        jeff_all_lysines_nomenclature = nomenclature.conjugated_lysines_to_jeff_all_lysines_nomenclature(edges)
+        # jeff_multiple_symbols = ....
+        jeff_multiple_symbols = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols(edges)
+        # jeff_multiple_symbols_eric_numbering
+        jeff_multiple_symbols_eric_numbering = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols_eric_numbering(edges)
+
+        # Return the entered UbX_Y value
+        return JSONResponse(content={
+            "status": "ok", "ubxy": ubxy_value, 
+            "output_json": output_json_string,
+            "txt_file_content": txt_file_content,
+            "formatted_edges": formatted_edges,
+            "nomenclature_preorder_ABC": nomenclature_preorder_ABC,
+            "nomenclature_preorder_jeff": nomenclature_preorder_jeff,
+            "strieter_nomenclature_wo_preorder": strieter_nomenclature_wo_preorder,
+            "kummelstedt_nomenclature_w_preorder": kummelstedt_nomenclature_w_preorder,
+            "jeff_all_lysines_nomenclature": jeff_all_lysines_nomenclature,
+            "jeff_multiple_symbols": jeff_multiple_symbols,
+            "jeff_multiple_symbols_eric_numbering": jeff_multiple_symbols_eric_numbering
+            })
+    except Exception as e:
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
