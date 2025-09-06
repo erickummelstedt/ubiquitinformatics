@@ -12,6 +12,15 @@ done
 # Also kill any uvicorn processes
 pkill -f "uvicorn.*fast_api" 2>/dev/null || true
 
+# Check if virtual environment exists, create if it doesn't
+if [ ! -d ".venv" ]; then
+  echo "Virtual environment not found. Creating .venv..."
+  python3 -m venv .venv
+fi
+
+echo "Activating virtual environment..."
+source .venv/bin/activate
+
 # Install Node.js and npm if missing
 if ! command -v npm &> /dev/null; then
   echo "❌ 'npm' is not installed. Please install Node.js from https://nodejs.org/."
@@ -32,18 +41,12 @@ if [ -d "front_end" ]; then
   cd ..
 fi
 
-# Install backend dependencies
-if [ -d "back_end" ]; then
+# Check backend dependencies (venv should already be activated)
+echo "Checking backend dependencies..."
+if ! python -c "import uvicorn" 2>/dev/null; then
   echo "Installing backend dependencies..."
-  cd back_end
-  if [ ! -d ".venv" ]; then
-    python3 -m venv .venv
-  fi
-  . .venv/bin/activate
   pip install --upgrade pip
-  pip install -r ../requirements_pip.txt
-  deactivate
-  cd ..
+  pip install -r requirements_pip.txt
 fi
 
 # Set default port if not provided

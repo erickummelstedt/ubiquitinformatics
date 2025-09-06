@@ -99,10 +99,12 @@ dist-ssr
 *.sln
 *.sw?
 
-# Backend test files (excluding test_data.py)
-/back_end/tests/__init__.py
+# Backend test files (excluding test_data.py and __init__.py)
 /back_end/tests/test_main.py
 /back_end/tests/test_nomenclature.py
 /back_end/tests/test_simulation.py
 /back_end/tests/test_utils.py
 /back_end/tests/testing.ipynb
+
+# Frontend test files
+/front_end/tests/
