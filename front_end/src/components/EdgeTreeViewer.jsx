@@ -8,7 +8,6 @@ const EdgeTreeViewer = ({
   graphwopreorderNomenclatureWPreorder, 
   graphwpreorderNomenclatureWPreorder,
   chemicalAllNode,
-  chemicalAllNodeEricNumbering,
   outputJsonString,
   massSpecTxtFile
 }) => {
@@ -298,21 +297,21 @@ const EdgeTreeViewer = ({
 Position Mapping:
     K63: evens with uppercase letter (e.g., B2, C2, D4)
     K48: odds with uppercase letter (e.g., B1, C1, D3)  
-    K33: evens with uppercase letter + * (e.g., B*2, C*2, D*4)
-    K29: odds with uppercase letter + * (e.g., B*1, C*1, D*3)
+    K33: evens with uppercase letter + ' (e.g., B'2, C'2, D'4)
+    K29: odds with uppercase letter + ' (e.g., B'1, C'1, D'3)
     K11: evens with lowercase letter (e.g., b2, c2, d4)
     K6:  odds with lowercase letter (e.g., b1, c1, d3)
-    K27: evens with lowercase letter + * (e.g., b*2, c*2, d*4)
-    M1:  odds with lowercase letter + * (e.g., b*1, c*1, d*3)
+    K27: evens with lowercase letter + ' (e.g., b'2, c'2, d'4)
+    M1:  odds with lowercase letter + ' (e.g., b'1, c'1, d'3)
 
 Formula: position = ((parent_letter_size + parent_number) - 1) * 2 + child_number
 
 Where:
     parent_letter_size: Based on parent's notation type
-        - 0 for uppercase without asterisk (A1, B2)
-        - 2 for uppercase with asterisk (A*1, B*2)  
-        - 4 for lowercase without asterisk (a1, b2)
-        - 6 for lowercase with asterisk (a*1, b*2)
+        - 0 for uppercase without prime (A1, B2)
+        - 2 for uppercase with prime (A'1, B'2)  
+        - 4 for lowercase without prime (a1, b2)
+        - 6 for lowercase with prime (a'1, b'2)
     parent_number: Numeric part of parent's notation
     child_number: +1 for K48/K29/K6/M1, +2 for K63/K33/K11/K27`}
                 </div>
@@ -329,33 +328,6 @@ Where:
                 border: '1px solid #e91e63'
               }}>
                 {chemicalAllNode}
-              </div>
-            </div>
-          )}
-
-          {/* Jeff Multiple Symbols Eric Numbering */}
-          {chemicalAllNodeEricNumbering && (
-            <div style={{ marginBottom: '16px' }}>
-              <h4 style={{ 
-                margin: '0 0 8px 0', 
-                color: '#333',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}>
-                Jeff Multiple Symbols Eric Numbering
-              </h4>
-              <div style={{
-                color: '#ff5722',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                fontFamily: 'monospace',
-                textAlign: 'center',
-                padding: '8px',
-                backgroundColor: '#fbe9e7',
-                borderRadius: '4px',
-                border: '1px solid #ff5722'
-              }}>
-                {chemicalAllNodeEricNumbering}
               </div>
             </div>
           )}

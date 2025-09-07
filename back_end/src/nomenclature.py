@@ -268,8 +268,358 @@ def format_nomenclature_preorder_A63B(edges):
     
     return '-'.join(f"{number_to_letter(s)}{lysine_map.get(k, '?')}{number_to_letter(d)}" for s, k, d in edges)
 
+
 # ==================================
-# ==== Jeff K48-K63 Nomenclature Conversion
+# ==== Jeff all lysines Nomenclature Short Hand Conversion
+# ==================================
+
+def conjugated_lysines_to_chemical_all_node_nomenclature(conjugated_lysines):
+    """
+    Convert conjugated lysines format to Jeff's shorthand tree nomenclature system
+    
+    Args:
+        conjugated_lysines (list): List of connections in format [[src, linkage, dst], ...]
+                                  Example: [[1, 'K63', 2], [2, 'K48', 3], [1, 'K33', 4], [4, 'K11', 5]]
+                                  Order matters - represents preorder traversal
+    
+    Returns:
+        str: Jeff's shorthand nomenclature string
+    
+    Level System:
+        Level 1 = A, Level 2 = B, Level 3 = C, Level 4 = D, etc.
+    
+    Position Mapping:
+        K63: evens with uppercase letter (e.g., B2, C2, D4)
+        K48: odds with uppercase letter (e.g., B1, C1, D3)  
+        K33: evens with uppercase letter + ' (e.g., B'2, C'2, D'4)
+        K29: odds with uppercase letter + ' (e.g., B'1, C'1, D'3)
+        K11: evens with lowercase letter (e.g., b2, c2, d4)
+        K6:  odds with lowercase letter (e.g., b1, c1, d3)
+        K27: evens with lowercase letter + ' (e.g., b'2, c'2, d'4)
+        M1:  odds with lowercase letter + ' (e.g., b'1, c'1, d'3)
+    
+    Formula: position = ((parent_letter_size + parent_number) - 1) * 2 + child_number
+    
+    Where:
+        parent_letter_size: Numeric value based on parent's notation type
+            - 0 for uppercase without prime (e.g., A1, B2)
+            - 2 for uppercase with prime (e.g., A'1, B'2)  
+            - 4 for lowercase without prime (e.g., a1, b2)
+            - 6 for lowercase with prime (e.g., a'1, b'2)
+        parent_number: The numeric part of the parent's notation (e.g., 2 from "B2" or "b'2")
+        - 1 to count the number of nodes before you reach your node otherwise you also include your node
+        child_number: Position increment based on lysine type
+            - +1 for K48, K29, K6, M1 (odd positions)
+            - +2 for K63, K33, K11, K27 (even positions)
+
+        lysine_to_notation = {
+        'K63': ('upper', False, 2),   # uppercase, no prime, child_number=+2
+        'K48': ('upper', False, 1),   # uppercase, no prime, child_number=+1
+        'K33': ('upper', True, 2),    # uppercase, prime, child_number=+2
+        'K29': ('upper', True, 1),    # uppercase, prime, child_number=+1
+        'K11': ('lower', False, 2),   # lowercase, no prime, child_number=+2
+        'K6':  ('lower', False, 1),   # lowercase, no prime, child_number=+1
+        'K27': ('lower', True, 2),    # lowercase, prime, child_number=+2
+        'M1':  ('lower', True, 1)     # lowercase, prime, child_number=+1
+    }
+    """
+    if not conjugated_lysines:
+        return "A1"  # Single ubiquitin
+    
+    # Lysine to notation mapping with child_number increments
+    # K63, K48, K33, K29, K27, K11, K6, M1 = 1, 2, 1, 2, 1, 2, 1, 2 
+    lysine_to_notation = {
+        'K63': ('upper', False, 2),   # uppercase, no prime, child_number=+2
+        'K48': ('upper', False, 1),   # uppercase, no prime, child_number=+1
+        'K33': ('upper', True, 2),    # uppercase, prime, child_number=+2
+        'K29': ('upper', True, 1),    # uppercase, prime, child_number=+1
+        'K11': ('lower', False, 2),   # lowercase, no prime, child_number=+2
+        'K6':  ('lower', False, 1),   # lowercase, no prime, child_number=+1
+        'K27': ('lower', True, 2),    # lowercase, prime, child_number=+2
+        'M1':  ('lower', True, 1)     # lowercase, prime, child_number=+1
+    }
+
+    # Alternative mapping examples exactly - kept for reference
+    lysine_to_notation_better = {
+        'K63': ('upper', False, 1),   # uppercase, no prime, child_number=+2
+        'K48': ('upper', False, 2),   # uppercase, no prime, child_number=+1
+        'K33': ('upper', True, 1),    # uppercase, prime, child_number=+2
+        'K29': ('upper', True, 2),    # uppercase, prime, child_number=+1
+        'K27': ('lower', False, 1),    # lowercase, prime, child_number=+2
+        'K11': ('lower', False, 2),   # lowercase, no prime, child_number=+2
+        'K6':  ('lower', True, 1),   # lowercase, no prime, child_number=+1
+        'M1':  ('lower', True, 2)     # lowercase, prime, child_number=+1
+    }
+    
+    # Parent letter size mapping
+    letter_size_mapping = {
+        'upper_no_prime': 0,    # uppercase without prime
+        'upper_prime': 2,       # uppercase with prime
+        'lower_no_prime': 4,    # lowercase without prime
+        'lower_prime': 6        # lowercase with prime
+    }
+    
+    # Build mapping from node number to the order it appears in connections
+    node_to_order = {}
+    all_nodes = set()
+    
+    # Track the order nodes appear in the conjugated lysines list
+    order_counter = 0
+    for src, linkage, dst in conjugated_lysines:
+        if src not in node_to_order:
+            node_to_order[src] = order_counter
+            order_counter += 1
+        if dst not in node_to_order:
+            node_to_order[dst] = order_counter
+            order_counter += 1
+        all_nodes.add(src)
+        all_nodes.add(dst)
+    
+    # Build tree structure
+    children = {}  # parent -> list of (child, linkage, order)
+    parents = {}   # child -> (parent, linkage)
+    
+    for src, linkage, dst in conjugated_lysines:
+        if src not in children:
+            children[src] = []
+        children[src].append((dst, linkage, node_to_order[dst]))
+        parents[dst] = (src, linkage)
+    
+    # Find root node (node with no parent)
+    root = None
+    for node in all_nodes:
+        if node not in parents:
+            root = node
+            break
+    
+    if root is None:
+        return "Error: No root node found"
+    
+    # Assign shorthand positions
+    nomenclature_map = {}  # node -> shorthand_notation
+    
+    def assign_shorthand_positions(node, level):
+        if node == root:
+            # Root node is always A1
+            nomenclature_map[node] = "A1"
+        else:
+            # Get parent info and linkage to determine notation
+            parent, linkage = parents[node]
+            
+            # Get notation rules for this linkage
+            notation_info = lysine_to_notation.get(linkage)
+            if notation_info is None:
+                # Unknown linkage, skip
+                return
+            
+            case_type, has_asterisk, child_number = notation_info
+            
+            # Determine level letter
+            level_letter = chr(ord('A') + level)
+            if case_type == 'lower':
+                level_letter = level_letter.lower()
+            
+            # Calculate position based on formula: ((parent_letter_size + parent_number) - 1) * 8 + child_number
+            if parent == root:
+                # Direct children of root use the child_number based on lysine type
+                position = child_number
+            else:
+                # Get parent's notation to extract parent_letter_size and parent_number
+                parent_notation = nomenclature_map.get(parent, "")
+                
+                # Extract parent_number from notation
+                import re
+                match = re.search(r"(\d+)$", parent_notation)
+                parent_number = int(match.group(1)) if match else 1
+                
+                # Determine parent_letter_size based on parent's notation type
+                parent_letter_size = 0  # default
+                if parent_notation:
+                    if parent_notation[0].isupper():
+                        if "'" in parent_notation:
+                            parent_letter_size = 2  # uppercase with prime
+                        else:
+                            parent_letter_size = 0  # uppercase without prime
+                    else:  # lowercase
+                        if "'" in parent_notation:
+                            parent_letter_size = 6  # lowercase with prime
+                        else:
+                            parent_letter_size = 4  # lowercase without prime
+                
+                # Apply the formula
+                position = ((parent_letter_size + parent_number) - 1) * 8 + child_number
+            
+            # Build the notation string
+            prime = "'" if has_asterisk else ""
+            notation = f"{level_letter}{prime}{position}"
+            nomenclature_map[node] = notation
+        
+        # Recursively assign positions to children (maintaining preorder)
+        if node in children:
+            # Sort children by their appearance order in the original list
+            sorted_children = sorted(children[node], key=lambda x: x[2])  # Sort by order
+            
+            for child, linkage, _ in sorted_children:
+                assign_shorthand_positions(child, level + 1)
+    
+    # Start assignment from root
+    assign_shorthand_positions(root, 0)
+    
+    # Build nomenclature list by collecting all notations and reorder by level then position
+    all_notations = []
+    for node in all_nodes:
+        if node in nomenclature_map:
+            notation = nomenclature_map[node]
+            
+            # Parse notation to extract level letter and position number for sorting
+            import re
+            match = re.match(r"^([a-zA-Z])('?)(\d+)$", notation)
+            if match:
+                level_letter, prime, position_str = match.groups()
+                level_num = ord(level_letter.upper()) - ord('A')
+                position_num = int(position_str)
+                
+                all_notations.append((level_num, position_num, notation))
+    
+    # Build the final nomenclature string with comma separators
+    nomenclature_parts = [notation for _, _, notation in all_notations]
+    
+    return ','.join(nomenclature_parts)
+
+
+# =========================================================
+# Mass Spec Dictionary Functions
+# Extract unique FASTA sequences for mass spectrometry analysis
+# =========================================================
+
+def extract_fasta_sequences_for_mass_spec(parent_dictionary):
+    """
+    Traverse the polyubiquitin structure and extract unique FASTA sequences
+    to build a mass spec dictionary mapping sequence names to their FASTA sequences.
+    
+    Args:
+        parent_dictionary (dict or str): Ubiquitin structure as a dictionary or JSON string.
+    
+    Returns:
+        dict: Dictionary mapping sequence names (e.g., "his-Ub", "Ub") to their FASTA sequences.
+    """
+    
+    # Ensure that the parent dictionary is a JSON
+    parent_dictionary = convert_json_to_dict(parent_dictionary)
+    
+    # Ensure that the parent dictionary has all the valid keys 
+    validate_protein_keys(parent_dictionary)
+    
+    # Initialize context object to track unique FASTA sequences
+    fasta_context = {
+        "unique_sequences": {},  # Dictionary to store unique sequence_name -> FASTA_sequence mappings
+        "chain_number_list": [1]
+    }
+    
+    # Start the recursive traversal
+    _, fasta_context = inner_wrapper_extract_fasta_sequences(parent_dictionary, fasta_context)
+    
+    return fasta_context["unique_sequences"]
+
+
+def inner_wrapper_extract_fasta_sequences(input_dictionary, fasta_context):
+    """
+    Recursively process nested dictionaries to extract unique FASTA sequences
+    and map them to appropriate sequence names.
+    """
+    working_dictionary = copy.deepcopy(input_dictionary)
+    
+    # Ensure that the working dictionary is a JSON
+    working_dictionary = convert_json_to_dict(working_dictionary)
+    
+    # Ensure that the working dictionary has all the valid keys 
+    validate_protein_keys(working_dictionary)
+    
+    # Process current protein and assign chain number
+    working_dictionary, fasta_context = process_current_protein_fasta(working_dictionary, fasta_context)
+    
+    # Extract FASTA sequence and determine sequence name
+    fasta_sequence = working_dictionary["FASTA_sequence"]
+    
+    # Determine sequence name based on FASTA sequence
+    if fasta_sequence == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH":
+        if working_dictionary["chain_number"] == 1:
+            sequence_name = "his-Ub"
+        else:
+            sequence_name = "his-Ub"  # Keep consistent naming
+    elif fasta_sequence == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG":
+        if working_dictionary["chain_number"] == 1:
+            sequence_name = "Ub"
+        else:
+            sequence_name = "Ub"  # Keep consistent naming
+    else:
+        # For any other FASTA sequences, use a generic naming pattern
+        sequence_name = f"Unknown_Protein_{working_dictionary['protein']}"
+    
+    # Add to unique sequences dictionary
+    fasta_context["unique_sequences"][sequence_name] = fasta_sequence
+    
+    # Log protein details for debugging
+    logging.info(f"Processing protein chain {working_dictionary['chain_number']}: {sequence_name}")
+    logging.info(f"FASTA sequence: {fasta_sequence[:50]}..." if len(fasta_sequence) > 50 else f"FASTA sequence: {fasta_sequence}")
+    
+    # Process branching sites recursively
+    working_branching_sites = working_dictionary.get("branching_sites", [])
+    
+    for branch in working_branching_sites:
+        # Log branching details
+        logging.info(f"Processing branch: {branch['site_name']} with children: {type(branch['children'])}")
+        
+        # If branch has a protein child, recursively process it
+        if isinstance(branch["children"], dict):
+            branch["children"], fasta_context = inner_wrapper_extract_fasta_sequences(
+                branch["children"], fasta_context
+            )
+    
+    return working_dictionary, fasta_context
+
+
+def process_current_protein_fasta(working_dictionary, fasta_context):
+    """
+    Process the current protein for FASTA extraction, similar to process_current_protein
+    but focused on sequence extraction needs.
+    """
+    # Set the current chain number from context
+    working_dictionary['chain_number'] = fasta_context['chain_number_list'][-1]
+    
+    # Set chain length
+    working_dictionary['chain_length'] = len(working_dictionary['FASTA_sequence'])
+    
+    # Increment chain_number for future recursive calls
+    fasta_context['chain_number_list'].append(fasta_context['chain_number_list'][-1] + 1)
+    
+    return working_dictionary, fasta_context
+
+
+def build_mass_spec_dictionary(parent_dictionary):
+    """
+    Convenience function to build a mass spec dictionary from a polyubiquitin structure.
+    
+    Args:
+        parent_dictionary (dict or str): Ubiquitin structure as a dictionary or JSON string.
+    
+    Returns:
+        dict: Dictionary with sequence names as keys and FASTA sequences as values.
+              Example: {"his-Ub": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH",
+                       "Ub": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"}
+    """
+    return extract_fasta_sequences_for_mass_spec(parent_dictionary)
+
+# =========================================================
+
+
+
+# ==================================
+# ===== Deprecated Functions =======
+# ==================================
+
+# ==================================
+# ==== K48-K63 Nomenclature Conversion (old)
 # ==================================
 
 def conjugated_lysines_to_jeff_K48_K63_nomenclature(conjugated_lysines):
@@ -527,537 +877,3 @@ def conjugated_lysines_all_lysines_nomenclature(conjugated_lysines):
         nomenclature_parts.append(f"{level_letter}{position}")
     
     return ''.join(nomenclature_parts)
-
-
-# ==================================
-# ==== Jeff all lysines Nomenclature Short Hand Conversion
-# ==================================
-
-def conjugated_lysines_to_jeffs_multiple_symbols(conjugated_lysines):
-    """
-    Convert conjugated lysines format to Jeff's shorthand tree nomenclature system
-    
-    Args:
-        conjugated_lysines (list): List of connections in format [[src, linkage, dst], ...]
-                                  Example: [[1, 'K63', 2], [2, 'K48', 3], [1, 'K33', 4], [4, 'K11', 5]]
-                                  Order matters - represents preorder traversal
-    
-    Returns:
-        str: Jeff's shorthand nomenclature string
-    
-    Level System:
-        Level 1 = A, Level 2 = B, Level 3 = C, Level 4 = D, etc.
-    
-    Position Mapping:
-        K63: evens with uppercase letter (e.g., B2, C2, D4)
-        K48: odds with uppercase letter (e.g., B1, C1, D3)  
-        K33: evens with uppercase letter + * (e.g., B*2, C*2, D*4)
-        K29: odds with uppercase letter + * (e.g., B*1, C*1, D*3)
-        K11: evens with lowercase letter (e.g., b2, c2, d4)
-        K6:  odds with lowercase letter (e.g., b1, c1, d3)
-        K27: evens with lowercase letter + * (e.g., b*2, c*2, d*4)
-        M1:  odds with lowercase letter + * (e.g., b*1, c*1, d*3)
-    
-    Formula: position = ((parent_letter_size + parent_number) - 1) * 2 + child_number
-    
-    Where:
-        parent_letter_size: Numeric value based on parent's notation type
-            - 0 for uppercase without asterisk (e.g., A1, B2)
-            - 2 for uppercase with asterisk (e.g., A*1, B*2)  
-            - 4 for lowercase without asterisk (e.g., a1, b2)
-            - 6 for lowercase with asterisk (e.g., a*1, b*2)
-        parent_number: The numeric part of the parent's notation (e.g., 2 from "B2" or "b*2")
-        - 1 to count the number of nodes before you reach your node otherwise you also include your node
-        child_number: Position increment based on lysine type
-            - +1 for K48, K29, K6, M1 (odd positions)
-            - +2 for K63, K33, K11, K27 (even positions)
-
-        lysine_to_notation = {
-        'K63': ('upper', False, 2),   # uppercase, no asterisk, child_number=+2
-        'K48': ('upper', False, 1),   # uppercase, no asterisk, child_number=+1
-        'K33': ('upper', True, 2),    # uppercase, asterisk, child_number=+2
-        'K29': ('upper', True, 1),    # uppercase, asterisk, child_number=+1
-        'K11': ('lower', False, 2),   # lowercase, no asterisk, child_number=+2
-        'K6':  ('lower', False, 1),   # lowercase, no asterisk, child_number=+1
-        'K27': ('lower', True, 2),    # lowercase, asterisk, child_number=+2
-        'M1':  ('lower', True, 1)     # lowercase, asterisk, child_number=+1
-    }
-    """
-    if not conjugated_lysines:
-        return "A1"  # Single ubiquitin
-    
-    # Lysine to notation mapping with child_number increments
-    # K63, K48, K33, K29, K27, K11, K6, M1 = 1, 2, 1, 2, 1, 2, 1, 2 
-    lysine_to_notation = {
-        'K63': ('upper', False, 2),   # uppercase, no asterisk, child_number=+2
-        'K48': ('upper', False, 1),   # uppercase, no asterisk, child_number=+1
-        'K33': ('upper', True, 2),    # uppercase, asterisk, child_number=+2
-        'K29': ('upper', True, 1),    # uppercase, asterisk, child_number=+1
-        'K11': ('lower', False, 2),   # lowercase, no asterisk, child_number=+2
-        'K6':  ('lower', False, 1),   # lowercase, no asterisk, child_number=+1
-        'K27': ('lower', True, 2),    # lowercase, asterisk, child_number=+2
-        'M1':  ('lower', True, 1)     # lowercase, asterisk, child_number=+1
-    }
-
-    # Alternative mapping examples exactly
-    lysine_to_notation_better = {
-        'K63': ('upper', False, 1),   # uppercase, no asterisk, child_number=+2
-        'K48': ('upper', False, 2),   # uppercase, no asterisk, child_number=+1
-        'K33': ('upper', True, 1),    # uppercase, asterisk, child_number=+2
-        'K29': ('upper', True, 2),    # uppercase, asterisk, child_number=+1
-        'K27': ('lower', False, 1),    # lowercase, asterisk, child_number=+2
-        'K11': ('lower', False, 2),   # lowercase, no asterisk, child_number=+2
-        'K6':  ('lower', True, 1),   # lowercase, no asterisk, child_number=+1
-        'M1':  ('lower', True, 2)     # lowercase, asterisk, child_number=+1
-    }
-    
-    # Parent letter size mapping
-    letter_size_mapping = {
-        'upper_no_asterisk': 0,    # uppercase without asterisk
-        'upper_asterisk': 2,       # uppercase with asterisk
-        'lower_no_asterisk': 4,    # lowercase without asterisk
-        'lower_asterisk': 6        # lowercase with asterisk
-    }
-    
-    # Build mapping from node number to the order it appears in connections
-    node_to_order = {}
-    all_nodes = set()
-    
-    # Track the order nodes appear in the conjugated lysines list
-    order_counter = 0
-    for src, linkage, dst in conjugated_lysines:
-        if src not in node_to_order:
-            node_to_order[src] = order_counter
-            order_counter += 1
-        if dst not in node_to_order:
-            node_to_order[dst] = order_counter
-            order_counter += 1
-        all_nodes.add(src)
-        all_nodes.add(dst)
-    
-    # Build tree structure
-    children = {}  # parent -> list of (child, linkage, order)
-    parents = {}   # child -> (parent, linkage)
-    
-    for src, linkage, dst in conjugated_lysines:
-        if src not in children:
-            children[src] = []
-        children[src].append((dst, linkage, node_to_order[dst]))
-        parents[dst] = (src, linkage)
-    
-    # Find root node (node with no parent)
-    root = None
-    for node in all_nodes:
-        if node not in parents:
-            root = node
-            break
-    
-    if root is None:
-        return "Error: No root node found"
-    
-    # Assign shorthand positions
-    nomenclature_map = {}  # node -> shorthand_notation
-    
-    def assign_shorthand_positions(node, level):
-        if node == root:
-            # Root node is always A1
-            nomenclature_map[node] = "A1"
-        else:
-            # Get parent info and linkage to determine notation
-            parent, linkage = parents[node]
-            
-            # Get notation rules for this linkage
-            notation_info = lysine_to_notation.get(linkage)
-            if notation_info is None:
-                # Unknown linkage, skip
-                return
-            
-            case_type, has_asterisk, child_number = notation_info
-            
-            # Determine level letter
-            level_letter = chr(ord('A') + level)
-            if case_type == 'lower':
-                level_letter = level_letter.lower()
-            
-            # Calculate position based on formula: ((parent_letter_size + parent_number) - 1) * 8 + child_number
-            if parent == root:
-                # Direct children of root use the child_number based on lysine type
-                position = child_number
-            else:
-                # Get parent's notation to extract parent_letter_size and parent_number
-                parent_notation = nomenclature_map.get(parent, "")
-                
-                # Extract parent_number from notation
-                import re
-                match = re.search(r"(\d+)$", parent_notation)
-                parent_number = int(match.group(1)) if match else 1
-                
-                # Determine parent_letter_size based on parent's notation type
-                parent_letter_size = 0  # default
-                if parent_notation:
-                    if parent_notation[0].isupper():
-                        if "*" in parent_notation:
-                            parent_letter_size = 2  # uppercase with asterisk
-                        else:
-                            parent_letter_size = 0  # uppercase without asterisk
-                    else:  # lowercase
-                        if "*" in parent_notation:
-                            parent_letter_size = 6  # lowercase with asterisk
-                        else:
-                            parent_letter_size = 4  # lowercase without asterisk
-                
-                # Apply the formula
-                position = ((parent_letter_size + parent_number) - 1) * 8 + child_number
-            
-            # Build the notation string
-            asterisk = "*" if has_asterisk else ""
-            notation = f"{level_letter}{asterisk}{position}"
-            nomenclature_map[node] = notation
-        
-        # Recursively assign positions to children (maintaining preorder)
-        if node in children:
-            # Sort children by their appearance order in the original list
-            sorted_children = sorted(children[node], key=lambda x: x[2])  # Sort by order
-            
-            for child, linkage, _ in sorted_children:
-                assign_shorthand_positions(child, level + 1)
-    
-    # Start assignment from root
-    assign_shorthand_positions(root, 0)
-    
-    # Build nomenclature list by collecting all notations and reorder by level then position
-    all_notations = []
-    for node in all_nodes:
-        if node in nomenclature_map:
-            notation = nomenclature_map[node]
-            
-            # Parse notation to extract level letter and position number for sorting
-            import re
-            match = re.match(r'^([a-zA-Z])(\*?)(\d+)$', notation)
-            if match:
-                level_letter, asterisk, position_str = match.groups()
-                level_num = ord(level_letter.upper()) - ord('A')
-                position_num = int(position_str)
-                
-                all_notations.append((level_num, position_num, notation))
-    
-    # Build the final nomenclature string with comma separators
-    nomenclature_parts = [notation for _, _, notation in all_notations]
-    
-    return ','.join(nomenclature_parts)
-
-
-def conjugated_lysines_to_jeffs_multiple_symbols_eric_numbering(conjugated_lysines):
-    """
-    Convert conjugated lysines format to Jeff's shorthand tree nomenclature system
-    
-    Args:
-        conjugated_lysines (list): List of connections in format [[src, linkage, dst], ...]
-                                  Example: [[1, 'K63', 2], [2, 'K48', 3], [1, 'K33', 4], [4, 'K11', 5]]
-                                  Order matters - represents preorder traversal
-    
-    Returns:
-        str: Jeff's shorthand nomenclature string
-    
-    Level System:
-        Level 1 = A, Level 2 = B, Level 3 = C, Level 4 = D, etc.
-    
-    Position Mapping:
-        K63: evens with uppercase letter (e.g., B2, C2, D4)
-        K48: odds with uppercase letter (e.g., B1, C1, D3)  
-        K33: evens with uppercase letter + * (e.g., B*2, C*2, D*4)
-        K29: odds with uppercase letter + * (e.g., B*1, C*1, D*3)
-        K11: evens with lowercase letter (e.g., b2, c2, d4)
-        K6:  odds with lowercase letter (e.g., b1, c1, d3)
-        K27: evens with lowercase letter + * (e.g., b*2, c*2, d*4)
-        M1:  odds with lowercase letter + * (e.g., b*1, c*1, d*3)
-    
-    Formula: position = ((parent_letter_size + parent_number) - 1) * 8 + child_number
-    
-    Where:
-        parent_letter_size: Numeric value based on parent's notation type
-            - 0 for uppercase without asterisk (e.g., A1, B2)
-            - 2 for uppercase with asterisk (e.g., A*1, B*2)  
-            - 4 for lowercase without asterisk (e.g., a1, b2)
-            - 6 for lowercase with asterisk (e.g., a*1, b*2)
-        parent_number: The numeric part of the parent's notation (e.g., 2 from "B2" or "b*2")
-        child_number: Position increment based on lysine type
-            - +1 for K48, K29, K6, M1 (odd positions)
-            - +2 for K63, K33, K11, K27 (even positions)
-    """
-    if not conjugated_lysines:
-        return "A1"  # Single ubiquitin
-    
-    # Lysine to notation mapping with child_number increments
-    # My recomendation to Jeff, is the natural mapping of 
-    # K63, K48, K33, K29, K27, K11, K6, M1 = 1, 2, 1, 2, 1, 2, 1, 2 
-    lysine_to_notation = {
-        'K63': ('upper', False, 1),   # uppercase, no asterisk, child_number=+2
-        'K48': ('upper', False, 2),   # uppercase, no asterisk, child_number=+1
-        'K33': ('upper', True, 1),    # uppercase, asterisk, child_number=+2
-        'K29': ('upper', True, 2),    # uppercase, asterisk, child_number=+1
-        'K27': ('lower', False, 1),    # lowercase, asterisk, child_number=+2
-        'K11': ('lower', False, 2),   # lowercase, no asterisk, child_number=+2
-        'K6':  ('lower', True, 1),   # lowercase, no asterisk, child_number=+1
-        'M1':  ('lower', True, 2)     # lowercase, asterisk, child_number=+1
-    }
-    
-    # Parent letter size mapping
-    letter_size_mapping = {
-        'upper_no_asterisk': 0,    # uppercase without asterisk
-        'upper_asterisk': 2,       # uppercase with asterisk
-        'lower_no_asterisk': 4,    # lowercase without asterisk
-        'lower_asterisk': 6        # lowercase with asterisk
-    }
-    
-    # Build mapping from node number to the order it appears in connections
-    node_to_order = {}
-    all_nodes = set()
-    
-    # Track the order nodes appear in the conjugated lysines list
-    order_counter = 0
-    for src, linkage, dst in conjugated_lysines:
-        if src not in node_to_order:
-            node_to_order[src] = order_counter
-            order_counter += 1
-        if dst not in node_to_order:
-            node_to_order[dst] = order_counter
-            order_counter += 1
-        all_nodes.add(src)
-        all_nodes.add(dst)
-    
-    # Build tree structure
-    children = {}  # parent -> list of (child, linkage, order)
-    parents = {}   # child -> (parent, linkage)
-    
-    for src, linkage, dst in conjugated_lysines:
-        if src not in children:
-            children[src] = []
-        children[src].append((dst, linkage, node_to_order[dst]))
-        parents[dst] = (src, linkage)
-    
-    # Find root node (node with no parent)
-    root = None
-    for node in all_nodes:
-        if node not in parents:
-            root = node
-            break
-    
-    if root is None:
-        return "Error: No root node found"
-    
-    # Assign shorthand positions
-    nomenclature_map = {}  # node -> shorthand_notation
-    
-    def assign_shorthand_positions(node, level):
-        if node == root:
-            # Root node is always A1
-            nomenclature_map[node] = "A1"
-        else:
-            # Get parent info and linkage to determine notation
-            parent, linkage = parents[node]
-            
-            # Get notation rules for this linkage
-            notation_info = lysine_to_notation.get(linkage)
-            if notation_info is None:
-                # Unknown linkage, skip
-                return
-            
-            case_type, has_asterisk, child_number = notation_info
-            
-            # Determine level letter
-            level_letter = chr(ord('A') + level)
-            if case_type == 'lower':
-                level_letter = level_letter.lower()
-            
-            # Calculate position based on formula: ((parent_letter_size + parent_number) - 1) * 8 + child_number
-            if parent == root:
-                # Direct children of root use the child_number based on lysine type
-                position = child_number
-            else:
-                # Get parent's notation to extract parent_letter_size and parent_number
-                parent_notation = nomenclature_map.get(parent, "")
-                
-                # Extract parent_number from notation
-                import re
-                match = re.search(r"(\d+)$", parent_notation)
-                parent_number = int(match.group(1)) if match else 1
-                
-                # Determine parent_letter_size based on parent's notation type
-                parent_letter_size = 0  # default
-                if parent_notation:
-                    if parent_notation[0].isupper():
-                        if "*" in parent_notation:
-                            parent_letter_size = 2  # uppercase with asterisk
-                        else:
-                            parent_letter_size = 0  # uppercase without asterisk
-                    else:  # lowercase
-                        if "*" in parent_notation:
-                            parent_letter_size = 6  # lowercase with asterisk
-                        else:
-                            parent_letter_size = 4  # lowercase without asterisk
-                
-                # Apply the formula
-                position = ((parent_letter_size + parent_number) - 1) * 8 + child_number
-            
-            # Build the notation string
-            asterisk = "*" if has_asterisk else ""
-            notation = f"{level_letter}{asterisk}{position}"
-            nomenclature_map[node] = notation
-        
-        # Recursively assign positions to children (maintaining preorder)
-        if node in children:
-            # Sort children by their appearance order in the original list
-            sorted_children = sorted(children[node], key=lambda x: x[2])  # Sort by order
-            
-            for child, linkage, _ in sorted_children:
-                assign_shorthand_positions(child, level + 1)
-    
-    # Start assignment from root
-    assign_shorthand_positions(root, 0)
-    
-    # Build nomenclature list by collecting all notations and reorder by level then position
-    all_notations = []
-    for node in all_nodes:
-        if node in nomenclature_map:
-            notation = nomenclature_map[node]
-            
-            # Parse notation to extract level letter and position number for sorting
-            import re
-            match = re.match(r'^([a-zA-Z])(\*?)(\d+)$', notation)
-            if match:
-                level_letter, asterisk, position_str = match.groups()
-                level_num = ord(level_letter.upper()) - ord('A')
-                position_num = int(position_str)
-                
-                all_notations.append((level_num, position_num, notation))
-    
-    # Build the final nomenclature string with comma separators
-    nomenclature_parts = [notation for _, _, notation in all_notations]
-    
-    return ','.join(nomenclature_parts)
-
-# =========================================================
-# Mass Spec Dictionary Functions
-# Extract unique FASTA sequences for mass spectrometry analysis
-# =========================================================
-
-def extract_fasta_sequences_for_mass_spec(parent_dictionary):
-    """
-    Traverse the polyubiquitin structure and extract unique FASTA sequences
-    to build a mass spec dictionary mapping sequence names to their FASTA sequences.
-    
-    Args:
-        parent_dictionary (dict or str): Ubiquitin structure as a dictionary or JSON string.
-    
-    Returns:
-        dict: Dictionary mapping sequence names (e.g., "his-Ub", "Ub") to their FASTA sequences.
-    """
-    
-    # Ensure that the parent dictionary is a JSON
-    parent_dictionary = convert_json_to_dict(parent_dictionary)
-    
-    # Ensure that the parent dictionary has all the valid keys 
-    validate_protein_keys(parent_dictionary)
-    
-    # Initialize context object to track unique FASTA sequences
-    fasta_context = {
-        "unique_sequences": {},  # Dictionary to store unique sequence_name -> FASTA_sequence mappings
-        "chain_number_list": [1]
-    }
-    
-    # Start the recursive traversal
-    _, fasta_context = inner_wrapper_extract_fasta_sequences(parent_dictionary, fasta_context)
-    
-    return fasta_context["unique_sequences"]
-
-
-def inner_wrapper_extract_fasta_sequences(input_dictionary, fasta_context):
-    """
-    Recursively process nested dictionaries to extract unique FASTA sequences
-    and map them to appropriate sequence names.
-    """
-    working_dictionary = copy.deepcopy(input_dictionary)
-    
-    # Ensure that the working dictionary is a JSON
-    working_dictionary = convert_json_to_dict(working_dictionary)
-    
-    # Ensure that the working dictionary has all the valid keys 
-    validate_protein_keys(working_dictionary)
-    
-    # Process current protein and assign chain number
-    working_dictionary, fasta_context = process_current_protein_fasta(working_dictionary, fasta_context)
-    
-    # Extract FASTA sequence and determine sequence name
-    fasta_sequence = working_dictionary["FASTA_sequence"]
-    
-    # Determine sequence name based on FASTA sequence
-    if fasta_sequence == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH":
-        if working_dictionary["chain_number"] == 1:
-            sequence_name = "his-Ub"
-        else:
-            sequence_name = "his-Ub"  # Keep consistent naming
-    elif fasta_sequence == "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG":
-        if working_dictionary["chain_number"] == 1:
-            sequence_name = "Ub"
-        else:
-            sequence_name = "Ub"  # Keep consistent naming
-    else:
-        # For any other FASTA sequences, use a generic naming pattern
-        sequence_name = f"Unknown_Protein_{working_dictionary['protein']}"
-    
-    # Add to unique sequences dictionary
-    fasta_context["unique_sequences"][sequence_name] = fasta_sequence
-    
-    # Log protein details for debugging
-    logging.info(f"Processing protein chain {working_dictionary['chain_number']}: {sequence_name}")
-    logging.info(f"FASTA sequence: {fasta_sequence[:50]}..." if len(fasta_sequence) > 50 else f"FASTA sequence: {fasta_sequence}")
-    
-    # Process branching sites recursively
-    working_branching_sites = working_dictionary.get("branching_sites", [])
-    
-    for branch in working_branching_sites:
-        # Log branching details
-        logging.info(f"Processing branch: {branch['site_name']} with children: {type(branch['children'])}")
-        
-        # If branch has a protein child, recursively process it
-        if isinstance(branch["children"], dict):
-            branch["children"], fasta_context = inner_wrapper_extract_fasta_sequences(
-                branch["children"], fasta_context
-            )
-    
-    return working_dictionary, fasta_context
-
-
-def process_current_protein_fasta(working_dictionary, fasta_context):
-    """
-    Process the current protein for FASTA extraction, similar to process_current_protein
-    but focused on sequence extraction needs.
-    """
-    # Set the current chain number from context
-    working_dictionary['chain_number'] = fasta_context['chain_number_list'][-1]
-    
-    # Set chain length
-    working_dictionary['chain_length'] = len(working_dictionary['FASTA_sequence'])
-    
-    # Increment chain_number for future recursive calls
-    fasta_context['chain_number_list'].append(fasta_context['chain_number_list'][-1] + 1)
-    
-    return working_dictionary, fasta_context
-
-
-def build_mass_spec_dictionary(parent_dictionary):
-    """
-    Convenience function to build a mass spec dictionary from a polyubiquitin structure.
-    
-    Args:
-        parent_dictionary (dict or str): Ubiquitin structure as a dictionary or JSON string.
-    
-    Returns:
-        dict: Dictionary with sequence names as keys and FASTA sequences as values.
-              Example: {"his-Ub": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGGDHHHHHH",
-                       "Ub": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"}
-    """
-    return extract_fasta_sequences_for_mass_spec(parent_dictionary)
-
-# =========================================================

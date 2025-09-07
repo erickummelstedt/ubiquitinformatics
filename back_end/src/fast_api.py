@@ -276,14 +276,12 @@ async def submit_ubxy(request: Request):
         nomenclature_preorder_A63B = nomenclature.format_nomenclature_preorder_A63B(edges)
         # ========== 
 
-        # Correct nomenclature assignments
+        # graph theory nomenclature assignments
         graph_wo_preorder_nomenclature = output_context['nomenclature_wo_preorder']
         graph_w_preorder_nomenclature = output_context['nomenclature_w_preorder']
         
         # chemical_all_node_nomenclature = ....
-        chemical_all_node_nomenclature = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols(edges)
-        # chemical_all_node_nomenclature_eric_numbering
-        chemical_all_node_nomenclature_eric_numbering = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols_eric_numbering(edges)
+        chemical_all_node_nomenclature = nomenclature.conjugated_lysines_to_chemical_all_node_nomenclature(edges)
 
         # Convert reaction_sequences_dicts to bytes
         reaction_sequences_dicts = plotting.build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size)
@@ -301,9 +299,7 @@ async def submit_ubxy(request: Request):
             "nomenclature_preorder_A63B": nomenclature_preorder_A63B,
             "graph_wo_preorder_nomenclature": graph_wo_preorder_nomenclature,
             "graph_w_preorder_nomenclature": graph_w_preorder_nomenclature,
-            "chemical_all_node_nomenclature": chemical_all_node_nomenclature,
-
-            "chemical_all_node_nomenclature_eric_numbering": chemical_all_node_nomenclature_eric_numbering
+            "chemical_all_node_nomenclature": chemical_all_node_nomenclature
             })
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
@@ -389,9 +385,7 @@ async def submit_json_output(request: Request):
         graph_w_preorder_nomenclature = output_context['nomenclature_w_preorder']
         
         # chemical_all_node_nomenclature = ....
-        chemical_all_node_nomenclature = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols(edges)
-        # chemical_all_node_nomenclature_eric_numbering
-        chemical_all_node_nomenclature_eric_numbering = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols_eric_numbering(edges)
+        chemical_all_node_nomenclature = nomenclature.conjugated_lysines_to_chemical_all_node_nomenclature(edges)
 
         # Convert reaction_sequences_dicts to bytes
         reaction_sequences_dicts = plotting.build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size)
@@ -409,8 +403,7 @@ async def submit_json_output(request: Request):
             "nomenclature_preorder_A63B": nomenclature_preorder_A63B,
             "graph_wo_preorder_nomenclature": graph_wo_preorder_nomenclature,
             "graph_w_preorder_nomenclature": graph_w_preorder_nomenclature,
-            "chemical_all_node_nomenclature": chemical_all_node_nomenclature,
-            "chemical_all_node_nomenclature_eric_numbering": chemical_all_node_nomenclature_eric_numbering
+            "chemical_all_node_nomenclature": chemical_all_node_nomenclature
             })
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
@@ -885,9 +878,7 @@ async def submit_nomenclature_request(request: Request):
         # ======== End of Strieter-style FASTA generation =======
         
         # chemical_all_node_nomenclature = ....
-        chemical_all_node_nomenclature = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols(edges)
-        # chemical_all_node_nomenclature_eric_numbering
-        chemical_all_node_nomenclature_eric_numbering = nomenclature.conjugated_lysines_to_jeffs_multiple_symbols_eric_numbering(edges)
+        chemical_all_node_nomenclature = nomenclature.conjugated_lysines_to_chemical_all_node_nomenclature(edges)
 
         # Return the entered UbX_Y value
         return JSONResponse(content={
@@ -899,8 +890,7 @@ async def submit_nomenclature_request(request: Request):
             "nomenclature_preorder_A63B": nomenclature_preorder_A63B,
             "graph_wo_preorder_nomenclature": graph_wo_preorder_nomenclature,
             "graph_w_preorder_nomenclature": graph_w_preorder_nomenclature,
-            "chemical_all_node_nomenclature": chemical_all_node_nomenclature,
-            "chemical_all_node_nomenclature_eric_numbering": chemical_all_node_nomenclature_eric_numbering
+            "chemical_all_node_nomenclature": chemical_all_node_nomenclature
             })
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)

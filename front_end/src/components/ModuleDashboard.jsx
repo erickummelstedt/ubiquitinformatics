@@ -63,7 +63,6 @@ const ModuleDashboard = () => {
   const [graphwopreorderNomenclatureWPreorder, setGraphWOpreorderNomenclatureWPreorder] = useState(null); // Store graph nomenclature without preorder
   const [graphwpreorderNomenclatureWPreorder, setGraphwpreorderNomenclatureWPreorder] = useState(null); // Store graph nomenclature with preorder
   const [chemicalAllNode, setChemicalAllNode] = useState(null); // Store jeff multiple symbols nomenclature
-  const [chemicalAllNodeEricNumbering, setChemicalAllNodeEricNumbering] = useState(null); // Store jeff multiple symbols eric numbering
   const [outputJsonString, setOutputJsonString] = useState(null); // Store output JSON from nomenclature API
   const [massSpecTxtFile, setMassSpecTxtFile] = useState(null); // Store txt file content from nomenclature API
   const [inputNodes, setInputNodes] = useState({
@@ -87,7 +86,6 @@ const ModuleDashboard = () => {
     setGraphWOpreorderNomenclatureWPreorder(null);
     setGraphwpreorderNomenclatureWPreorder(null);
     setChemicalAllNode(null);
-    setChemicalAllNodeEricNumbering(null);
     setOutputJsonString(null);
     setMassSpecTxtFile(null);
   }, [page]);
@@ -241,9 +239,6 @@ const ModuleDashboard = () => {
                       if (result.chemical_all_node_nomenclature) {
                         setChemicalAllNode(result.chemical_all_node_nomenclature);
                       }
-                      if (result.chemical_all_node_nomenclature_eric_numbering) {
-                        setChemicalAllNodeEricNumbering(result.chemical_all_node_nomenclature_eric_numbering);
-                      }
                       if (result.output_json) {
                         setOutputJsonString(result.output_json);
                       }
@@ -286,7 +281,6 @@ const ModuleDashboard = () => {
                   graphwopreorderNomenclatureWPreorder={graphwopreorderNomenclatureWPreorder}
                   graphwpreorderNomenclatureWPreorder={graphwpreorderNomenclatureWPreorder}
                   chemicalAllNode={chemicalAllNode}
-                  chemicalAllNodeEricNumbering={chemicalAllNodeEricNumbering}
                   outputJsonString={outputJsonString}
                   massSpecTxtFile={massSpecTxtFile}
                 />
@@ -357,9 +351,6 @@ const ModuleDashboard = () => {
                               }
                               if (result.chemical_all_node_nomenclature) {
                                 setChemicalAllNode(result.chemical_all_node_nomenclature);
-                              }
-                              if (result.chemical_all_node_nomenclature_eric_numbering) {
-                                setChemicalAllNodeEricNumbering(result.chemical_all_node_nomenclature_eric_numbering);
                               }
                               
                               const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
@@ -481,9 +472,6 @@ const ModuleDashboard = () => {
                             if (result.chemical_all_node_nomenclature) {
                               setChemicalAllNode(result.chemical_all_node_nomenclature);
                             }
-                            if (result.chemical_all_node_nomenclature_eric_numbering) {
-                              setChemicalAllNodeEricNumbering(result.chemical_all_node_nomenclature_eric_numbering);
-                            }
                             
                             const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
                             console.log('Decoded Sequence:', decodedSequence); // Log the decoded sequence
@@ -505,7 +493,6 @@ const ModuleDashboard = () => {
                           graphwopreorderNomenclatureWPreorder={graphwopreorderNomenclatureWPreorder}
                           graphwpreorderNomenclatureWPreorder={graphwpreorderNomenclatureWPreorder}
                           chemicalAllNode={chemicalAllNode}
-                          chemicalAllNodeEricNumbering={chemicalAllNodeEricNumbering}
                         />
                       </div>
                     )}
