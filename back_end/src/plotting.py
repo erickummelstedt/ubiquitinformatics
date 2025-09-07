@@ -2559,11 +2559,15 @@ def build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size):
         multimer_id = format_multimer_id(multimer_id)
         multimer_id = format_text(multimer_id)
 
+        # Get used_in_synthesis value from combined_database
+        used_in_synthesis = int(data_dict['combined_database'].loc[data_dict['combined_database']['index'] == idx, 'used_in_synthesis'].iloc[0])
+
         # Create a dictionary mapping columns to updated values, with 'Acceptor' as the first key
         steps_dict = {
+            'Used\nin\nSynthesis': used_in_synthesis,
             'Simulation\nindex': idx, 
             'Multimer Id': multimer_id,
-            'Acceptor': multimer_code
+            'Acceptor': multimer_code,
             }
 
         # Update the steps_dict with the combined values
@@ -2652,8 +2656,11 @@ def build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size):
 
         return compressed_dicts
 
+
     # Create the full dictionary and DataFrame for reaction schemes
     steps_df, steps_full_dict = full_dict_df_for_reaction_schemes(data_dict, indexes, multimer_size)
+
+    print("steps_full_dict:", steps_full_dict)
 
     # Call the function
     reaction_schemes_dicts = generate_all_lines_dicts(data_dict, indexes, multimer_size)

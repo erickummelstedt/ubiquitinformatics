@@ -262,6 +262,21 @@ const renderBox = (item, showReactionWell) => {
             >
                 Simulation Index: {item["Simulation\nindex"]}
             </div>
+            {!showReactionWell && (
+                <div
+                    style={{
+                        backgroundColor: item["Used\nin\nSynthesis"] === 1 ? 'rgba(144, 238, 144, 0.3)' : 'rgba(255, 255, 255, 0.95)',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        marginBottom: '10px',
+                    }}
+                >
+                    Selected for final synthesis: {item["Used\nin\nSynthesis"] === 1 ? "Yes" : "No"}
+                </div>
+            )}
             <div
                 style={{
                     backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -275,6 +290,7 @@ const renderBox = (item, showReactionWell) => {
             >
                 Multimer Synthesised: {item["Multimer Id"]}
             </div>
+            
                 <div
                 style={{
                         display: 'flex',
