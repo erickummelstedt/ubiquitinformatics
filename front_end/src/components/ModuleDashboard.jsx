@@ -194,7 +194,7 @@ const ModuleDashboard = () => {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
             <input
               type="text"
-              placeholder="Enter UbX_Y e.g.(Ub5_31)"
+              placeholder="Enter UbID (e.g. A63B-A48C) or multimer type (e.g. tetramer 5)"
               onKeyDown={async (e) => {
                 if (e.key === 'Enter') {
                   const value = e.target.value;
@@ -222,7 +222,20 @@ const ModuleDashboard = () => {
                         setFormattedEdges(result.formatted_edges);
                       }
                       if (result.ubxy) {
-                        setUbxyValue(result.ubxy);
+                        // Convert UbX_Y format to "Multimer Y" format for display
+                        const ubxyMatch = result.ubxy.match(/^Ub(\d+)_(\d+)$/);
+                        if (ubxyMatch) {
+                          const [, multimerSize, number] = ubxyMatch;
+                          const multimerName = {
+                            '2': 'Dimer',
+                            '3': 'Trimer', 
+                            '4': 'Tetramer',
+                            '5': 'Pentamer'
+                          }[multimerSize] || `Multimer ${multimerSize}`;
+                          setUbxyValue(`${multimerName} ${number}`);
+                        } else {
+                          setUbxyValue(result.ubxy);
+                        }
                       }
                       if (result.nomenclature_preorder_1A2) {
                         setNomenclaturePreorder1A2(result.nomenclature_preorder_1A2);
@@ -253,7 +266,7 @@ const ModuleDashboard = () => {
                 }
               }}
               style={{
-                width: '300px',
+                width: '480px',
                 padding: '8px',
                 borderRadius: '6px',
                 border: '1px solid #ccc',
@@ -266,9 +279,12 @@ const ModuleDashboard = () => {
               color: '#666',
               marginBottom: '-5px',
               textAlign: 'center',
-              fontStyle: 'italic'
+              fontStyle: 'italic',
+              lineHeight: '1.4'
             }}>
-              X = 4 or 5, Y = 1-819 for Ub4, 1-10472 for Ub5
+              <div>Nomenclature format: A63B-A48C (tetramer/pentamer only)</div>
+              <div>Multimer format: "dimer 5", "trimer 25", "tetramer 100", "pentamer 500"</div>
+              <div style={{ fontSize: '12px', marginTop: '4px' }}>Numbers: dimer 1-7, trimer 1-70, tetramer 1-819, pentamer 1-10472</div>
             </div>
             {/* Display EdgeTreeViewer if available */}
             {formattedEdges && ubxyValue && (

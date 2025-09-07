@@ -220,22 +220,47 @@ async def submit_ubxy(request: Request):
         ubiquitin_history = data_dict['ubiquitin_history']
 
         # If it starts with 'A', convert from nomenclature format to UbX_Y format 
-        if ubxy_value.startswith('1'):
+        if ubxy_value.startswith('A'):
             # Convert 'A1B2C3' style to 'U4_1' style
             try:
                 nomenclature_value = ubxy_value  # e.g., 'A1B2C3'
                 
                 parsed_edges = nomenclature.parse_compact_edges(ubxy_value)
-                print("parsed_edges: ", parsed_edges)   
+                
+                # Validation 1: Check that there are exactly 4 nodes (A, B, C, D)
+                all_nodes = set()
+                for src, linkage, dst in parsed_edges:
+                    all_nodes.add(src)
+                    all_nodes.add(dst)
+                
+                if len(all_nodes) != 4:
+                    return JSONResponse(content={"status": "error", "message": f"Structure must have exactly 4 nodes (A, B, C, D). Found {len(all_nodes)} nodes."}, status_code=400)
+                
+                if max(all_nodes) != 4:
+                    return JSONResponse(content={"status": "error", "message": "Structure must reach node D (4). Maximum node found: " + str(max(all_nodes))}, status_code=400)
+                
+                # Validation 2: Check that only K63 and K48 linkages are present
+                allowed_linkages = {'K63', 'K48'}
+                found_linkages = set()
+                for src, linkage, dst in parsed_edges:
+                    found_linkages.add(linkage)
+                
+                invalid_linkages = found_linkages - allowed_linkages
+                if invalid_linkages:
+                    return JSONResponse(content={"status": "error", "message": f"Only K63 and K48 linkages are allowed. Found invalid linkages: {list(invalid_linkages)}"}, status_code=400)
+                
+                print("hello3: ", "hello3" )
                 output_ubiG_json = nomenclature.build_polyubiquitin_from_edges(parsed_edges)
+                print("hello3: ", "hello3" )
                 print("output_ubiG_json: ", output_ubiG_json )
+                print("hello3: ", "hello3" )
                 # Load multimers JSON file and convert to dictionary
                 file_path1 = project_root / 'front_end' / 'src' / 'data' / f'multimer_id_to_json{multimer_size}.json'
                 with open(file_path1, 'r') as f:
                     multimers_dict = json.load(f)
 
                 # Find the key in multimers_dict that corresponds to output_ubiG_json
-                print("output_ubiG_json: ", output_ubiG_json )
+                print("hello3: ", output_ubiG_json )
                 print("ubxy_value found:", ubxy_value)
 
                 ubxy_value = None
@@ -778,6 +803,7 @@ async def submit_nomenclature_request(request: Request):
     from pathlib import Path
     import pandas as pd
     import copy
+    import json
 
     # Dynamically get the backend path relative to this file's location
     current_path = Path(__file__).resolve()
@@ -799,19 +825,53 @@ async def submit_nomenclature_request(request: Request):
         if not ubxy_value:
             return JSONResponse(content={"status": "error", "message": "No UbX_Y value provided"}, status_code=400)
 
-        # Validate that ubxy_value begins with 'U' or 'A'
-        if not (ubxy_value.startswith('U') or ubxy_value.startswith('1')):
-            return JSONResponse(content={"status": "error", "message": "UbX_Y value must begin with 'U' or '1'"}, status_code=400)
+        # Validate and process different input formats
+        if ubxy_value.lower().startswith(('dimer', 'trimer', 'tetramer', 'pentamer')):
+            # Handle dimer/trimer/tetramer/pentamer format
+            parts = ubxy_value.lower().split()
+            if len(parts) != 2:
+                return JSONResponse(content={"status": "error", "message": "Format must be 'multimer_type number' (e.g., 'dimer 1', 'tetramer 50')"}, status_code=400)
+            
+            multimer_type = parts[0]
+            try:
+                multimer_number = int(parts[1])
+            except ValueError:
+                return JSONResponse(content={"status": "error", "message": "Second part must be a number"}, status_code=400)
+            
+            # Validate ranges and convert to UbX_Y format
+            if multimer_type == 'dimer':
+                if not (1 <= multimer_number <= 7):
+                    return JSONResponse(content={"status": "error", "message": "Dimer number must be between 1-7"}, status_code=400)
+                ubxy_value = f"Ub2_{multimer_number}"
+                multimer_size = 2
+            elif multimer_type == 'trimer':
+                if not (1 <= multimer_number <= 70):
+                    return JSONResponse(content={"status": "error", "message": "Trimer number must be between 1-70"}, status_code=400)
+                ubxy_value = f"Ub3_{multimer_number}"
+                multimer_size = 3
+            elif multimer_type == 'tetramer':
+                if not (1 <= multimer_number <= 819):
+                    return JSONResponse(content={"status": "error", "message": "Tetramer number must be between 1-819"}, status_code=400)
+                ubxy_value = f"Ub4_{multimer_number}"
+                multimer_size = 4
+            elif multimer_type == 'pentamer':
+                if not (1 <= multimer_number <= 10472):
+                    return JSONResponse(content={"status": "error", "message": "Pentamer number must be between 1-10472"}, status_code=400)
+                ubxy_value = f"Ub5_{multimer_number}"
+                multimer_size = 5
+            
+            logger.info(f"Converted {parts[0]} {parts[1]} to {ubxy_value}")
+            
+        elif ubxy_value.startswith('A'):
+            # Handle A63B nomenclature format
+            try:
+                # Determine multimer size from nomenclature
+                multimer_size = int(nomenclature.multimer_length_from_nomenclature(ubxy_value))
+                if multimer_size not in [4, 5]:
+                    return JSONResponse(content={"status": "error", "message": "Nomenclature must correspond to multimer size 4 or 5"}, status_code=400)
+            except Exception as e:
+                return JSONResponse(content={"status": "error", "message": f"Error determining multimer size from nomenclature: {str(e)}"}, status_code=400)
 
-        logger.info(f"Received UbX_Y value: {ubxy_value}")
-
-        # Original UbX_Y processing for values starting with 'U'
-        # Split UbX_Y value into X and Y components
-        ubxy_parts = ubxy_value.replace("Ub", "").split('_')
-        X = int(ubxy_parts[0])  # Multimer size (4 or 5)
-        Y = int(ubxy_parts[1])  # Index number
-        multimer_size = X
-        
         # Function to load JSON data
         def download_jsons(multimer_size):
             input_dir = project_root / 'back_end' / 'data' / 'all_jsons'
@@ -834,12 +894,49 @@ async def submit_nomenclature_request(request: Request):
         multimer_jsons = data_dict['multimer_jsons']
         multimer_contexts = data_dict['multimer_contexts']
 
+        # If it starts with 'A', convert from nomenclature format to UbX_Y format 
+        if ubxy_value.startswith('A'):
+            # Convert 'A1B2C3' style to 'U4_1' style
+            try:
+                nomenclature_value = ubxy_value  # e.g., 'A1B2C3'
+                
+                # Determine multimer size from nomenclature
+                multimer_size = int(nomenclature.multimer_length_from_nomenclature(ubxy_value))
+                
+                parsed_edges = nomenclature.parse_compact_edges(ubxy_value)
+                output_ubiG_json = nomenclature.build_polyubiquitin_from_edges(parsed_edges)
+
+                # Find the key in multimers_dict that corresponds to output_ubiG_json
+                ubxy_value = None
+
+                for key, value in multimer_jsons.items():
+                    if str(value) == str(output_ubiG_json):
+                        multimer_number = key
+                        break
+
+                if multimer_number is None:
+                    return JSONResponse(content={"status": "error", "message": "Generated structure not found in multimers database"}, status_code=404)
+
+                # create the UbX_Y value
+                ubxy_value = f"Ub{multimer_size}_{multimer_number}"  # Assuming index matches multimer number for simplicity
+
+                logger.info(f"Converted {nomenclature_value} to {ubxy_value}")  # Debug print
+            except Exception as e:
+                return JSONResponse(content={"status": "error", "message": f"Error in nomenclature conversion: {str(e)}"}, status_code=400)
+
+        # Original UbX_Y processing for values starting with 'U'
+        # Split UbX_Y value into X and Y components
+        ubxy_parts = ubxy_value.replace("Ub", "").split('_')
+        X = int(ubxy_parts[0])  # Multimer size (4 or 5)
+        Y = int(ubxy_parts[1])  # Index number
+        multimer_size = X
+
         # Find the multimer in the JSON data
         if str(Y) in multimer_jsons:
             final_multimer = multimer_jsons[str(Y)]
         else:
             return JSONResponse(content={"status": "error", "message": f"Multimer {ubxy_value} not found in database"}, status_code=404)
-        
+
         # Pull the final multimer json and context
         output_json, output_context = main.iterate_through_ubiquitin(final_multimer)
         

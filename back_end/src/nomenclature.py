@@ -111,13 +111,17 @@ def parse_compact_edges(compact):
     Parse compact edge notation into [[src, 'Kxx', dst], ...].
 
     Accepts either:
-      - a single string like "1A2, 1B4, 2A3, 4B5" (comma-separated)
-      - a single string like "1A2-2A3-3A4-4B5" (dash-separated)
-      - an iterable of strings like ["1A2", "1B4", "2A3", "4B5"]
+      - a single string like "A63B, A48D, B63C, D48E" (comma-separated)
+      - a single string like "A63B-A48D-B63C-D48E" (dash-separated)
+      - an iterable of strings like ["A63B", "A48D", "B63C", "D48E"]
+
+    Format: Letter-LysineNumber-Letter (e.g., A63B = node A connects to node B via K63)
+    Node mapping: A=1, B=2, C=3, D=4, etc.
+    Lysine mapping: 63=K63, 48=K48, 33=K33, 29=K29, 27=K27, 11=K11, 6=K6
 
     Returns: list of [int, str, int], e.g. [[1,'K63',2], ...]
     """
-    # Normalize to a list of tokens like ["1A2", "1B4", ...]
+    # Normalize to a list of tokens like ["A63B", "A48D", ...]
     if isinstance(compact, str):
         # split on commas or dashes; also allow arbitrary whitespace
         if ',' in compact:
@@ -130,17 +134,39 @@ def parse_compact_edges(compact):
     else:
         tokens = [str(t).strip() for t in compact if str(t).strip()]
 
+    # Reverse mapping from lysine numbers to K notation
+    LYSINE_NUM_TO_K = {
+        '63': 'K63',
+        '48': 'K48',
+        '33': 'K33',
+        '29': 'K29',
+        '27': 'K27',
+        '11': 'K11',
+        '6': 'K6'
+    }
+    
+    def letter_to_number(letter):
+        """Convert letter to number: A->1, B->2, C->3, etc."""
+        return ord(letter.upper()) - ord('A') + 1
+
     edges = []
-    pat = re.compile(r'^(\d+)\s*([A-G])\s*(\d+)$')
+    pat = re.compile(r'^([A-Z])(\d+)([A-Z])$')
     for tok in tokens:
         m = pat.match(tok)
         if not m:
-            raise ValueError(f"Invalid compact edge token: {tok!r} (expected like '12A7')")
-        s, letter, d = m.groups()
-        lys = LETTER_TO_LYS.get(letter)
+            raise ValueError(f"Invalid compact edge token: {tok!r} (expected like 'A63B')")
+        src_letter, lysine_num, dst_letter = m.groups()
+        
+        # Convert letters to numbers
+        src_num = letter_to_number(src_letter)
+        dst_num = letter_to_number(dst_letter)
+        
+        # Convert lysine number to K notation
+        lys = LYSINE_NUM_TO_K.get(lysine_num)
         if lys is None:
-            raise ValueError(f"Unknown lysine letter: {letter!r}")
-        edges.append([int(s), lys, int(d)])
+            raise ValueError(f"Unknown lysine number: {lysine_num!r}")
+        
+        edges.append([src_num, lys, dst_num])
     return edges
 
 # NEW FUNCTION: build_polyubiquitin_from_edges
@@ -155,15 +181,17 @@ def build_polyubiquitin_from_edges(connections):
     Returns:
         dict: The final polyubiquitin structure built from the edges.
     """
-    print("hello")
+
+    # Start with the base ubiquitin molecule
+    new_ubi_ubq_1 = ubi_ubq_1
+    new_ubi_ubq_1= convert_json_to_dict(new_ubi_ubq_1)
+    new_ubi_ubq_1['chain_number'] = int(1)
+    current_structure = new_ubi_ubq_1.copy()
+
     if not connections:
         # Nothing to add: just iterate the base structure
-        output_structure, _ = iterate_through_ubiquitin(histag_ubi_ubq_1)
+        output_structure, _ = iterate_through_ubiquitin(ubi_ubq_1)
         return output_structure
-
-    print("hello2")
-    # Start with the base ubiquitin molecule
-    current_structure = histag_ubi_ubq_1
 
     # Apply each connection iteratively; dst is implied/unused by ubiquitin_building_all
     for edge in connections:
@@ -180,8 +208,6 @@ def build_polyubiquitin_from_edges(connections):
             # If src isn't an int, skip this edge
             continue
         lysine_residue = str(lys)
-
-        print("hello3")
 
         # Prepare the new ubiquitin to add. give it the correct chain number
         new_ubi_ubq_1 = ubi_ubq_1
@@ -207,16 +233,21 @@ def multimer_length_from_nomenclature(compact: str) -> int:
     Return the number of unique ubiquitin units in a compact edge string.
 
     Example:
-        "1A2-2A3-3A4-4B5" -> 5  (units: {1,2,3,4,5})
+        "A63B-A48C-B63D" -> 4  (units: {A,B,C,D} = {1,2,3,4})
 
-    Accepts letters A–G for lysines (fixed mapping), ignores whitespace.
+    Accepts the A63B format (Letter-LysineNumber-Letter), ignores whitespace.
     """
-    # Find all "number Letter number" patterns, e.g. 1A2, 12B7, etc.
-    pairs = re.findall(r'(\d+)\s*[A-G]\s*(\d+)', compact)
+    # Find all "Letter LysineNumber Letter" patterns, e.g. A63B, B48C, etc.
+    pairs = re.findall(r'([A-Z])\d+([A-Z])', compact)
     nodes = set()
-    for s, d in pairs:
-        nodes.add(int(s))
-        nodes.add(int(d))
+    
+    def letter_to_number(letter):
+        """Convert letter to number: A->1, B->2, C->3, etc."""
+        return ord(letter.upper()) - ord('A') + 1
+    
+    for src_letter, dst_letter in pairs:
+        nodes.add(letter_to_number(src_letter))
+        nodes.add(letter_to_number(dst_letter))
     return len(nodes)
 
 
@@ -250,7 +281,7 @@ def format_nomenclature_preorder_A63B(edges):
     Node mapping: 1 -> A, 2 -> B, 3 -> C, 4 -> D, etc.
     
     Example:
-        [[1, 'K63', 2], [1, 'K48', 4]] -> "A63B-A48D"
+        [[1, 'K63', 2], [1, 'K48', 3]] -> "A63B-A48C"
     """
     lysine_map = {
         'K63': '63',

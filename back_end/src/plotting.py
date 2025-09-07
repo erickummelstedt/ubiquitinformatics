@@ -2656,7 +2656,6 @@ def build_reaction_dictionaries_for_UI(data_dict, indexes, multimer_size):
 
         return compressed_dicts
 
-
     # Create the full dictionary and DataFrame for reaction schemes
     steps_df, steps_full_dict = full_dict_df_for_reaction_schemes(data_dict, indexes, multimer_size)
 
