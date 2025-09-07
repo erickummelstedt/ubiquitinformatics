@@ -406,7 +406,7 @@ const ModuleDashboard = () => {
                         }
                       }}
                       style={{
-                        width: '300px',
+                        width: '450px',
                         padding: '8px',
                         borderRadius: '6px',
                         border: '1px solid #ccc',
