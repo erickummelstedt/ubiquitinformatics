@@ -14,7 +14,7 @@ from src.simulation import *
 from src.utils.utils import *
 from src.data_cleaning import *
 from src.all_linkages import *
-from tests.test_data import *
+from src.building_blocks import *
 
 # =========================================================
 # Run tests to ensure the code is working correctly

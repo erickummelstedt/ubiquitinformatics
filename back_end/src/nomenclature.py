@@ -15,7 +15,7 @@ from src.simulation import *
 from src.utils.utils import *
 from src.data_cleaning import *
 from src.all_linkages import *
-from tests.test_data import *
+from src.building_blocks import *
 
 """
 UBIQUITIN NOMENCLATURE SYSTEM
@@ -243,7 +243,7 @@ def build_polyubiquitin_from_edges_with_histag(connections):
     new_ubi_ubq_1= convert_json_to_dict(new_ubi_ubq_1)
     new_ubi_ubq_1['chain_number'] = int(1)
     current_structure = new_ubi_ubq_1.copy()
-    
+
     if not connections:
         # Nothing to add: just iterate the base structure
         output_structure, _ = iterate_through_ubiquitin(ubi_ubq_1)

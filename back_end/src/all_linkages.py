@@ -14,7 +14,7 @@ sys.path.insert(0, str(local_path))
 from src.utils.utils import *
 from src.utils.logging_utils import *
 from src.main import * 
-from tests.test_data import ubi_ubq_1
+from src.building_blocks import ubi_ubq_1
 
 def process_branch_all(branch, working_dictionary, context):
     """

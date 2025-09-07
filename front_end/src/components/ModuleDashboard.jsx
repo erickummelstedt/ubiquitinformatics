@@ -741,9 +741,9 @@ const ModuleDashboard = () => {
             </button>
             <div style={{ textAlign: 'center', color: '#388e3c', fontWeight: 600, fontSize: 15, marginBottom: 16 }}>
               The following files will also be included:<br />
-              <span style={{ color: '#1976d2' }}>reagent calculations (NAME_reagent_calculations.xlsx)</span><br />
-              <span style={{ color: '#1976d2' }}>opentrons synthesis (NAME_opentrons_synthesis.py)</span><br />
-              <span style={{ color: '#1976d2' }}>reaction schemes (NAME_reaction_schemes.png)</span>
+              <span style={{ color: '#1976d2' }}>reagent calculations (.xlsx)</span><br />
+              <span style={{ color: '#1976d2' }}>opentrons synthesis (.py)</span><br />
+              <span style={{ color: '#1976d2' }}>plate map schemes (.png)</span>
             </div>
           </div>
           <div>

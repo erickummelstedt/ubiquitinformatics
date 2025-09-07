@@ -18,7 +18,7 @@ sys.path.insert(0, str(local_path))
 
 from src.main import *
 from src.utils.utils import *
-from tests.test_data import *
+from src.building_blocks import *
 
 def simulate_E2_steps(
     history_dict: dict,
