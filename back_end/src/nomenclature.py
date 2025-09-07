@@ -380,10 +380,10 @@ def conjugated_lysines_to_jeff_K48_K63_nomenclature(conjugated_lysines):
 
 
 # ==================================
-# ==== Jeff all lysines Nomenclature Conversion
+# ==== all lysines Nomenclature Conversion
 # ==================================
 
-def conjugated_lysines_to_jeff_all_lysines_nomenclature(conjugated_lysines):
+def conjugated_lysines_all_lysines_nomenclature(conjugated_lysines):
     """
     Convert conjugated lysines format to tree nomenclature using 7-lysine mapping system
     
@@ -558,7 +558,7 @@ def conjugated_lysines_to_jeffs_multiple_symbols(conjugated_lysines):
         K27: evens with lowercase letter + * (e.g., b*2, c*2, d*4)
         M1:  odds with lowercase letter + * (e.g., b*1, c*1, d*3)
     
-    Formula: position = ((parent_letter_size + parent_number) - 1) * 8 + child_number
+    Formula: position = ((parent_letter_size + parent_number) - 1) * 2 + child_number
     
     Where:
         parent_letter_size: Numeric value based on parent's notation type
@@ -567,15 +567,26 @@ def conjugated_lysines_to_jeffs_multiple_symbols(conjugated_lysines):
             - 4 for lowercase without asterisk (e.g., a1, b2)
             - 6 for lowercase with asterisk (e.g., a*1, b*2)
         parent_number: The numeric part of the parent's notation (e.g., 2 from "B2" or "b*2")
+        - 1 to count the number of nodes before you reach your node otherwise you also include your node
         child_number: Position increment based on lysine type
             - +1 for K48, K29, K6, M1 (odd positions)
             - +2 for K63, K33, K11, K27 (even positions)
+
+        lysine_to_notation = {
+        'K63': ('upper', False, 2),   # uppercase, no asterisk, child_number=+2
+        'K48': ('upper', False, 1),   # uppercase, no asterisk, child_number=+1
+        'K33': ('upper', True, 2),    # uppercase, asterisk, child_number=+2
+        'K29': ('upper', True, 1),    # uppercase, asterisk, child_number=+1
+        'K11': ('lower', False, 2),   # lowercase, no asterisk, child_number=+2
+        'K6':  ('lower', False, 1),   # lowercase, no asterisk, child_number=+1
+        'K27': ('lower', True, 2),    # lowercase, asterisk, child_number=+2
+        'M1':  ('lower', True, 1)     # lowercase, asterisk, child_number=+1
+    }
     """
     if not conjugated_lysines:
         return "A1"  # Single ubiquitin
     
     # Lysine to notation mapping with child_number increments
-    # My recomendation to Jeff, is the natural mapping of 
     # K63, K48, K33, K29, K27, K11, K6, M1 = 1, 2, 1, 2, 1, 2, 1, 2 
     lysine_to_notation = {
         'K63': ('upper', False, 2),   # uppercase, no asterisk, child_number=+2
@@ -588,6 +599,7 @@ def conjugated_lysines_to_jeffs_multiple_symbols(conjugated_lysines):
         'M1':  ('lower', True, 1)     # lowercase, asterisk, child_number=+1
     }
 
+    # Alternative mapping examples exactly
     lysine_to_notation_better = {
         'K63': ('upper', False, 1),   # uppercase, no asterisk, child_number=+2
         'K48': ('upper', False, 2),   # uppercase, no asterisk, child_number=+1

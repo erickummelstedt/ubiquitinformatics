@@ -338,7 +338,7 @@ const SubgraphAnalysisPage = () => {
       <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#f0f8ff', border: '1px solid #b0d4f1', borderRadius: '8px' }}>
         <h3 style={{ margin: '0 0 12px 0', color: '#2c5282', fontWeight: 'bold' }}>Subgraph Containment Analysis Table</h3>
         <p style={{ margin: 0, color: '#4a5568', lineHeight: '1.5' }}>
-          This table displays a subgraph containment matrix that quantifies how many times smaller ubiquitin multimers (subgraphs) are found as isomorphic structures within larger ubiquitin multimers (supergraphs). Each subgraph corresponds to a structural epitope.
+          This table displays a subgraph containment matrix that quantifies how many times smaller ubiquitin multimers (subgraphs) are found as isomorphic structures within larger ubiquitin multimers (supergraphs). Each subgraph could correspond to a structural epitope.
         </p>
       </div>
       

@@ -62,9 +62,8 @@ const ModuleDashboard = () => {
   const [nomenclaturePreorderA63B, setNomenclaturePreorderA63B] = useState(null); // Store A63B's preorder nomenclature
   const [graphwopreorderNomenclatureWPreorder, setGraphWOpreorderNomenclatureWPreorder] = useState(null); // Store graph nomenclature without preorder
   const [graphwpreorderNomenclatureWPreorder, setGraphwpreorderNomenclatureWPreorder] = useState(null); // Store graph nomenclature with preorder
-  const [jeffMultipleSymbols, setJeffMultipleSymbols] = useState(null); // Store jeff multiple symbols nomenclature
-  const [jeffAllLysinesNomenclature, setJeffAllLysinesNomenclature] = useState(null); // Store jeff all lysines nomenclature
-  const [jeffMultipleSymbolsEricNumbering, setJeffMultipleSymbolsEricNumbering] = useState(null); // Store jeff multiple symbols eric numbering
+  const [chemicalAllNode, setChemicalAllNode] = useState(null); // Store jeff multiple symbols nomenclature
+  const [chemicalAllNodeEricNumbering, setChemicalAllNodeEricNumbering] = useState(null); // Store jeff multiple symbols eric numbering
   const [outputJsonString, setOutputJsonString] = useState(null); // Store output JSON from nomenclature API
   const [massSpecTxtFile, setMassSpecTxtFile] = useState(null); // Store txt file content from nomenclature API
   const [inputNodes, setInputNodes] = useState({
@@ -87,9 +86,8 @@ const ModuleDashboard = () => {
     setNomenclaturePreorderA63B(null);
     setGraphWOpreorderNomenclatureWPreorder(null);
     setGraphwpreorderNomenclatureWPreorder(null);
-    setJeffMultipleSymbols(null);
-    setJeffAllLysinesNomenclature(null);
-    setJeffMultipleSymbolsEricNumbering(null);
+    setChemicalAllNode(null);
+    setChemicalAllNodeEricNumbering(null);
     setOutputJsonString(null);
     setMassSpecTxtFile(null);
   }, [page]);
@@ -122,7 +120,6 @@ const ModuleDashboard = () => {
       setNomenclaturePreorder1A2(null); // Clear nomenclature value
       setGraphWOpreorderNomenclatureWPreorder(null); // Clear strieter nomenclature
       setGraphwpreorderNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
-      setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
 
       const response = await fetch('/api/submit-selection', {
         method: 'POST',
@@ -211,7 +208,6 @@ const ModuleDashboard = () => {
                       setNomenclaturePreorder1A2(null);
                       setGraphWOpreorderNomenclatureWPreorder(null);
                       setGraphwpreorderNomenclatureWPreorder(null);
-                      setJeffAllLysinesNomenclature(null);
                       setOutputJsonString(null);
                       setMassSpecTxtFile(null);
 
@@ -242,14 +238,11 @@ const ModuleDashboard = () => {
                       if (result.graph_w_preorder_nomenclature) {
                         setGraphwpreorderNomenclatureWPreorder(result.graph_w_preorder_nomenclature);
                       }
-                      if (result.jeff_multiple_symbols) {
-                        setJeffMultipleSymbols(result.jeff_multiple_symbols);
+                      if (result.chemical_all_node_nomenclature) {
+                        setChemicalAllNode(result.chemical_all_node_nomenclature);
                       }
-                      if (result.jeff_all_lysines_nomenclature) {
-                        setJeffAllLysinesNomenclature(result.jeff_all_lysines_nomenclature);
-                      }
-                      if (result.jeff_multiple_symbols_eric_numbering) {
-                        setJeffMultipleSymbolsEricNumbering(result.jeff_multiple_symbols_eric_numbering);
+                      if (result.chemical_all_node_nomenclature_eric_numbering) {
+                        setChemicalAllNodeEricNumbering(result.chemical_all_node_nomenclature_eric_numbering);
                       }
                       if (result.output_json) {
                         setOutputJsonString(result.output_json);
@@ -292,9 +285,8 @@ const ModuleDashboard = () => {
                   nomenclaturePreorderA63B={nomenclaturePreorderA63B}
                   graphwopreorderNomenclatureWPreorder={graphwopreorderNomenclatureWPreorder}
                   graphwpreorderNomenclatureWPreorder={graphwpreorderNomenclatureWPreorder}
-                  jeffMultipleSymbols={jeffMultipleSymbols}
-                  jeffAllLysinesNomenclature={jeffAllLysinesNomenclature}
-                  jeffMultipleSymbolsEricNumbering={jeffMultipleSymbolsEricNumbering}
+                  chemicalAllNode={chemicalAllNode}
+                  chemicalAllNodeEricNumbering={chemicalAllNodeEricNumbering}
                   outputJsonString={outputJsonString}
                   massSpecTxtFile={massSpecTxtFile}
                 />
@@ -328,7 +320,6 @@ const ModuleDashboard = () => {
                               setNomenclaturePreorder1A2(null); // Clear nomenclature value
                               setGraphWOpreorderNomenclatureWPreorder(null); // Clear strieter nomenclature
                               setGraphwpreorderNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
-                              setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
                               setInputNodes({
                                 nodes: DEFAULT_NODES,
                                 arrows: [],
@@ -364,14 +355,11 @@ const ModuleDashboard = () => {
                               if (result.graph_w_preorder_nomenclature) {
                                 setGraphwpreorderNomenclatureWPreorder(result.graph_w_preorder_nomenclature);
                               }
-                              if (result.jeff_multiple_symbols) {
-                                setJeffMultipleSymbols(result.jeff_multiple_symbols);
+                              if (result.chemical_all_node_nomenclature) {
+                                setChemicalAllNode(result.chemical_all_node_nomenclature);
                               }
-                              if (result.jeff_all_lysines_nomenclature) {
-                                setJeffAllLysinesNomenclature(result.jeff_all_lysines_nomenclature);
-                              }
-                              if (result.jeff_multiple_symbols_eric_numbering) {
-                                setJeffMultipleSymbolsEricNumbering(result.jeff_multiple_symbols_eric_numbering);
+                              if (result.chemical_all_node_nomenclature_eric_numbering) {
+                                setChemicalAllNodeEricNumbering(result.chemical_all_node_nomenclature_eric_numbering);
                               }
                               
                               const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
@@ -456,7 +444,6 @@ const ModuleDashboard = () => {
                           setNomenclaturePreorder1A2(null); // Clear nomenclature value
                           setGraphWOpreorderNomenclatureWPreorder(null); // Clear strieter nomenclature
                           setGraphwpreorderNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
-                          setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
                           // Don't reset inputNodes here to preserve the arrows and scaffold state
 
                           setJsonOutput(jsonOutput);
@@ -491,14 +478,11 @@ const ModuleDashboard = () => {
                             if (result.graph_w_preorder_nomenclature) {
                               setGraphwpreorderNomenclatureWPreorder(result.graph_w_preorder_nomenclature);
                             }
-                            if (result.jeff_multiple_symbols) {
-                              setJeffMultipleSymbols(result.jeff_multiple_symbols);
+                            if (result.chemical_all_node_nomenclature) {
+                              setChemicalAllNode(result.chemical_all_node_nomenclature);
                             }
-                            if (result.jeff_all_lysines_nomenclature) {
-                              setJeffAllLysinesNomenclature(result.jeff_all_lysines_nomenclature);
-                            }
-                            if (result.jeff_multiple_symbols_eric_numbering) {
-                              setJeffMultipleSymbolsEricNumbering(result.jeff_multiple_symbols_eric_numbering);
+                            if (result.chemical_all_node_nomenclature_eric_numbering) {
+                              setChemicalAllNodeEricNumbering(result.chemical_all_node_nomenclature_eric_numbering);
                             }
                             
                             const decodedSequence = JSON.parse(atob(result.reaction_sequences_b64));
@@ -520,9 +504,8 @@ const ModuleDashboard = () => {
                           nomenclaturePreorderA63B={nomenclaturePreorderA63B}
                           graphwopreorderNomenclatureWPreorder={graphwopreorderNomenclatureWPreorder}
                           graphwpreorderNomenclatureWPreorder={graphwpreorderNomenclatureWPreorder}
-                          jeffMultipleSymbols={jeffMultipleSymbols}
-                          jeffAllLysinesNomenclature={jeffAllLysinesNomenclature}
-                          jeffMultipleSymbolsEricNumbering={jeffMultipleSymbolsEricNumbering}
+                          chemicalAllNode={chemicalAllNode}
+                          chemicalAllNodeEricNumbering={chemicalAllNodeEricNumbering}
                         />
                       </div>
                     )}
