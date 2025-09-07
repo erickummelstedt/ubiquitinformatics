@@ -160,6 +160,7 @@ async def submit_ubxy(request: Request):
     from pathlib import Path
     import pandas as pd
     import copy
+    import json
 
     # Dynamically get the backend path relative to this file's location
     current_path = Path(__file__).resolve()
@@ -182,13 +183,13 @@ async def submit_ubxy(request: Request):
             return JSONResponse(content={"status": "error", "message": "No UbX_Y value provided"}, status_code=400)
 
         # Validate that ubxy_value begins with 'U' or 'A'
-        if not (ubxy_value.startswith('U') or ubxy_value.startswith('1')):
+        if not (ubxy_value.startswith('U') or ubxy_value.startswith('A')):
             return JSONResponse(content={"status": "error", "message": "UbX_Y value must begin with 'U' or '1'"}, status_code=400)
 
         logger.info(f"Received UbX_Y value: {ubxy_value}")
 
         # If it starts with 'A', fix the nomenclature
-        if ubxy_value.startswith('1'):
+        if ubxy_value.startswith('A'):
             # Original UbX_Y processing for values starting with 'U'
             multimer_size = int(nomenclature.multimer_length_from_nomenclature(ubxy_value))  # Rough estimate based on length
         else:
@@ -225,53 +226,26 @@ async def submit_ubxy(request: Request):
             try:
                 nomenclature_value = ubxy_value  # e.g., 'A1B2C3'
                 
+                # Determine multimer size from nomenclature
+                multimer_size = int(nomenclature.multimer_length_from_nomenclature(ubxy_value))
+                
                 parsed_edges = nomenclature.parse_compact_edges(ubxy_value)
-                
-                # Validation 1: Check that there are exactly 4 nodes (A, B, C, D)
-                all_nodes = set()
-                for src, linkage, dst in parsed_edges:
-                    all_nodes.add(src)
-                    all_nodes.add(dst)
-                
-                if len(all_nodes) != 4:
-                    return JSONResponse(content={"status": "error", "message": f"Structure must have exactly 4 nodes (A, B, C, D). Found {len(all_nodes)} nodes."}, status_code=400)
-                
-                if max(all_nodes) != 4:
-                    return JSONResponse(content={"status": "error", "message": "Structure must reach node D (4). Maximum node found: " + str(max(all_nodes))}, status_code=400)
-                
-                # Validation 2: Check that only K63 and K48 linkages are present
-                allowed_linkages = {'K63', 'K48'}
-                found_linkages = set()
-                for src, linkage, dst in parsed_edges:
-                    found_linkages.add(linkage)
-                
-                invalid_linkages = found_linkages - allowed_linkages
-                if invalid_linkages:
-                    return JSONResponse(content={"status": "error", "message": f"Only K63 and K48 linkages are allowed. Found invalid linkages: {list(invalid_linkages)}"}, status_code=400)
-                
-                print("hello3: ", "hello3" )
-                output_ubiG_json = nomenclature.build_polyubiquitin_from_edges(parsed_edges)
-                print("hello3: ", "hello3" )
-                print("output_ubiG_json: ", output_ubiG_json )
-                print("hello3: ", "hello3" )
-                # Load multimers JSON file and convert to dictionary
+                output_ubiG_json = nomenclature.build_polyubiquitin_from_edges_with_histag(parsed_edges)
+
+                # Find the key in multimers_dict that corresponds to output_ubiG_json
+                ubxy_value = None
+
                 file_path1 = project_root / 'front_end' / 'src' / 'data' / f'multimer_id_to_json{multimer_size}.json'
                 with open(file_path1, 'r') as f:
                     multimers_dict = json.load(f)
 
-                # Find the key in multimers_dict that corresponds to output_ubiG_json
-                print("hello3: ", output_ubiG_json )
-                print("ubxy_value found:", ubxy_value)
-
-                ubxy_value = None
                 for key, value in multimers_dict.items():
                     if value == str(output_ubiG_json):
                         ubxy_value = key
                         break
+
                 if ubxy_value is None:
                     return JSONResponse(content={"status": "error", "message": "Generated structure not found in multimers database"}, status_code=404)
-                    
-                print("ubxy_value found:", ubxy_value)
 
                 logger.info(f"Converted {nomenclature_value} to {ubxy_value}")  # Debug print
             except Exception as e:

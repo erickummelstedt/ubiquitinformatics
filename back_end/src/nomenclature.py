@@ -169,7 +169,7 @@ def parse_compact_edges(compact):
         edges.append([src_num, lys, dst_num])
     return edges
 
-# NEW FUNCTION: build_polyubiquitin_from_edges
+# build_polyubiquitin_from_edges
 def build_polyubiquitin_from_edges(connections):
     """
     Build a polyubiquitin structure from an explicit edge list.
@@ -225,6 +225,61 @@ def build_polyubiquitin_from_edges(connections):
     output_structure, _ = iterate_through_ubiquitin(current_structure)
     return output_structure
 
+# build_polyubiquitin_from_edges
+def build_polyubiquitin_from_edges_with_histag(connections):
+    """
+    Build a polyubiquitin structure from an explicit edge list.
+
+    Args:
+        connections (list): List like [[src, 'Kxx', dst], ...],
+                            e.g. [[1, 'K63', 2], [1, 'K48', 4], [2, 'K63', 3], [4, 'K48', 5]]
+
+    Returns:
+        dict: The final polyubiquitin structure built from the edges.
+    """
+
+    # Start with the base ubiquitin molecule
+    new_ubi_ubq_1 = histag_ubi_ubq_1
+    new_ubi_ubq_1= convert_json_to_dict(new_ubi_ubq_1)
+    new_ubi_ubq_1['chain_number'] = int(1)
+    current_structure = new_ubi_ubq_1.copy()
+    
+    if not connections:
+        # Nothing to add: just iterate the base structure
+        output_structure, _ = iterate_through_ubiquitin(ubi_ubq_1)
+        return output_structure
+
+    # Apply each connection iteratively; dst is implied/unused by ubiquitin_building_all
+    for edge in connections:
+        try:
+            src, lys, dst = edge  
+        except ValueError:
+            # Skip malformed edges
+            continue
+
+        # Normalize types
+        try:
+            ubiquitin_number = int(src)
+        except (TypeError, ValueError):
+            # If src isn't an int, skip this edge
+            continue
+        lysine_residue = str(lys)
+
+        # Prepare the new ubiquitin to add. give it the correct chain number
+        new_ubi_ubq_1 = ubi_ubq_1
+        new_ubi_ubq_1= convert_json_to_dict(new_ubi_ubq_1)
+        new_ubi_ubq_1['chain_number'] = int(dst)
+
+        # Build the chain
+        current_structure, _ = ubiquitin_building_all(
+            parent_dictionary=current_structure,
+            ubi_molecule_to_add=new_ubi_ubq_1,
+            ubiquitin_number=ubiquitin_number,
+            lysine_residue=lysine_residue,
+        )
+
+    output_structure, _ = iterate_through_ubiquitin(current_structure)
+    return output_structure
 
 import re
 

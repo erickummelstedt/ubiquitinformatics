@@ -315,7 +315,7 @@ const ModuleDashboard = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
                     <input
                       type="text"
-                      placeholder="Enter UbX_Y e.g.(Ub5_31)"
+                      placeholder="Enter UbID (e.g. A63B-B48C-C63D) or UbX_Y e.g.(Ub4_11)"
                       onKeyDown={async (e) => {
                         if (e.key === 'Enter') {
                           const value = e.target.value;
