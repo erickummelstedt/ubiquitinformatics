@@ -59,8 +59,9 @@ fi
 
 # Step 6: Install Node.js dependencies if needed
 if [ -d "front_end" ]; then
-  echo "📥 Installing frontend dependencies..."
+  echo "📥 Installing frontend dependencies (clean)..."
   cd front_end
+  rm -rf node_modules package-lock.json
   npm install
   cd ..
 fi
