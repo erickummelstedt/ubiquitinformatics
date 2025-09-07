@@ -1,0 +1,444 @@
+import React, { useRef, useEffect, useState } from 'react';
+
+// Integrated simulateClicksFromJson function
+function simulateClicksFromJson(json, nodes, edges) {
+  let clicked = new Set();
+  let arrows = [];
+  let mapping = {};
+  let smallNodes = [];
+
+  function recurse(ub, parentIdx, used, originIdx = parentIdx) {
+    nodes[parentIdx] = { ...nodes[parentIdx], clicks: 1, chain_number: ub.chain_number };
+    mapping[ub.chain_number] = parentIdx;
+    clicked.add(parentIdx);
+
+    for (const site of ub.branching_sites || []) {
+      if (site.children && typeof site.children === 'object') {
+        const childIdx = findNextAllowedNode(parentIdx, used, site.site_name);
+        if (childIdx !== null && childIdx < nodes.length) {
+          let color = 'gray';
+          if (site.site_name === 'K48') color = 'red';
+          else if (site.site_name === 'K63') color = 'blue';
+
+          arrows.push({ from: parentIdx, to: childIdx, color, highlighted: true });
+          used.add(childIdx);
+          recurse(site.children, childIdx, used, originIdx);
+        }
+      }
+    }
+
+    const originalIdx = mapping[ub.chain_number];
+    if (originalIdx !== undefined && originalIdx !== parentIdx) {
+      const originalNode = nodes[originalIdx];
+      const availableNodes = nodes.filter((node, idx) =>
+        !used.has(idx) &&
+        node.y === originalNode.y - 50 &&
+        Math.abs(node.x - originalNode.x) <= 100
+      );
+      for (const nextNode of availableNodes) {
+        const nextNodeIdx = nodes.indexOf(nextNode);
+        if (!used.has(nextNodeIdx)) {
+          arrows.push({ from: originalIdx, to: nextNodeIdx, color: 'gray', highlighted: true });
+          used.add(nextNodeIdx);
+          break;
+        }
+      }
+    }
+
+    for (const site of ub.branching_sites || []) {
+      if (site.children === 'SMAC' || site.children === 'ABOC') {
+        const colorState = site.children === 'SMAC' ? 2 : 1;
+        const angle = site.site_name === 'K48' ? -Math.PI / 4 : Math.PI / 4;
+        const dx = Math.sin(angle) * 25;
+        const dy = -Math.cos(angle) * 25;
+        const node = nodes[parentIdx];
+        smallNodes.push({
+          x: node.x + dx,
+          y: node.y + dy,
+          key: `protect-${node.chain_number}-${site.site_name}`,
+          state: colorState
+        });
+      }
+    }
+  }
+
+  function findNextAllowedNode(parentIdx, used, siteName) {
+    // K63 moves rightward and up, K48 moves leftward and up
+    const direction = siteName === 'K63' ? 1 : -1;
+    const targetY = nodes[parentIdx].y - 50;
+    for (let i = 0; i < nodes.length; i++) {
+      if (used.has(i)) continue;
+
+      const dx = nodes[i].x - nodes[parentIdx].x;
+      const dy = nodes[i].y - nodes[parentIdx].y;
+      const isCorrectDirection = direction === -1 ? dx < 0 : dx > 0;
+
+      const isDirectlyAbove = nodes[i].y === targetY && Math.abs(dx) <= 100;
+      const isAdjacent = edges.some(([a, b]) => (a === parentIdx && b === i) || (b === parentIdx && a === i));
+
+      if (isDirectlyAbove && isAdjacent && isCorrectDirection) {
+        return i;
+      }
+    }
+    return null;
+  }
+
+  let used = new Set([0]);
+  recurse(json, 0, used);
+  return { nodes, arrows, mapping, smallNodes };
+}
+
+const DEFAULT_NODES = [
+  { x: 300, y: 300, clicks: 0 },
+  { x: 250, y: 250, clicks: 0 }, { x: 350, y: 250, clicks: 0 },
+  { x: 200, y: 200, clicks: 0 }, { x: 300, y: 200, clicks: 0 }, { x: 400, y: 200, clicks: 0 },
+  { x: 150, y: 150, clicks: 0 }, { x: 250, y: 150, clicks: 0 }, { x: 350, y: 150, clicks: 0 }, { x: 450, y: 150, clicks: 0 },
+  { x: 100, y: 100, clicks: 0 }, { x: 200, y: 100, clicks: 0 }, { x: 300, y: 100, clicks: 0 }, { x: 400, y: 100, clicks: 0 }, { x: 500, y: 100, clicks: 0 }
+];
+const DEFAULT_EDGES = [
+  [0, 1], [0, 2],
+  [1, 3], [1, 4],
+  [2, 4], [2, 5],
+  [3, 6], [3, 7],
+  [4, 7], [4, 8],
+  [5, 8], [5, 9],
+  [6, 10], [6, 11],
+  [7, 11], [7, 12],
+  [8, 12], [8, 13],
+  [9, 13], [9, 14]
+];
+
+const PANEL_WIDTH = 570;
+const PANEL_HEIGHT = 370;
+const RADIUS = 20;
+const LIGHT_GRAY = '#dddddd';
+const GRAY = '#aaaaaa';
+const BLACK = '#000000';
+
+const ClickableScaffoldPanel = ({ 
+  initialNodes = DEFAULT_NODES, 
+  initialArrows = [],
+  initialMapping = {},
+  initialSmallNodes = [],
+  initialJson = null,
+  edges = DEFAULT_EDGES, 
+  showRefresh = true, 
+  panelWidth, 
+  panelHeight, 
+  onSubmit 
+}) => {
+  const canvasRef = useRef(null);
+  
+  // If initialJson is provided, simulate from it, otherwise use provided data
+  const simulationData = initialJson ? 
+    simulateClicksFromJson(initialJson, DEFAULT_NODES.map(node => ({ ...node, clicks: 0 })), edges) :
+    {
+      nodes: initialNodes,
+      arrows: initialArrows,
+      mapping: initialMapping,
+      smallNodes: initialSmallNodes
+    };
+
+  const [nodes, setNodes] = useState(() => {
+    const n = simulationData.nodes.map(node => ({ ...node }));
+    // Only set first node to clicked if no arrows are provided
+    if (simulationData.arrows.length === 0) {
+      n[0].clicks = 1;
+    }
+    return n;
+  });
+  const [arrows, setArrows] = useState(simulationData.arrows || []);
+  const [smallNodes, setSmallNodes] = useState(simulationData.smallNodes || []);
+  const [clickedNodes, setClickedNodes] = useState(() => {
+    // Initialize clicked nodes based on arrows or default to first node
+    if (simulationData.arrows.length > 0) {
+      const clickedSet = new Set();
+      simulationData.arrows.forEach(({ from, to }) => {
+        clickedSet.add(from);
+        clickedSet.add(to);
+      });
+      return clickedSet;
+    }
+    return new Set([0]);
+  });
+  const [lastNodeIndex, setLastNodeIndex] = useState(0);
+  const maxClicks = 5;
+  const [refreshBtnRect, setRefreshBtnRect] = useState(null);
+  const [showFastAPIBox, setShowFastAPIBox] = useState(false);
+  const [jsonOutput, setJsonOutput] = useState(null);
+
+  // refs for nodes, arrows, and clickedNodes
+  const nodesRef = useRef(nodes);
+  const arrowsRef = useRef(arrows);
+  const clickedNodesRef = useRef(clickedNodes);
+  useEffect(() => { nodesRef.current = nodes; }, [nodes]);
+  useEffect(() => { arrowsRef.current = arrows; }, [arrows]);
+  useEffect(() => { clickedNodesRef.current = clickedNodes; }, [clickedNodes]);
+
+  // Update state when initial props change
+  useEffect(() => {
+    const n = initialNodes.map(node => ({ ...node }));
+    if (initialArrows.length === 0) {
+      n[0].clicks = 1;
+    }
+    setNodes(n);
+  }, [initialNodes]);
+
+  useEffect(() => {
+    setArrows(initialArrows || []);
+  }, [initialArrows]);
+
+  useEffect(() => {
+    if (initialArrows.length > 0) {
+      const clickedSet = new Set();
+      initialArrows.forEach(({ from, to }) => {
+        clickedSet.add(from);
+        clickedSet.add(to);
+      });
+      setClickedNodes(clickedSet);
+    } else {
+      setClickedNodes(new Set([0]));
+    }
+  }, [initialArrows]);
+
+  // Draw the scaffold
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const width = panelWidth || PANEL_WIDTH;
+    const height = panelHeight || PANEL_HEIGHT;
+    canvas.width = width;
+    canvas.height = height;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Draw background box
+    const boxX = 0;
+    const boxY = 0;
+    const boxW = width;
+    const boxH = height;
+    const radius = 20;
+    ctx.fillStyle = '#101010';
+    ctx.beginPath();
+    ctx.moveTo(boxX + radius, boxY);
+    ctx.arcTo(boxX + boxW, boxY, boxX + boxW, boxY + boxH, radius);
+    ctx.arcTo(boxX + boxW, boxY + boxH, boxX, boxY + boxH, radius);
+    ctx.arcTo(boxX, boxY + boxH, boxX, boxY, radius);
+    ctx.arcTo(boxX, boxY, boxX + boxW, boxY, radius);
+    ctx.closePath();
+    ctx.fill();
+    if (showRefresh) {
+      // Draw refresh button (bottom left)
+      const refreshBtn = {
+        x: boxX + 20,
+        y: boxY + boxH - 50,
+        w: 80,
+        h: 30,
+        r: 10
+      };
+      ctx.fillStyle = '#222';
+      ctx.beginPath();
+      ctx.moveTo(refreshBtn.x + refreshBtn.r, refreshBtn.y);
+      ctx.arcTo(refreshBtn.x + refreshBtn.w, refreshBtn.y, refreshBtn.x + refreshBtn.w, refreshBtn.y + refreshBtn.h, refreshBtn.r);
+      ctx.arcTo(refreshBtn.x + refreshBtn.w, refreshBtn.y + refreshBtn.h, refreshBtn.x, refreshBtn.y + refreshBtn.h, refreshBtn.r);
+      ctx.arcTo(refreshBtn.x, refreshBtn.y + refreshBtn.h, refreshBtn.x, refreshBtn.y, refreshBtn.r);
+      ctx.arcTo(refreshBtn.x, refreshBtn.y, refreshBtn.x + refreshBtn.w, refreshBtn.y, refreshBtn.r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#555';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.font = `16px 'Helvetica Neue', sans-serif`;
+      ctx.fillText('Refresh', refreshBtn.x + 10, refreshBtn.y + 20);
+      setRefreshBtnRect(refreshBtn);
+
+      // Draw submit button (bottom right)
+      const submitBtn = {
+        x: boxX + boxW - 100,
+        y: boxY + boxH - 50,
+        w: 80,
+        h: 30,
+        r: 10
+      };
+      ctx.fillStyle = '#222';
+      ctx.beginPath();
+      ctx.moveTo(submitBtn.x + submitBtn.r, submitBtn.y);
+      ctx.arcTo(submitBtn.x + submitBtn.w, submitBtn.y, submitBtn.x + submitBtn.w, submitBtn.y + submitBtn.h, submitBtn.r);
+      ctx.arcTo(submitBtn.x + submitBtn.w, submitBtn.y + submitBtn.h, submitBtn.x, submitBtn.y + submitBtn.h, submitBtn.r);
+      ctx.arcTo(submitBtn.x, submitBtn.y + submitBtn.h, submitBtn.x, submitBtn.y, submitBtn.r);
+      ctx.arcTo(submitBtn.x, submitBtn.y, submitBtn.x + submitBtn.w, submitBtn.y, submitBtn.r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#555';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.font = `16px 'Helvetica Neue', sans-serif`;
+      ctx.fillText('Submit', submitBtn.x + 10, submitBtn.y + 20);
+    } else {
+      setRefreshBtnRect(null);
+    }
+    // Outer/inner border
+    ctx.strokeStyle = '#444';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Draw edges
+    ctx.strokeStyle = GRAY;
+    ctx.lineWidth = 2;
+    edges.forEach(([i1, i2]) => {
+      const { x: x1, y: y1 } = nodes[i1];
+      const { x: x2, y: y2 } = nodes[i2];
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    });
+    // Draw arrows
+    arrows.forEach(({ from, to, color }) => {
+      const { x: x1, y: y1 } = nodes[from];
+      const { x: x2, y: y2 } = nodes[to];
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      const offset = 5;
+      const offsetXperp = -dy / length * offset;
+      const offsetYperp = dx / length * offset;
+      const direction = color === 'blue' ? 1 : -1;
+      const sx1 = x1 + direction * offsetXperp;
+      const sy1 = y1 + direction * offsetYperp;
+      const sx2 = x2 + direction * offsetXperp;
+      const sy2 = y2 + direction * offsetYperp;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(sx1, sy1);
+      ctx.lineTo(sx2, sy2);
+      ctx.stroke();
+      // Arrowhead
+      const midX = (sx1 + sx2) / 2;
+      const midY = (sy1 + sy2) / 2;
+      const angle = Math.atan2(sy2 - sy1, sx2 - sx1);
+      const arrowLength = 10;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(midX, midY);
+      ctx.lineTo(
+        midX - arrowLength * Math.cos(angle - Math.PI / 6),
+        midY - arrowLength * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.lineTo(
+        midX - arrowLength * Math.cos(angle + Math.PI / 6),
+        midY - arrowLength * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.closePath();
+      ctx.fill();
+    });
+    // Draw nodes
+    nodes.forEach(({ x, y, clicks }, i) => {
+      if (clicks === 0) ctx.fillStyle = LIGHT_GRAY;
+      else if (clicks === 1) ctx.fillStyle = '#ff9999';
+      else ctx.fillStyle = '#cc6666';
+      ctx.beginPath();
+      ctx.arc(x, y, RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, RADIUS, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+  }, [nodes, arrows, showRefresh, panelWidth, panelHeight]);
+
+  // Click handler
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const handleMouseDown = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left);
+      const y = (e.clientY - rect.top);
+
+      // Check refresh button
+      if (showRefresh && refreshBtnRect) {
+        const { x: bx, y: by, w: bw, h: bh } = refreshBtnRect;
+        if (x >= bx && x <= bx + bw && y >= by && y <= by + bh) {
+          window.location.reload(); // Refresh the entire page
+          return;
+        }
+      }
+
+      // Check submit button
+      const submitBtn = {
+        x: panelWidth - 100,
+        y: panelHeight - 50,
+        w: 80,
+        h: 30
+      };
+      if (x >= submitBtn.x && x <= submitBtn.x + submitBtn.w && y >= submitBtn.y && y <= submitBtn.y + submitBtn.h) {
+        const linkages = arrows.map(({ from, to, color }) => ({
+          from,
+          to,
+          linkage: color === 'blue' ? 'K63' : 'K48' // Rename linkage based on color
+        }));
+        if (onSubmit) {
+          onSubmit(linkages);
+        }
+        return;
+      }
+
+      for (let i = 0; i < nodesRef.current.length; i++) {
+        const node = nodesRef.current[i];
+        const drawX = node.x;
+        const drawY = node.y;
+        const dx = drawX - x;
+        const dy = drawY - y;
+        if (Math.sqrt(dx * dx + dy * dy) <= RADIUS) {
+          let isAllowed = false;
+          let proposedPrev = null;
+          Array.from(clickedNodesRef.current).forEach(prevIndex => {
+            const isAdjacent = edges.some(([a, b]) =>
+              (a === prevIndex && b === i) || (b === prevIndex && a === i)
+            );
+            const isAbove = nodesRef.current[i].y < nodesRef.current[prevIndex].y;
+            const lineExists = arrowsRef.current.some(({ from, to }) =>
+              (from === prevIndex && to === i)
+            );
+            if (isAdjacent && isAbove && !lineExists) {
+              isAllowed = true;
+              proposedPrev = prevIndex;
+            }
+          });
+          if (!isAllowed) continue;
+          const totalClicks = nodesRef.current.reduce((sum, node) => sum + node.clicks, 0);
+          if (totalClicks >= maxClicks) return;
+          setNodes(prevNodes => prevNodes.map((n, idx) => idx === i ? { ...n, clicks: (n.clicks || 0) + 1 } : n));
+          setClickedNodes(prev => new Set(prev).add(i));
+          const prevIdx = proposedPrev !== null ? proposedPrev : i;
+          if (prevIdx !== null && prevIdx !== i) {
+            const prevNode = nodesRef.current[prevIdx];
+            const newNode = nodesRef.current[i];
+            const color = newNode.x < prevNode.x ? 'red' : 'blue';
+            setArrows(prev => [...prev, { from: prevIdx, to: i, color }]);
+          }
+        }
+      }
+    };
+
+    canvas.addEventListener('mousedown', handleMouseDown);
+    return () => {
+      canvas.removeEventListener('mousedown', handleMouseDown);
+    };
+  }, [showRefresh, refreshBtnRect, edges, nodes, arrows, panelWidth, panelHeight, onSubmit]);
+
+  return (
+    <>
+      <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
+    </>
+  );
+};
+
+export default ClickableScaffoldPanel;
+export { simulateClicksFromJson };

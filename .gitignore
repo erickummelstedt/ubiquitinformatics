@@ -1,0 +1,110 @@
+# Byte-compiled Python files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+env/
+venv/
+ENV/
+.venv/
+.ENV/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Logs and debugging output
+*.log
+*.out
+*.err
+logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.swp
+*.swo
+*~
+*.bak
+
+# Testing outputs
+.coverage
+*.coverage.*
+
+# Environment variables
+.env
+.env.*
+
+# Build and distribution files
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Packaging artifacts
+*.manifest
+*.spec
+
+# IDE and editor configurations
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Pytest caches
+.pytest_cache/
+
+# MyPy caches
+.mypy_cache/
+.dmypy.json
+
+# Coverage tool output
+htmlcov/
+coverage.xml
+
+# Docker files
+*.dockerfile
+.dockerignore
+
+# Wheel files
+*.whl
+
+/back_end/data/
+/back_end/src/original_data/
+/back_end/LaTeX/
+
+# Project files
+next_steps.txt
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Backend test files (excluding test_data.py and __init__.py)
+/back_end/tests/test_main.py
+/back_end/tests/test_nomenclature.py
+/back_end/tests/test_simulation.py
+/back_end/tests/test_utils.py
+/back_end/tests/testing.ipynb
+
+# Frontend test files
+/front_end/tests/

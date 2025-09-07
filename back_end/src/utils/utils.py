@@ -1,0 +1,166 @@
+import json
+
+def match_assertion_error_contains(error_message, expected_parts):
+    """
+    Returns True if all strings in `expected_parts` are found in `error_message`.
+    """
+    return all(part in error_message for part in expected_parts)
+
+def all_strings_exist(substrings, error_string):
+    """
+    Checks if all strings in the list `substrings` are present in `error_string`.
+
+    :param substrings: List of strings to check for
+    :param error_string: The string to search within
+    :return: True if all substrings are found, False otherwise
+    """
+    return all(sub in error_string for sub in substrings)
+
+def all_strings_exist_in_list(expected_substrings, error_strings):
+    """
+    Checks if all strings in each expected_substring exist in the corresponding string in error_strings.
+
+    Args:
+        error_strings (List[str]): A list of error_string strings.
+        expected_substrings (List[List[str]]): A list of expected_substrings of substrings to check against each error_string string.
+
+    Returns:
+        List[bool]: A list of booleans indicating match success for each error_string/expected_substring pair.
+    """
+    
+    print(f"Checking {len(error_strings)} error strings against {len(expected_substrings)} expected substrings.")
+    
+    if len(error_strings) != len(expected_substrings):
+        raise ValueError("Length of error_string and expected_substrings must be equal.")
+
+    result = []
+    for error_string, expected_substring in zip(error_strings, expected_substrings):
+        match = all(sub in error_string for sub in expected_substring)
+        result.append(match)
+
+    return result
+
+def convert_json_to_dict(parent_dictionary):
+    """
+    Converts a JSON string to a dictionary if necessary.
+    If the input is already a dictionary, it remains unchanged.
+    Raises a ValueError if the JSON format is invalid.
+
+    :param input_data: JSON string or dictionary
+    :return: Dictionary representation of the input data
+    """
+
+    if isinstance(parent_dictionary, str):
+        try:
+            # Ensure correct JSON format by replacing single quotes with double quotes
+            formatted_json = parent_dictionary.replace("'", "\"")
+            return json.loads(formatted_json)
+        except json.JSONDecodeError as e:
+            raise ValueError("Invalid JSON format: Unable to parse the string") from e
+    elif isinstance(parent_dictionary, dict):
+        return parent_dictionary
+    else:
+        raise TypeError("Input must be a dictionary or a JSON string")
+    
+
+def inject_fasta_sequence_at_chain(
+    branches,
+    target_chain_number,
+    new_fasta_sequence,
+    current_chain_number=1
+):
+    """
+    Recursively modifies the FASTA_sequence of the ubiquitin structure at a specific chain number.
+
+    Args:
+        branches (list): The branching_sites list of the current ubiquitin.
+        target_chain_number (int): The chain number at which to inject the new FASTA sequence.
+        new_fasta_sequence (str): The modified sequence to inject.
+        current_chain_number (int): Tracks the depth of recursion (default: 1).
+    """
+    # Check each branching site
+    for site in branches:
+        # Recurse if there's a nested child
+        if isinstance(site.get("children"), dict):
+            child = site["children"]
+
+            # Update if it's the target chain number
+            if child.get("chain_number") == target_chain_number:
+                child["FASTA_sequence"] = new_fasta_sequence
+                return  # Early exit once found and replaced
+
+            # Continue searching deeper
+            inject_fasta_sequence_at_chain(
+                child["branching_sites"],
+                target_chain_number,
+                new_fasta_sequence,
+                current_chain_number + 1
+            )
+
+def inject_protein_key(branches, target_chain_number, key, value=None, remove=False):
+    """
+    Recursively modifies or removes a key in a specific ubiquitin's dictionary by chain number.
+    """
+    for site in branches:
+        child = site.get("children")
+        if isinstance(child, dict):
+            if child.get("chain_number") == target_chain_number:
+                if remove:
+                    child.pop(key, None)
+                else:
+                    child[key] = value
+                return  # stop after injection
+            inject_protein_key(child.get("branching_sites", []), target_chain_number, key, value, remove)
+
+
+def inject_branching_sites(branches, target_chain_number, new_branching_sites, current_chain_number=1):
+    """
+    Recursively injects or replaces the branching_sites list of a specific ubiquitin node.
+
+    Args:
+        branches (list): Top-level list of branching_sites.
+        target_chain_number (int): The target chain number for injection.
+        new_branching_sites (list): The new branching_sites to set.
+        current_chain_number (int): Current depth of recursion.
+    """
+    for site in branches:
+        child = site.get("children")
+        if isinstance(child, dict):
+            if child.get("chain_number") == target_chain_number:
+                child["branching_sites"] = new_branching_sites
+                return
+            inject_branching_sites(child.get("branching_sites", []), target_chain_number, new_branching_sites, current_chain_number + 1)
+
+
+def get_multimer_column_names(multimer_size):
+    """
+    Generates column names for a multimer reaction sequence 
+    based on the multimer size.
+
+    Args:
+        multimer_size (int): The size of the multimer (2 to 6).
+
+    Returns:
+        list: List of column names for the reaction steps.
+
+    Raises:
+        ValueError: If multimer_size is not supported.
+    """
+    if multimer_size < 2 or multimer_size > 6:
+        raise ValueError(
+            f"Unsupported multimer size: {multimer_size}. "
+            "Only sizes 2 to 6 are currently supported."
+        )
+
+    column_names = ['initial_acceptor']
+
+    # Define the order of labels
+    labels = ['dimer', 'trimer', 'tetramer', 'pentamer', 'hexamer']
+
+    for i in range(2, multimer_size + 1):
+        label = labels[i - 2]
+        column_names.append(f'{label}_formation')
+        if i < multimer_size:
+            column_names.append(f'{label}_deprotection')
+
+    return column_names
