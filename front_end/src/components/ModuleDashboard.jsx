@@ -58,10 +58,10 @@ const ModuleDashboard = () => {
   const [jsonOutput, setJsonOutput] = useState(null);
   const [formattedEdges, setFormattedEdges] = useState(null); // Store formatted edges from API
   const [ubxyValue, setUbxyValue] = useState(null); // Store UbX_Y value from API
-  const [nomenclaturePreorderABC, setNomenclaturePreorderABC] = useState(null); // Store nomenclature value from API
-  const [nomenclaturePreorderJeff, setNomenclaturePreorderJeff] = useState(null); // Store Jeff's preorder nomenclature
-  const [strieterNomenclatureWoPreorder, setStrieterNomenclatureWoPreorder] = useState(null); // Store strieter nomenclature (without preorder)
-  const [kummelstedtNomenclatureWPreorder, setKummelstedtNomenclatureWPreorder] = useState(null); // Store kummelstedt nomenclature (with preorder)
+  const [nomenclaturePreorder1A2, setNomenclaturePreorder1A2] = useState(null); // Store 1A2 nomenclature value from API
+  const [nomenclaturePreorderA63B, setNomenclaturePreorderA63B] = useState(null); // Store A63B's preorder nomenclature
+  const [graphwopreorderNomenclatureWPreorder, setGraphWOpreorderNomenclatureWPreorder] = useState(null); // Store graph nomenclature without preorder
+  const [graphwpreorderNomenclatureWPreorder, setGraphwpreorderNomenclatureWPreorder] = useState(null); // Store graph nomenclature with preorder
   const [jeffK48K63Nomenclature, setJeffK48K63Nomenclature] = useState(null); // Store jeff K48/K63 nomenclature
   const [jeffMultipleSymbols, setJeffMultipleSymbols] = useState(null); // Store jeff multiple symbols nomenclature
   const [jeffAllLysinesNomenclature, setJeffAllLysinesNomenclature] = useState(null); // Store jeff all lysines nomenclature
@@ -84,10 +84,10 @@ const ModuleDashboard = () => {
     setFigures(null);
     setFormattedEdges(null);
     setUbxyValue(null);
-    setNomenclaturePreorderABC(null);
-    setNomenclaturePreorderJeff(null);
-    setStrieterNomenclatureWoPreorder(null);
-    setKummelstedtNomenclatureWPreorder(null);
+    setNomenclaturePreorder1A2(null);
+    setNomenclaturePreorderA63B(null);
+    setGraphWOpreorderNomenclatureWPreorder(null);
+    setGraphwpreorderNomenclatureWPreorder(null);
     setJeffK48K63Nomenclature(null);
     setJeffMultipleSymbols(null);
     setJeffAllLysinesNomenclature(null);
@@ -121,9 +121,9 @@ const ModuleDashboard = () => {
       setJsonOutput(null); // Clear previously rendered scaffold
       setFormattedEdges(null); // Clear formatted edges
       setUbxyValue(null); // Clear UbX_Y value
-      setNomenclaturePreorderABC(null); // Clear nomenclature value
-      setStrieterNomenclatureWoPreorder(null); // Clear strieter nomenclature
-      setKummelstedtNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
+      setNomenclaturePreorder1A2(null); // Clear nomenclature value
+      setGraphWOpreorderNomenclatureWPreorder(null); // Clear strieter nomenclature
+      setGraphwpreorderNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
       setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
       setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
 
@@ -211,9 +211,9 @@ const ModuleDashboard = () => {
                       // Clear previous data
                       setFormattedEdges(null);
                       setUbxyValue(null);
-                      setNomenclaturePreorderABC(null);
-                      setStrieterNomenclatureWoPreorder(null);
-                      setKummelstedtNomenclatureWPreorder(null);
+                      setNomenclaturePreorder1A2(null);
+                      setGraphWOpreorderNomenclatureWPreorder(null);
+                      setGraphwpreorderNomenclatureWPreorder(null);
                       setJeffAllLysinesNomenclature(null);
                       setOutputJsonString(null);
                       setTxtFileContent(null);
@@ -233,17 +233,17 @@ const ModuleDashboard = () => {
                       if (result.ubxy) {
                         setUbxyValue(result.ubxy);
                       }
-                      if (result.nomenclature_preorder_ABC) {
-                        setNomenclaturePreorderABC(result.nomenclature_preorder_ABC);
+                      if (result.nomenclature_preorder_1A2) {
+                        setNomenclaturePreorder1A2(result.nomenclature_preorder_1A2);
                       }
-                      if (result.nomenclature_preorder_jeff) {
-                        setNomenclaturePreorderJeff(result.nomenclature_preorder_jeff);
+                      if (result.nomenclature_preorder_A63B) {
+                        setNomenclaturePreorderA63B(result.nomenclature_preorder_A63B);
                       }
-                      if (result.strieter_nomenclature_wo_preorder) {
-                        setStrieterNomenclatureWoPreorder(result.strieter_nomenclature_wo_preorder);
+                      if (result.graph_wo_preorder_nomenclature) {
+                        setGraphWOpreorderNomenclatureWPreorder(result.graph_wo_preorder_nomenclature);
                       }
-                      if (result.kummelstedt_nomenclature_w_preorder) {
-                        setKummelstedtNomenclatureWPreorder(result.kummelstedt_nomenclature_w_preorder);
+                      if (result.graph_w_preorder_nomenclature) {
+                        setGraphwpreorderNomenclatureWPreorder(result.graph_w_preorder_nomenclature);
                       }
                       if (result.jeff_multiple_symbols) {
                         setJeffMultipleSymbols(result.jeff_multiple_symbols);
@@ -291,10 +291,10 @@ const ModuleDashboard = () => {
                 <EdgeTreeViewer 
                   formattedEdges={formattedEdges} 
                   ubxyValue={ubxyValue} 
-                  nomenclaturePreorderABC={nomenclaturePreorderABC}
-                  nomenclaturePreorderJeff={nomenclaturePreorderJeff}
-                  strieterNomenclatureWoPreorder={strieterNomenclatureWoPreorder}
-                  kummelstedtNomenclatureWPreorder={kummelstedtNomenclatureWPreorder}
+                  nomenclaturePreorder1A2={nomenclaturePreorder1A2}
+                  nomenclaturePreorderA63B={nomenclaturePreorderA63B}
+                  graphwopreorderNomenclatureWPreorder={graphwopreorderNomenclatureWPreorder}
+                  graphwpreorderNomenclatureWPreorder={graphwpreorderNomenclatureWPreorder}
                   jeffMultipleSymbols={jeffMultipleSymbols}
                   jeffAllLysinesNomenclature={jeffAllLysinesNomenclature}
                   jeffMultipleSymbolsEricNumbering={jeffMultipleSymbolsEricNumbering}
@@ -328,9 +328,9 @@ const ModuleDashboard = () => {
                               setJsonOutput(null); // Clear previously rendered scaffold
                               setFormattedEdges(null); // Clear formatted edges
                               setUbxyValue(null); // Clear UbX_Y value
-                              setNomenclaturePreorderABC(null); // Clear nomenclature value
-                              setStrieterNomenclatureWoPreorder(null); // Clear strieter nomenclature
-                              setKummelstedtNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
+                              setNomenclaturePreorder1A2(null); // Clear nomenclature value
+                              setGraphWOpreorderNomenclatureWPreorder(null); // Clear strieter nomenclature
+                              setGraphwpreorderNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
                               setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
                               setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
                               setInputNodes({
@@ -356,17 +356,17 @@ const ModuleDashboard = () => {
                               if (result.ubxy) {
                                 setUbxyValue(result.ubxy);
                               }
-                              if (result.nomenclature_preorder_ABC) {
-                                setNomenclaturePreorderABC(result.nomenclature_preorder_ABC);
+                              if (result.nomenclature_preorder_1A2) {
+                                setNomenclaturePreorder1A2(result.nomenclature_preorder_1A2);
                               }
-                              if (result.nomenclature_preorder_jeff) {
-                                setNomenclaturePreorderJeff(result.nomenclature_preorder_jeff);
+                              if (result.nomenclature_preorder_A63B) {
+                                setNomenclaturePreorderA63B(result.nomenclature_preorder_A63B);
                               }
-                              if (result.strieter_nomenclature_wo_preorder) {
-                                setStrieterNomenclatureWoPreorder(result.strieter_nomenclature_wo_preorder);
+                              if (result.graph_wo_preorder_nomenclature) {
+                                setGraphWOpreorderNomenclatureWPreorder(result.graph_wo_preorder_nomenclature);
                               }
-                              if (result.kummelstedt_nomenclature_w_preorder) {
-                                setKummelstedtNomenclatureWPreorder(result.kummelstedt_nomenclature_w_preorder);
+                              if (result.graph_w_preorder_nomenclature) {
+                                setGraphwpreorderNomenclatureWPreorder(result.graph_w_preorder_nomenclature);
                               }
                               if (result.jeff_multiple_symbols) {
                                 setJeffMultipleSymbols(result.jeff_multiple_symbols);
@@ -460,9 +460,9 @@ const ModuleDashboard = () => {
                           setJsonOutput(null);
                           setFormattedEdges(null); // Clear formatted edges
                           setUbxyValue(null); // Clear UbX_Y value
-                          setNomenclaturePreorderABC(null); // Clear nomenclature value
-                          setStrieterNomenclatureWoPreorder(null); // Clear strieter nomenclature
-                          setKummelstedtNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
+                          setNomenclaturePreorder1A2(null); // Clear nomenclature value
+                          setGraphWOpreorderNomenclatureWPreorder(null); // Clear strieter nomenclature
+                          setGraphwpreorderNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
                           setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
                           setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
                           // Don't reset inputNodes here to preserve the arrows and scaffold state
@@ -487,17 +487,17 @@ const ModuleDashboard = () => {
                             if (result.ubxy) {
                               setUbxyValue(result.ubxy);
                             }
-                            if (result.nomenclature_preorder_ABC) {
-                              setNomenclaturePreorderABC(result.nomenclature_preorder_ABC);
+                            if (result.nomenclature_preorder_1A2) {
+                              setNomenclaturePreorder1A2(result.nomenclature_preorder_1A2);
                             }
-                            if (result.nomenclature_preorder_jeff) {
-                              setNomenclaturePreorderJeff(result.nomenclature_preorder_jeff);
+                            if (result.nomenclature_preorder_A63B) {
+                              setNomenclaturePreorderA63B(result.nomenclature_preorder_A63B);
                             }
-                            if (result.strieter_nomenclature_wo_preorder) {
-                              setStrieterNomenclatureWoPreorder(result.strieter_nomenclature_wo_preorder);
+                            if (result.graph_wo_preorder_nomenclature) {
+                              setGraphWOpreorderNomenclatureWPreorder(result.graph_wo_preorder_nomenclature);
                             }
-                            if (result.kummelstedt_nomenclature_w_preorder) {
-                              setKummelstedtNomenclatureWPreorder(result.kummelstedt_nomenclature_w_preorder);
+                            if (result.graph_w_preorder_nomenclature) {
+                              setGraphwpreorderNomenclatureWPreorder(result.graph_w_preorder_nomenclature);
                             }
                             if (result.jeff_multiple_symbols) {
                               setJeffMultipleSymbols(result.jeff_multiple_symbols);
@@ -527,10 +527,10 @@ const ModuleDashboard = () => {
                         <EdgeTreeViewer 
                           formattedEdges={formattedEdges} 
                           ubxyValue={ubxyValue} 
-                          nomenclaturePreorderABC={nomenclaturePreorderABC}
-                          nomenclaturePreorderJeff={nomenclaturePreorderJeff}
-                          strieterNomenclatureWoPreorder={strieterNomenclatureWoPreorder}
-                          kummelstedtNomenclatureWPreorder={kummelstedtNomenclatureWPreorder}
+                          nomenclaturePreorder1A2={nomenclaturePreorder1A2}
+                          nomenclaturePreorderA63B={nomenclaturePreorderA63B}
+                          graphwopreorderNomenclatureWPreorder={graphwopreorderNomenclatureWPreorder}
+                          graphwpreorderNomenclatureWPreorder={graphwpreorderNomenclatureWPreorder}
                           jeffMultipleSymbols={jeffMultipleSymbols}
                           jeffK48K63Nomenclature={jeffK48K63Nomenclature}
                           jeffAllLysinesNomenclature={jeffAllLysinesNomenclature}

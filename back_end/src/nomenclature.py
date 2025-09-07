@@ -224,7 +224,7 @@ def multimer_length_from_nomenclature(compact: str) -> int:
 # ==== Nomenclature functions
 # =================================
 
-def format_nomenclature_preorder_ABC(edges):
+def format_nomenclature_preorder_1A2(edges):
     """
     Convert edges with lysine labels into compact string form using fixed mapping:
         K63 -> A, K48 -> B, K33 -> C, K29 -> D, K27 -> E, K11 -> F, K6 -> G
@@ -243,7 +243,7 @@ def format_nomenclature_preorder_ABC(edges):
     return '-'.join(f"{s}{fixed_map.get(k, '?')}{d}" for s, k, d in edges)
 
 
-def format_nomenclature_preorder_jeff(edges):
+def format_nomenclature_preorder_A63B(edges):
     """
     Convert edges with lysine labels into Jeff's preorder format using lysine numbers and node letters.
     Lysine mapping: K63 -> 63, K48 -> 48, K33 -> 33, K29 -> 29, K27 -> 27, K11 -> 11, K6 -> 6

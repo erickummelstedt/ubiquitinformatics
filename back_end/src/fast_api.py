@@ -270,15 +270,15 @@ async def submit_ubxy(request: Request):
         formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
         
         # New version - pre-order with A, B, C
-        nomenclature_preorder_ABC = nomenclature.format_nomenclature_preorder_ABC(edges)
+        nomenclature_preorder_1A2 = nomenclature.format_nomenclature_preorder_1A2(edges)
 
         # New version - Jeffs pre-order with K63, K48, K33, K29, K27, K11, K6 and A, B ,C as nodes
-        nomenclature_preorder_jeff = nomenclature.format_nomenclature_preorder_jeff(edges)
+        nomenclature_preorder_A63B = nomenclature.format_nomenclature_preorder_A63B(edges)
         # ========== 
 
         # Correct nomenclature assignments
-        strieter_nomenclature_wo_preorder = output_context['nomenclature_wo_preorder']
-        kummelstedt_nomenclature_w_preorder = output_context['nomenclature_w_preorder']
+        graph_wo_preorder_nomenclature = output_context['nomenclature_wo_preorder']
+        graph_w_preorder_nomenclature = output_context['nomenclature_w_preorder']
         
         # Old version - Jeffs without pre-order - NEED TO FIX AGAIN
         # jeff_k48_k63_nomenclature = nomenclature.conjugated_lysines_to_nomenclature(edges)
@@ -302,10 +302,10 @@ async def submit_ubxy(request: Request):
             "status": "ok", "ubxy": ubxy_value, 
             "reaction_sequences_b64": reaction_sequences_b64,
             "formatted_edges": formatted_edges,
-            "nomenclature_preorder_ABC": nomenclature_preorder_ABC,
-            "nomenclature_preorder_jeff": nomenclature_preorder_jeff,
-            "strieter_nomenclature_wo_preorder": strieter_nomenclature_wo_preorder,
-            "kummelstedt_nomenclature_w_preorder": kummelstedt_nomenclature_w_preorder,
+            "nomenclature_preorder_1A2": nomenclature_preorder_1A2,
+            "nomenclature_preorder_A63B": nomenclature_preorder_A63B,
+            "graph_wo_preorder_nomenclature": graph_wo_preorder_nomenclature,
+            "graph_w_preorder_nomenclature": graph_w_preorder_nomenclature,
             "jeff_K48_K63_nomenclature": jeff_K48_K63_nomenclature,
             "jeff_all_lysines_nomenclature": jeff_all_lysines_nomenclature,
             "jeff_multiple_symbols": jeff_multiple_symbols,
@@ -386,14 +386,14 @@ async def submit_json_output(request: Request):
         formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
         
         # New version - pre-order with A, B, C
-        nomenclature_preorder_ABC = nomenclature.format_nomenclature_preorder_ABC(edges)
+        nomenclature_preorder_1A2 = nomenclature.format_nomenclature_preorder_1A2(edges)
 
         # New version - Jeffs pre-order with K63, K48, K33, K29, K27, K11, K6 and A, B ,C as nodes
-        nomenclature_preorder_jeff = nomenclature.format_nomenclature_preorder_jeff(edges)
+        nomenclature_preorder_A63B = nomenclature.format_nomenclature_preorder_A63B(edges)
         
         # Correct nomenclature assignments
-        strieter_nomenclature_wo_preorder = output_context['nomenclature_wo_preorder']
-        kummelstedt_nomenclature_w_preorder = output_context['nomenclature_w_preorder']
+        graph_wo_preorder_nomenclature = output_context['nomenclature_wo_preorder']
+        graph_w_preorder_nomenclature = output_context['nomenclature_w_preorder']
         
         # Old version - Jeffs without pre-order - NEED TO FIX AGAIN
         # jeff_k48_k63_nomenclature = nomenclature.conjugated_lysines_to_nomenclature(edges)
@@ -417,10 +417,10 @@ async def submit_json_output(request: Request):
             "status": "ok", "ubxy": ubxy_value, 
             "reaction_sequences_b64": reaction_sequences_b64,
             "formatted_edges": formatted_edges,
-            "nomenclature_preorder_ABC": nomenclature_preorder_ABC,
-            "nomenclature_preorder_jeff": nomenclature_preorder_jeff,
-            "strieter_nomenclature_wo_preorder": strieter_nomenclature_wo_preorder,
-            "kummelstedt_nomenclature_w_preorder": kummelstedt_nomenclature_w_preorder,
+            "nomenclature_preorder_1A2": nomenclature_preorder_1A2,
+            "nomenclature_preorder_A63B": nomenclature_preorder_A63B,
+            "graph_wo_preorder_nomenclature": graph_wo_preorder_nomenclature,
+            "graph_w_preorder_nomenclature": graph_w_preorder_nomenclature,
             "jeff_K48_K63_nomenclature": jeff_K48_K63_nomenclature,
             "jeff_all_lysines_nomenclature": jeff_all_lysines_nomenclature,
             "jeff_multiple_symbols": jeff_multiple_symbols,
@@ -872,14 +872,14 @@ async def submit_nomenclature_request(request: Request):
         formatted_edges = ', '.join([f"{src} -> {site} -> {dst}" for src, site, dst in edges])
 
         # New version - pre-order with A, B, C
-        nomenclature_preorder_ABC = nomenclature.format_nomenclature_preorder_ABC(edges)
+        nomenclature_preorder_1A2 = nomenclature.format_nomenclature_preorder_1A2(edges)
 
         # New version - Jeffs pre-order with K63, K48, K33, K29, K27, K11, K6 and A, B ,C as nodes
-        nomenclature_preorder_jeff = nomenclature.format_nomenclature_preorder_jeff(edges)
+        nomenclature_preorder_A63B = nomenclature.format_nomenclature_preorder_A63B(edges)
         
         # Correct nomenclature assignments
-        strieter_nomenclature_wo_preorder = output_context['nomenclature_wo_preorder']
-        kummelstedt_nomenclature_w_preorder = output_context['nomenclature_w_preorder']
+        graph_wo_preorder_nomenclature = output_context['nomenclature_wo_preorder']
+        graph_w_preorder_nomenclature = output_context['nomenclature_w_preorder']
 
         # ======= Strieter-style FASTA generation =======
         
@@ -894,7 +894,7 @@ async def submit_nomenclature_request(request: Request):
             txt_file_content += f"\n{key};{fasta_sequence}\n"
         
         # Add >Isf section with nomenclature
-        txt_file_content += f">Isf\n{ubxy_value};{strieter_nomenclature_wo_preorder}\n"
+        txt_file_content += f">Isf\n{ubxy_value};{graph_wo_preorder_nomenclature}\n"
         
         # ======== End of Strieter-style FASTA generation =======
         
@@ -912,10 +912,10 @@ async def submit_nomenclature_request(request: Request):
             "output_json": output_json_string,
             "txt_file_content": txt_file_content,
             "formatted_edges": formatted_edges,
-            "nomenclature_preorder_ABC": nomenclature_preorder_ABC,
-            "nomenclature_preorder_jeff": nomenclature_preorder_jeff,
-            "strieter_nomenclature_wo_preorder": strieter_nomenclature_wo_preorder,
-            "kummelstedt_nomenclature_w_preorder": kummelstedt_nomenclature_w_preorder,
+            "nomenclature_preorder_1A2": nomenclature_preorder_1A2,
+            "nomenclature_preorder_A63B": nomenclature_preorder_A63B,
+            "graph_wo_preorder_nomenclature": graph_wo_preorder_nomenclature,
+            "graph_w_preorder_nomenclature": graph_w_preorder_nomenclature,
             "jeff_all_lysines_nomenclature": jeff_all_lysines_nomenclature,
             "jeff_multiple_symbols": jeff_multiple_symbols,
             "jeff_multiple_symbols_eric_numbering": jeff_multiple_symbols_eric_numbering

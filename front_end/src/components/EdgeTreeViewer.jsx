@@ -3,10 +3,10 @@ import React from 'react';
 const EdgeTreeViewer = ({ 
   formattedEdges, 
   ubxyValue, 
-  nomenclaturePreorderABC, 
-  nomenclaturePreorderJeff,
-  strieterNomenclatureWoPreorder, 
-  kummelstedtNomenclatureWPreorder,
+  nomenclaturePreorder1A2, 
+  nomenclaturePreorderA63B,
+  graphwopreorderNomenclatureWPreorder, 
+  graphwpreorderNomenclatureWPreorder,
   jeffMultipleSymbols,
   jeffK48K63Nomenclature,
   jeffAllLysinesNomenclature,
@@ -164,34 +164,9 @@ const EdgeTreeViewer = ({
       {/* Nomenclature Displays */}
       {formattedEdges && (
         <>
-          {nomenclaturePreorderABC && (
-            <div style={{ marginBottom: '16px' }}>
-              <h4 style={{ 
-                margin: '0 0 8px 0', 
-                color: '#333',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}>
-                Kummelstedt Preorder Nomenclature with ABCD... as K63, K48, K33, K29...
-              </h4>
-              <div style={{
-                color: '#7b1fa2',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                fontFamily: 'monospace',
-                textAlign: 'center',
-                padding: '8px',
-                backgroundColor: '#f3e5f5',
-                borderRadius: '4px',
-                border: '1px solid #7b1fa2'
-              }}>
-                {nomenclaturePreorderABC}
-              </div>
-            </div>
-          )}
 
-          {/* Jeff Preorder Nomenclature */}
-          {nomenclaturePreorderJeff && (
+          {/* Ub1D Preorder Nomenclature */}
+          {nomenclaturePreorderA63B && (
             <div style={{ marginBottom: '16px' }}>
               <h4 style={{ 
                 margin: '0 0 8px 0', 
@@ -199,7 +174,7 @@ const EdgeTreeViewer = ({
                 fontSize: '14px',
                 fontWeight: 'bold'
               }}>
-                Jeff Preorder Nomenclature
+                UbID nomenclature with preorder numbering A = 1, B = 2... (Bode/Majima/Kummelstedt)
               </h4>
               <div style={{
                 color: '#1976d2',
@@ -212,13 +187,13 @@ const EdgeTreeViewer = ({
                 borderRadius: '4px',
                 border: '1px solid #1976d2'
               }}>
-                {nomenclaturePreorderJeff}
+                {nomenclaturePreorderA63B}
               </div>
             </div>
           )}
 
-          {/* Strieter Nomenclature (without preorder) */}
-          {strieterNomenclatureWoPreorder && (
+          {/* Alternative Ub1D Preorder Nomenclature */}
+          {nomenclaturePreorder1A2 && (
             <div style={{ marginBottom: '16px' }}>
               <h4 style={{ 
                 margin: '0 0 8px 0', 
@@ -226,7 +201,34 @@ const EdgeTreeViewer = ({
                 fontSize: '14px',
                 fontWeight: 'bold'
               }}>
-                Strieter Nomenclature (without preorder)
+                Alternative UbID nomenclature with preorder numbering A = K63, B = K48... (Bode/Majima/Kummelstedt) 
+              </h4>
+              <div style={{
+                color: '#7b1fa2',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                textAlign: 'center',
+                padding: '8px',
+                backgroundColor: '#f3e5f5',
+                borderRadius: '4px',
+                border: '1px solid #7b1fa2'
+              }}>
+                {nomenclaturePreorder1A2}
+              </div>
+            </div>
+          )}
+
+          {/* Graph-based nomenclature without preorder (Strieter/Shestoperova/Ivanov) */}
+          {graphwopreorderNomenclatureWPreorder && (
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ 
+                margin: '0 0 8px 0', 
+                color: '#333',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}>
+                Graph-based nomenclature without preorder (Strieter/Shestoperova/Ivanov)
               </h4>
               <div style={{
                 color: '#d32f2f',
@@ -239,13 +241,13 @@ const EdgeTreeViewer = ({
                 borderRadius: '4px',
                 border: '1px solid #d32f2f'
               }}>
-                {strieterNomenclatureWoPreorder}
+                {graphwopreorderNomenclatureWPreorder}
               </div>
             </div>
           )}
 
-          {/* Kummelstedt Nomenclature (with preorder) */}
-          {kummelstedtNomenclatureWPreorder && (
+          {/* Graph-based nomenclature with preorder numbering (Bode/Majima/Kummelstedt) */}
+          {graphwpreorderNomenclatureWPreorder && (
             <div style={{ marginBottom: '16px' }}>
               <h4 style={{ 
                 margin: '0 0 8px 0', 
@@ -253,7 +255,7 @@ const EdgeTreeViewer = ({
                 fontSize: '14px',
                 fontWeight: 'bold'
               }}>
-                Kummelstedt Nomenclature (with preorder)
+                Graph-based nomenclature with preorder numbering (Bode/Majima/Kummelstedt) 
               </h4>
               <div style={{
                 color: '#388e3c',
@@ -266,7 +268,7 @@ const EdgeTreeViewer = ({
                 borderRadius: '4px',
                 border: '1px solid #388e3c'
               }}>
-                {formatWithSubscripts(kummelstedtNomenclatureWPreorder)}
+                {formatWithSubscripts(graphwpreorderNomenclatureWPreorder)}
               </div>
             </div>
           )}
