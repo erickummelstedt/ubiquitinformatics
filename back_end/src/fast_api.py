@@ -280,9 +280,6 @@ async def submit_ubxy(request: Request):
         graph_wo_preorder_nomenclature = output_context['nomenclature_wo_preorder']
         graph_w_preorder_nomenclature = output_context['nomenclature_w_preorder']
         
-        # Old version - Jeffs without pre-order - NEED TO FIX AGAIN
-        # jeff_k48_k63_nomenclature = nomenclature.conjugated_lysines_to_nomenclature(edges)
-        jeff_K48_K63_nomenclature = nomenclature.conjugated_lysines_to_jeff_K48_K63_nomenclature(edges)
         # jeff_full_nomenclature_ABC = ....
         jeff_all_lysines_nomenclature = nomenclature.conjugated_lysines_to_jeff_all_lysines_nomenclature(edges)
         # jeff_multiple_symbols = ....
@@ -306,7 +303,6 @@ async def submit_ubxy(request: Request):
             "nomenclature_preorder_A63B": nomenclature_preorder_A63B,
             "graph_wo_preorder_nomenclature": graph_wo_preorder_nomenclature,
             "graph_w_preorder_nomenclature": graph_w_preorder_nomenclature,
-            "jeff_K48_K63_nomenclature": jeff_K48_K63_nomenclature,
             "jeff_all_lysines_nomenclature": jeff_all_lysines_nomenclature,
             "jeff_multiple_symbols": jeff_multiple_symbols,
 
@@ -395,9 +391,6 @@ async def submit_json_output(request: Request):
         graph_wo_preorder_nomenclature = output_context['nomenclature_wo_preorder']
         graph_w_preorder_nomenclature = output_context['nomenclature_w_preorder']
         
-        # Old version - Jeffs without pre-order - NEED TO FIX AGAIN
-        # jeff_k48_k63_nomenclature = nomenclature.conjugated_lysines_to_nomenclature(edges)
-        jeff_K48_K63_nomenclature = nomenclature.conjugated_lysines_to_jeff_K48_K63_nomenclature(edges)
         # jeff_full_nomenclature_ABC = ....
         jeff_all_lysines_nomenclature = nomenclature.conjugated_lysines_to_jeff_all_lysines_nomenclature(edges)
         # jeff_multiple_symbols = ....
@@ -421,7 +414,6 @@ async def submit_json_output(request: Request):
             "nomenclature_preorder_A63B": nomenclature_preorder_A63B,
             "graph_wo_preorder_nomenclature": graph_wo_preorder_nomenclature,
             "graph_w_preorder_nomenclature": graph_w_preorder_nomenclature,
-            "jeff_K48_K63_nomenclature": jeff_K48_K63_nomenclature,
             "jeff_all_lysines_nomenclature": jeff_all_lysines_nomenclature,
             "jeff_multiple_symbols": jeff_multiple_symbols,
             "jeff_multiple_symbols_eric_numbering": jeff_multiple_symbols_eric_numbering
@@ -887,14 +879,14 @@ async def submit_nomenclature_request(request: Request):
         FASTA_sequences = nomenclature.build_mass_spec_dictionary(output_json)
 
         # Build the text file content
-        txt_file_content = ">Ppt"
+        mass_spec_txt_file = ">Ppt"
         
         # Add >Ppt section with FASTA sequences
         for key, fasta_sequence in FASTA_sequences.items():
-            txt_file_content += f"\n{key};{fasta_sequence}\n"
+            mass_spec_txt_file += f"\n{key};{fasta_sequence}\n"
         
         # Add >Isf section with nomenclature
-        txt_file_content += f">Isf\n{ubxy_value};{graph_wo_preorder_nomenclature}\n"
+        mass_spec_txt_file += f">Isf\n{ubxy_value};{graph_wo_preorder_nomenclature}\n"
         
         # ======== End of Strieter-style FASTA generation =======
         
@@ -910,7 +902,7 @@ async def submit_nomenclature_request(request: Request):
         return JSONResponse(content={
             "status": "ok", "ubxy": ubxy_value, 
             "output_json": output_json_string,
-            "txt_file_content": txt_file_content,
+            "mass_spec_txt_file": mass_spec_txt_file,
             "formatted_edges": formatted_edges,
             "nomenclature_preorder_1A2": nomenclature_preorder_1A2,
             "nomenclature_preorder_A63B": nomenclature_preorder_A63B,

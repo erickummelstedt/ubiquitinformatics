@@ -62,12 +62,11 @@ const ModuleDashboard = () => {
   const [nomenclaturePreorderA63B, setNomenclaturePreorderA63B] = useState(null); // Store A63B's preorder nomenclature
   const [graphwopreorderNomenclatureWPreorder, setGraphWOpreorderNomenclatureWPreorder] = useState(null); // Store graph nomenclature without preorder
   const [graphwpreorderNomenclatureWPreorder, setGraphwpreorderNomenclatureWPreorder] = useState(null); // Store graph nomenclature with preorder
-  const [jeffK48K63Nomenclature, setJeffK48K63Nomenclature] = useState(null); // Store jeff K48/K63 nomenclature
   const [jeffMultipleSymbols, setJeffMultipleSymbols] = useState(null); // Store jeff multiple symbols nomenclature
   const [jeffAllLysinesNomenclature, setJeffAllLysinesNomenclature] = useState(null); // Store jeff all lysines nomenclature
   const [jeffMultipleSymbolsEricNumbering, setJeffMultipleSymbolsEricNumbering] = useState(null); // Store jeff multiple symbols eric numbering
   const [outputJsonString, setOutputJsonString] = useState(null); // Store output JSON from nomenclature API
-  const [txtFileContent, setTxtFileContent] = useState(null); // Store txt file content from nomenclature API
+  const [massSpecTxtFile, setMassSpecTxtFile] = useState(null); // Store txt file content from nomenclature API
   const [inputNodes, setInputNodes] = useState({
     nodes: DEFAULT_NODES,
     arrows: [],
@@ -88,12 +87,11 @@ const ModuleDashboard = () => {
     setNomenclaturePreorderA63B(null);
     setGraphWOpreorderNomenclatureWPreorder(null);
     setGraphwpreorderNomenclatureWPreorder(null);
-    setJeffK48K63Nomenclature(null);
     setJeffMultipleSymbols(null);
     setJeffAllLysinesNomenclature(null);
     setJeffMultipleSymbolsEricNumbering(null);
     setOutputJsonString(null);
-    setTxtFileContent(null);
+    setMassSpecTxtFile(null);
   }, [page]);
 
   // Count selections for each label
@@ -124,7 +122,6 @@ const ModuleDashboard = () => {
       setNomenclaturePreorder1A2(null); // Clear nomenclature value
       setGraphWOpreorderNomenclatureWPreorder(null); // Clear strieter nomenclature
       setGraphwpreorderNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
-      setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
       setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
 
       const response = await fetch('/api/submit-selection', {
@@ -216,7 +213,7 @@ const ModuleDashboard = () => {
                       setGraphwpreorderNomenclatureWPreorder(null);
                       setJeffAllLysinesNomenclature(null);
                       setOutputJsonString(null);
-                      setTxtFileContent(null);
+                      setMassSpecTxtFile(null);
 
                       const response = await fetch('/api/submit_nomenclature_request', {
                         method: 'POST',
@@ -257,8 +254,8 @@ const ModuleDashboard = () => {
                       if (result.output_json) {
                         setOutputJsonString(result.output_json);
                       }
-                      if (result.txt_file_content) {
-                        setTxtFileContent(result.txt_file_content);
+                      if (result.mass_spec_txt_file) {
+                        setMassSpecTxtFile(result.mass_spec_txt_file);
                       }
 
                     } catch (err) {
@@ -299,7 +296,7 @@ const ModuleDashboard = () => {
                   jeffAllLysinesNomenclature={jeffAllLysinesNomenclature}
                   jeffMultipleSymbolsEricNumbering={jeffMultipleSymbolsEricNumbering}
                   outputJsonString={outputJsonString}
-                  txtFileContent={txtFileContent}
+                  massSpecTxtFile={massSpecTxtFile}
                 />
               </div>
             )}
@@ -331,7 +328,6 @@ const ModuleDashboard = () => {
                               setNomenclaturePreorder1A2(null); // Clear nomenclature value
                               setGraphWOpreorderNomenclatureWPreorder(null); // Clear strieter nomenclature
                               setGraphwpreorderNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
-                              setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
                               setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
                               setInputNodes({
                                 nodes: DEFAULT_NODES,
@@ -370,9 +366,6 @@ const ModuleDashboard = () => {
                               }
                               if (result.jeff_multiple_symbols) {
                                 setJeffMultipleSymbols(result.jeff_multiple_symbols);
-                              }
-                              if (result.jeff_K48_K63_nomenclature) {
-                                setJeffK48K63Nomenclature(result.jeff_K48_K63_nomenclature);
                               }
                               if (result.jeff_all_lysines_nomenclature) {
                                 setJeffAllLysinesNomenclature(result.jeff_all_lysines_nomenclature);
@@ -463,7 +456,6 @@ const ModuleDashboard = () => {
                           setNomenclaturePreorder1A2(null); // Clear nomenclature value
                           setGraphWOpreorderNomenclatureWPreorder(null); // Clear strieter nomenclature
                           setGraphwpreorderNomenclatureWPreorder(null); // Clear kummelstedt nomenclature
-                          setJeffK48K63Nomenclature(null); // Clear jeff K48/K63 nomenclature
                           setJeffAllLysinesNomenclature(null); // Clear jeff all lysines nomenclature
                           // Don't reset inputNodes here to preserve the arrows and scaffold state
 
@@ -502,9 +494,6 @@ const ModuleDashboard = () => {
                             if (result.jeff_multiple_symbols) {
                               setJeffMultipleSymbols(result.jeff_multiple_symbols);
                             }
-                            if (result.jeff_K48_K63_nomenclature) {
-                              setJeffK48K63Nomenclature(result.jeff_K48_K63_nomenclature);
-                            }
                             if (result.jeff_all_lysines_nomenclature) {
                               setJeffAllLysinesNomenclature(result.jeff_all_lysines_nomenclature);
                             }
@@ -532,7 +521,6 @@ const ModuleDashboard = () => {
                           graphwopreorderNomenclatureWPreorder={graphwopreorderNomenclatureWPreorder}
                           graphwpreorderNomenclatureWPreorder={graphwpreorderNomenclatureWPreorder}
                           jeffMultipleSymbols={jeffMultipleSymbols}
-                          jeffK48K63Nomenclature={jeffK48K63Nomenclature}
                           jeffAllLysinesNomenclature={jeffAllLysinesNomenclature}
                           jeffMultipleSymbolsEricNumbering={jeffMultipleSymbolsEricNumbering}
                         />

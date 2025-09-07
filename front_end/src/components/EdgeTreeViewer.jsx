@@ -8,11 +8,10 @@ const EdgeTreeViewer = ({
   graphwopreorderNomenclatureWPreorder, 
   graphwpreorderNomenclatureWPreorder,
   jeffMultipleSymbols,
-  jeffK48K63Nomenclature,
   jeffAllLysinesNomenclature,
   jeffMultipleSymbolsEricNumbering,
   outputJsonString,
-  txtFileContent
+  massSpecTxtFile
 }) => {
   // Function to format nomenclature with subscripts for negative numbers
   const formatWithSubscripts = (text) => {
@@ -219,33 +218,6 @@ const EdgeTreeViewer = ({
             </div>
           )}
 
-          {/* Graph-based nomenclature without preorder (Strieter/Shestoperova/Ivanov) */}
-          {graphwopreorderNomenclatureWPreorder && (
-            <div style={{ marginBottom: '16px' }}>
-              <h4 style={{ 
-                margin: '0 0 8px 0', 
-                color: '#333',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}>
-                Graph-based nomenclature without preorder (Strieter/Shestoperova/Ivanov)
-              </h4>
-              <div style={{
-                color: '#d32f2f',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                fontFamily: 'monospace',
-                textAlign: 'center',
-                padding: '8px',
-                backgroundColor: '#ffebee',
-                borderRadius: '4px',
-                border: '1px solid #d32f2f'
-              }}>
-                {graphwopreorderNomenclatureWPreorder}
-              </div>
-            </div>
-          )}
-
           {/* Graph-based nomenclature with preorder numbering (Bode/Majima/Kummelstedt) */}
           {graphwpreorderNomenclatureWPreorder && (
             <div style={{ marginBottom: '16px' }}>
@@ -269,33 +241,6 @@ const EdgeTreeViewer = ({
                 border: '1px solid #388e3c'
               }}>
                 {formatWithSubscripts(graphwpreorderNomenclatureWPreorder)}
-              </div>
-            </div>
-          )}
-
-          {/* Jeff K48/K63 Nomenclature */}
-          {jeffK48K63Nomenclature && (
-            <div style={{ marginBottom: '16px' }}>
-              <h4 style={{ 
-                margin: '0 0 8px 0', 
-                color: '#333',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}>
-                Jeff K48/K63 Nomenclature (K48/K63 linkages only)
-              </h4>
-              <div style={{
-                color: '#ff6f00',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                fontFamily: 'monospace',
-                textAlign: 'center',
-                padding: '8px',
-                backgroundColor: '#fff3e0',
-                borderRadius: '4px',
-                border: '1px solid #ff6f00'
-              }}>
-                {jeffK48K63Nomenclature}
               </div>
             </div>
           )}
@@ -381,8 +326,35 @@ const EdgeTreeViewer = ({
             </div>
           )}
 
-          {/* Strieter-style mass spec file */}
-          {txtFileContent && (
+          {/* Graph-based nomenclature without preorder (Strieter/Shestoperova/Ivanov) */}
+          {graphwopreorderNomenclatureWPreorder && (
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ 
+                margin: '0 0 8px 0', 
+                color: '#333',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}>
+                Graph-based nomenclature without preorder (Strieter/Shestoperova/Ivanov)
+              </h4>
+              <div style={{
+                color: '#d32f2f',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                textAlign: 'center',
+                padding: '8px',
+                backgroundColor: '#ffebee',
+                borderRadius: '4px',
+                border: '1px solid #d32f2f'
+              }}>
+                {graphwopreorderNomenclatureWPreorder}
+              </div>
+            </div>
+          )}
+
+          {/* Mass spec .txt file (Strieter/Shestoperova/Ivanov) */}
+          {massSpecTxtFile && (
             <div style={{ marginBottom: '16px' }}>
               <div style={{ 
                 display: 'flex', 
@@ -396,11 +368,11 @@ const EdgeTreeViewer = ({
                   fontSize: '14px',
                   fontWeight: 'bold'
                 }}>
-                  Strieter-style mass spec file
+                  Mass spec .txt file (Strieter/Shestoperova/Ivanov)
                 </h4>
                 <button
                   onClick={() => {
-                    const blob = new Blob([txtFileContent], { type: 'text/plain' });
+                    const blob = new Blob([massSpecTxtFile], { type: 'text/plain' });
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     link.href = url;
@@ -439,7 +411,7 @@ const EdgeTreeViewer = ({
                 maxHeight: '200px',
                 overflowY: 'auto'
               }}>
-                {txtFileContent}
+                {massSpecTxtFile}
               </div>
             </div>
           )}
