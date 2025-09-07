@@ -1,0 +1,12 @@
+# Simple Docker setup for ubiquitinformatics
+services:
+  ubiquitinformatics:
+    build: .
+    ports:
+      - "5173:5173"  # Frontend
+      - "8000:8000"  # Backend API
+    volumes:
+      - ./back_end/data:/app/back_end/data  # Persist simulation data
+      - ./logs:/app/logs                    # Persist logs
+    environment:
+      - NODE_ENV=development

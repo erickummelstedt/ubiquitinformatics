@@ -1,6 +1,11 @@
-#!/bin/sh
-# Kill any process using port 5173-5180 (Vite default range) and port 8000 (FastAPI)
-echo "Checking for existing servers..."
+#!/bin/bash
+
+echo "🧬 Starting Ubiquitinformatics - Complete Setup"
+echo "=============================================="
+echo ""
+
+# Kill any existing processes on ports first
+echo "🔄 Checking for existing servers..."
 for port in 5173 5174 5175 5176 5177 5178 5179 5180 8000; do
   PID=$(lsof -ti :$port)
   if [ ! -z "$PID" ]; then
@@ -12,16 +17,35 @@ done
 # Also kill any uvicorn processes
 pkill -f "uvicorn.*fast_api" 2>/dev/null || true
 
-# Check if virtual environment exists, create if it doesn't
+# Step 1: Check if virtual environment exists
 if [ ! -d ".venv" ]; then
-  echo "Virtual environment not found. Creating .venv..."
+  echo "📦 Setting up Python environment..."
   python3 -m venv .venv
 fi
 
-echo "Activating virtual environment..."
+# Step 2: Activate virtual environment
+echo "🔧 Activating Python environment..."
 source .venv/bin/activate
 
-# Install Node.js and npm if missing
+# Step 3: Install Python dependencies if needed
+if ! python -c "import uvicorn" 2>/dev/null; then
+  echo "📥 Installing Python dependencies..."
+  pip install --upgrade pip
+  pip install -r requirements.txt
+fi
+
+# Step 4: Run the simulation ONCE
+echo ""
+echo "🔬 Running simulation (this may take a few minutes)..."
+cd back_end/src
+python run_file.py
+cd ../..
+
+echo ""
+echo "✅ Simulation completed!"
+echo ""
+
+# Step 5: Install Node.js and npm if missing
 if ! command -v npm &> /dev/null; then
   echo "❌ 'npm' is not installed. Please install Node.js from https://nodejs.org/."
   exit 1
@@ -33,21 +57,21 @@ if ! command -v concurrently &> /dev/null; then
   npm install -g concurrently
 fi
 
-# Install frontend dependencies
+# Step 6: Install Node.js dependencies if needed
 if [ -d "front_end" ]; then
-  echo "Installing frontend dependencies..."
+  echo "📥 Installing frontend dependencies..."
   cd front_end
   npm install
   cd ..
 fi
 
-# Check backend dependencies (venv should already be activated)
-echo "Checking backend dependencies..."
-if ! python -c "import uvicorn" 2>/dev/null; then
-  echo "Installing backend dependencies..."
-  pip install --upgrade pip
-  pip install -r requirements_pip.txt
-fi
+# Step 7: Start the web interface
+echo "🌐 Starting web interface..."
+echo ""
+echo "This will open your browser automatically at http://localhost:5173"
+echo ""
+echo "Press Ctrl+C to stop the servers when you're done"
+echo ""
 
 # Set default port if not provided
 PORT=${1:-5173}

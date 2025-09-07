@@ -2,54 +2,60 @@
 
 A Python and React application for ubiquitin chain simulation and visualization.
 
-**⚠️ Important: This application currently only works on Mac computers.**
-## What You Need Before Starting
+### 🐳 Option 1: Docker Setup (Recommended)
+**No Python or Node.js installation needed!**
+1. **Git** - For downloading the project
+   - Check: `git --version` in Terminal
+   - Install: [https://git-scm.com/download](https://git-scm.com/download)
 
-Before you can download and run this project, you need to have these programs installed on your Mac:
+2. **Docker Desktop** - Handles everything else automatically
+   - Download: [https://www.docker.com/get-started](https://www.docker.com/get-started)
+   - Install and start Docker Desktop
+   - Ensure Docker is in your PATH: Run `docker --version` in Terminal to verify
 
-### Required Software
-1. **Git** - For downloading the project from GitHub
-   - Check if you have it: Open Terminal and type `git --version`
-   - If you don't have it, download from: [https://git-scm.com/download/mac](https://git-scm.com/download/mac)
-
-2. **Python 3.11.3** - The programming language this project uses
-   - We recommend using `pyenv` to manage Python versions
-   - Install pyenv: [https://github.com/pyenv/pyenv#installation](https://github.com/pyenv/pyenv#installation)
-
-3. **Node.js** - For the web interface
-   - Download from: [https://nodejs.org/](https://nodejs.org/) (choose the LTS version)
-
-### Alternative: Conda (Optional)
-Instead of the above Python setup, you can use Conda:
-- Download Anaconda: [https://www.anaconda.com/download](https://www.anaconda.com/download)
-- Or Miniconda: [https://docs.conda.io/en/latest/miniconda.html](https://docs.conda.io/en/latest/miniconda.html)
-
-## How to Download and Run the Project
-
-### Step 1: Download the Project
-1. Open Terminal (Applications → Utilities → Terminal)
-2. Navigate to where you want to put the project:
-   ```bash
-   cd Desktop  # This puts it on your Desktop, or choose another location
-   ```
-3. Download the project:
-   ```bash
-   git clone https://github.com/erickummelstedt/ubiquitinformatics.git
-   ```
-4. Go into the project folder:
-   ```bash
-   cd ubiquitinformatics
-   ```
-
-### Step 2: Set Up the Python Environment
-
-**Option A: Using Python and pip (Recommended)**
 ```bash
-pyenv local 3.11.3
-python -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements_pip.txt
+# Step 1: Download the project
+git clone https://github.com/erickummelstedt/ubiquitinformatics.git
+cd ubiquitinformatics
+
+# Step 2: Run everything with Docker (takes 2-3 minutes)
+# Mac/Linux:
+./start.sh
+
+# Windows:
+start.bat
+```
+
+Access at: http://localhost:5173
+
+### 🛠️ Option 2: Manual Setup (If you prefer local installation)
+**- requires installing Python and Node.js:**
+```bash
+# Download the project
+git clone https://github.com/erickummelstedt/ubiquitinformatics.git
+cd ubiquitinformatics
+
+# Run everything locally
+# Mac/Linux:
+./manual-start.sh
+```
+
+This will set up Python environment, install dependencies, run simulation, and start the web interface.
+
+---
+
+---
+
+## 📋 What You Need First
+
+
+### Option 2: Manual Setup (Advanced Users)
+1. **Git** + **Python 3.11+** + **Node.js** (see manual setup section below)
+
+---
+
+## ⚠️ Manual Setup (If You Need It)
+pip install -r requirements.txt
 ```
 
 **Option B: Using Conda**
@@ -57,7 +63,7 @@ pip install -r requirements_pip.txt
 conda create -n myenv python
 conda activate myenv
 conda config --append channels conda-forge
-conda install --file requirements_conda.txt
+conda install --file requirements.txt
 ```
 
 ### Step 3: Run the Application
@@ -75,4 +81,4 @@ You need to run these two commands (in this order):
 
 ### Step 4: Use the Application
 - After running both commands, your web browser should automatically open
-- If it doesn't, go to: [http://localhost:3000](http://localhost:3000)
+- If it doesn't, please [report an issue](https://github.com/erickummelstedt/ubiquitinformatics/issues) with your operating system details
