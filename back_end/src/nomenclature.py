@@ -925,16 +925,6 @@ def conjugated_lysines_to_jeffs_multiple_symbols_eric_numbering(conjugated_lysin
     
     return ','.join(nomenclature_parts)
 
-# ==================================
-# ==== Numerical System Conversion
-# ====================================
-
-# ========= new nomenclature function - jeff branches defined
-
-
-
-
-
 # =========================================================
 # Mass Spec Dictionary Functions
 # Extract unique FASTA sequences for mass spectrometry analysis
