@@ -11,7 +11,14 @@ A Python and React application for ubiquitin chain simulation and visualization.
 2. **Docker Desktop** - Handles everything else automatically
    - Download: [https://www.docker.com/get-started](https://www.docker.com/get-started)
    - Install and start Docker Desktop
-   - Ensure Docker is in your PATH: Run `docker --version` in Terminal to verify
+  - **Ensure Docker is in your PATH:**
+    1. Open Terminal and run `docker --version` to check if Docker is available.
+    2. If you see 'docker not found', run:
+      ```zsh
+      export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
+      ```
+    3. Now run `which docker` again to confirm Docker is found.
+
 
 ```bash
 # Step 1: Download the project
