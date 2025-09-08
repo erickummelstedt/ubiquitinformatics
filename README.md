@@ -19,10 +19,10 @@ git clone https://github.com/erickummelstedt/ubiquitinformatics.git
 cd ubiquitinformatics
 
 # Step 2: Run everything with Docker (takes 2-3 minutes)
-# Mac/Linux:
+# Mac:
 ./start.sh
 
-# Windows, working on developing a login page for windows
+# Windows/Linux, working on developing a login page for windows
 ```
 
 Access at: http://localhost:5173
@@ -36,7 +36,7 @@ git clone https://github.com/erickummelstedt/ubiquitinformatics.git
 cd ubiquitinformatics
 
 # Run everything locally
-# Mac/Linux:
+# Mac:
 ./manual-start.sh
 ```
 
