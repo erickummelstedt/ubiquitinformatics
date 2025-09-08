@@ -841,7 +841,7 @@ async def submit_nomenclature_request(request: Request):
             try:
                 # Determine multimer size from nomenclature
                 multimer_size = int(nomenclature.multimer_length_from_nomenclature(ubxy_value))
-                if multimer_size not in [4, 5]:
+                if multimer_size not in [2, 3, 4, 5]:
                     return JSONResponse(content={"status": "error", "message": "Nomenclature must correspond to multimer size 4 or 5"}, status_code=400)
             except Exception as e:
                 return JSONResponse(content={"status": "error", "message": f"Error determining multimer size from nomenclature: {str(e)}"}, status_code=400)

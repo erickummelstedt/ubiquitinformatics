@@ -19,6 +19,7 @@ A Python and React application for ubiquitin chain simulation and visualization.
       ```
     3. Now run `which docker` again to confirm Docker is found.
 
+3. **Source Code & Application Download** - Download the project files and application
 
 ```bash
 # Step 1: Download the project
