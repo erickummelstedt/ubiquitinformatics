@@ -22,8 +22,7 @@ cd ubiquitinformatics
 # Mac/Linux:
 ./start.sh
 
-# Windows:
-start.bat
+# Windows, working on developing a login page for windows
 ```
 
 Access at: http://localhost:5173
