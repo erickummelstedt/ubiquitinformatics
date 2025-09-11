@@ -300,7 +300,7 @@ In pre-order traversal, each branch is fully explored before the numbering retur
   - Example: Ub,63(Ub,63(Ub,48(Ub)),48(Ub))
 
 
-<small>*Reference: During the preparation of the manuscript associated to this codebase, another graph-based representation of Ub chains was posted: Shestoperova, E. I., Ivanov, D., Zhong, J., Chien, L. & Strieter, E. Computationally driven top-down mass spectrometry of ubiquitinated proteins. bioRxiv (2025) doi:10.1101/2025.07.24.666707. The GitHub can be found here: https://github.com/dg-ivanov/UbqTop</small>
+<small><sup>*</sup>Reference: During the preparation of the manuscript associated to this codebase, another graph-based representation of Ub chains was posted: Shestoperova, E. I., Ivanov, D., Zhong, J., Chien, L. & Strieter, E. Computationally driven top-down mass spectrometry of ubiquitinated proteins. bioRxiv (2025) doi:10.1101/2025.07.24.666707. The GitHub can be found here: https://github.com/dg-ivanov/UbqTop</small>
 ---
 
 ## 🖥️ User Interface Overview
