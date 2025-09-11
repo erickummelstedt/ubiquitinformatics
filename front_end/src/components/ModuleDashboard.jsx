@@ -43,8 +43,8 @@ const DEFAULT_EDGES = [
 
 const PAGE_CONFIG = {
   draw: { count: 1, label: 'Explore Reaction Pathways', panelWidth: 570, panelHeight: 370 },
-  tetramers: { count: 14, label: 'Tetramers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
-  pentamers: { count: 42, label: 'Pentamers', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
+  tetramers: { count: 14, label: 'Tetramer syntheses', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
+  pentamers: { count: 42, label: 'Pentamer syntheses', panelWidth: SMALL_PANEL_WIDTH, panelHeight: SMALL_PANEL_HEIGHT },
   reactionStats: { count: 1, label: 'Reaction Path Metrics', panelWidth: 570, panelHeight: 500 },
   subgraph: { count: 1, label: 'Ubiquitin Isomorphism', panelWidth: 570, panelHeight: 500 },
   nomenclature: { count: 1, label: 'Nomenclature Explorer', panelWidth: 570, panelHeight: 370 },
@@ -147,21 +147,29 @@ const ModuleDashboard = () => {
 
   return (
     <div style={{ width: '100vw', minHeight: '100vh', boxSizing: 'border-box', overflow: 'auto', padding: '16px 0' }}>
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
-        <label htmlFor="dashboard-page-select" style={{ fontWeight: 600, fontSize: 16, marginRight: 8 }}>Page:</label>
-        <select
-          id="dashboard-page-select"
-          value={page}
-          onChange={e => setPage(e.target.value)}
-          style={{ fontSize: 16, padding: '4px 12px', borderRadius: 6 }}
-        >
-          <option value="draw">Explore Reaction Pathways</option>
-          <option value="tetramers">Tetramers</option>
-          <option value="pentamers">Pentamers</option>
-          <option value="reactionStats">Reaction Path Metrics</option>
-          <option value="subgraph">Ubiquitin Isomorphism</option>
-          <option value="nomenclature">Nomenclature Explorer</option>
-        </select>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+          <label htmlFor="dashboard-page-select" style={{ fontWeight: 600, fontSize: 16, marginRight: 8 }}>Page:</label>
+          <select
+            id="dashboard-page-select"
+            value={page}
+            onChange={e => setPage(e.target.value)}
+            style={{ fontSize: 16, padding: '4px 12px', borderRadius: 6 }}
+          >
+            <option value="draw">Explore Reaction Pathways</option>
+            <option value="tetramers">Tetramer syntheses</option>
+            <option value="pentamers">Pentamer syntheses</option>
+            <option value="reactionStats">Reaction Path Metrics</option>
+            <option value="subgraph">Ubiquitin Isomorphism</option>
+            <option value="nomenclature">Nomenclature Explorer</option>
+          </select>
+        </div>
+        {(page === 'tetramers' || page === 'pentamers') && (
+          <div style={{ marginTop: 8, marginBottom: 0, fontSize: 15, color: '#666', fontWeight: 400, textAlign: 'center', fontStyle: 'italic' }}>
+            {page === 'tetramers' ? 'Select tetramers of interest for synthesis' : 'Select pentamers of interest for synthesis'}<br />
+            Choose up to 16 (including duplicates) before submitting
+          </div>
+        )}
       </div>
       <div style={{
         display: 'flex',
@@ -303,7 +311,7 @@ const ModuleDashboard = () => {
               </div>
             )}
           </div>
-        ) : (
+      ) : (
           [...Array(count)].map((_, i) => {
             const isSelected = selectedPanels.includes(i);
             const label = page === 'tetramers' ? `Ub4_${i + 1}` : page === 'pentamers' ? `Ub5_${i + 1}` : '';
@@ -421,7 +429,8 @@ const ModuleDashboard = () => {
                       textAlign: 'center',
                       fontStyle: 'italic'
                     }}>
-                      X = 4 or 5, Y = 1-14 for Ub4, 1-42 for Ub5
+                      X = 4 or 5, Y = 1-14 for Ub4, 1-42 for Ub5<br />
+                      Enter a UbID or select a multimer by drawing the tetramer or pentamer of interest
                     </div>
                     <div style={{
                       display: 'flex',
@@ -737,7 +746,7 @@ const ModuleDashboard = () => {
                 }
               }}
             >
-              Save All Files
+              Save all files
             </button>
             <div style={{ textAlign: 'center', color: '#388e3c', fontWeight: 600, fontSize: 15, marginBottom: 16 }}>
               The following files will also be included:<br />
@@ -747,26 +756,26 @@ const ModuleDashboard = () => {
             </div>
           </div>
           <div>
-            <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: 8 }}>Enzyme + Donor Mixes</div>
+            <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: 8 }}>E2 conjugation mixtures plate</div>
             <img
               src={`data:image/png;base64,${figures.enzymes_donors_96}`}
-              alt="Enzyme + Donor Plate"
+              alt="E2 conjugation mixtures plate"
               style={{ maxWidth: 350, borderRadius: 8, boxShadow: '0 2px 12px #0003' }}
             />
           </div>
           <div>
-            <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: 8 }}>Deprotections</div>
+            <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: 8 }}>Deprotection sequence</div>
             <img
               src={`data:image/png;base64,${figures.deprots_96}`}
-              alt="Deprotections Plate"
+              alt="Deprotection sequence"
               style={{ maxWidth: 350, borderRadius: 8, boxShadow: '0 2px 12px #0003' }}
             />
           </div>
           <div>
-            <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: 8 }}>Acceptors</div>
+            <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: 8 }}>Reaction/Acceptors plate</div>
             <img
               src={`data:image/png;base64,${figures.acceptors_96}`}
-              alt="Acceptors Plate"
+              alt="Reaction/Acceptors plate"
               style={{ maxWidth: 350, borderRadius: 8, boxShadow: '0 2px 12px #0003' }}
             />
           </div>

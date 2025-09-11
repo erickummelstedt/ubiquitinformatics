@@ -112,10 +112,11 @@ A site can contain another ubiG as its `children`, allowing for recursive branch
             "sequence_id": "NIQ(K)EST",
             "children": ""
           },
+          // Protecting groups (SMAC or ABOC) appear as a string in the 'children' field:
           {
             "site_name": "K48",
             "sequence_id": "FAG(K)QLE",
-            "children": ""
+            "children": "SMAC"
           },
           // ... other lysine sites for protein 2 ...
         ]
@@ -232,17 +233,106 @@ For further details, see the relevant sections in `run_file.py`, `all_linkages.p
 
 ## 🏷️ Graph Isomorphism and Nomenclature Systems
 
-Lastly, `all_linkages.py` handles graph isomorphism by directly inserting the JSON chain architecture into NetworkX, a Python package supporting advanced graph theory applications. This enables robust comparison and classification of chain topologies.
+`all_linkages.py` handles graph isomorphism by directly inserting the JSON chain architecture into NetworkX, a Python package supporting advanced graph theory applications. This enables robust comparison and classification of chain topologies.
 
-Additionally, `nomenclature.py` translates the logic from the JSON file into five defined nomenclature systems:
-1. Preorder numbering where the nodes are labeled (e.g., A = 1, B = 2)
-2. Preorder numbering where the edges are labeled (e.g., A = K63, B = K48)
-3. Graph-based nomenclature with preorder numbering (Bode/Majima/Kummelstedt)
-4. Chemistry-style all node labeled nomenclature (hover for info) (Bode)
-5. Graph-based nomenclature without preorder (Strieter/Shestoperova/Ivanov)
+Lastly, `nomenclature.py` translates the logic from the JSON file into five defined nomenclature systems:
+1. UbID: Preorder numbering where the edges are labeled (e.g., A = K63, B = K48)
+2. Preorder numbering where the nodes are labeled (e.g., A = 1, B = 2)
+3. Graph-based nomenclature with preorder numbering
+4. Chemistry-style all node labeled nomenclature 
+5. Graph-based nomenclature without preorder
 
-These nomenclature systems provide multiple perspectives for describing and analyzing ubiquitin chain architectures, supporting both chemical and graph-theoretical interpretations.
+These nomenclature systems provide multiple perspectives for describing and analyzing ubiquitin chain architectures, supporting both chemical and graph-theoretical interpretations. Further information about the nomenclatures are shown below:
+
+## NOMENCLATURE FORMATS
+
+Note: The vertices (V) are numbered by pre-order traversal, enabling a standardized and biologically consistent indexing scheme. Numbering proceeds from the C-terminus to the N-terminus, following the lysine order: K63, K48, K33, K29, K27, K11, K6.
+In pre-order traversal, each branch is fully explored before the numbering returns to the current chain, ensuring that all descendants of a branch are numbered before continuing along the parent chain.
+
+1. UbID: PREORDER NODE LABELING (where nodes 1 = A, 2 = B format):
+  - Assigns each node a unique label based on preorder tree traversal. (A, B, C, ...)
+  - Labels each edge according to the lysine linkage type.
+  - Format: Node labels (A, B, C, ...) represent node numbers in preorder traversal (A=1, B=2, C=3, etc.) 
+  - Format: Edge labels the number between the letters indicates the edge or lysine linkage (63=K63, 48=K48, etc.).
+  - Highlights the connectivity and linkage chemistry between nodes.
+  - Example: "A48B-B63C" = node A (1) connects to node B (2) via K48, node B (2) connects to node C (3) via K63.
+  - Further Example: A63B-B63C-C48D-B48E = Pentamer trimer with 2 K48 branches at position B(2) and C(3)
+
+2. PREORDER NODE LABELING (where edges K63 = A, K48 = B... format):
+  - Assigns each node a unique label based on preorder tree traversal.(1, 2, 3, ...)
+  - Format: Node labels (1, 2, 3, ...) represent node numbers in preorder traversal (A=1, B=2, C=3, etc.)
+  - Format: Edge labels (A, B, C, ...) correspond to the edge or lysine linkage (A=K63, B=K48, etc.).
+  - Highlights the connectivity and linkage chemistry between nodes.
+  - Example: "1B2-2A3" = node 1 connects to node 2 via B (K48), node 2 connects to node 3 via A (K63).
+  - Further Example: 1A2-2A3-3B4-2B5 = Pentamer trimer with 2 K48 branches at position 2 and 3
+    
+3. GRAPH-BASED NOMENCLATURE WITH PREORDER NUMBERING (Bode/Majima/Kummelstedt):
+  - Represents the chain as a nested structure, preserving the order in which nodes are added.
+  - Format: Ub1,63(Ub2,63(Ub3,48(Ub4)),48(Ub5))
+  - Useful for isomorphism checks and structural classification, focusing on connectivity while nodes are still numbered by preorder traversal.
+  - Example: Ub1,63(Ub2,63(Ub3,48(Ub4)),48(Ub5))
+
+4. CHEMISTRY-STYLE ALL NODE LABELED NOMENCLATURE (Bode):
+  - Uses a new chemical notation conventions to label all nodes in the chain.
+  - Format: Each node is assigned a label based on its chemical context and position.
+  Level System:
+    Level 1 = A, Level 2 = B, Level 3 = C, Level 4 = D, etc.
+
+  Position Mapping:
+    K63: evens with uppercase letter (e.g., B2, C2, D4)
+    K48: odds with uppercase letter (e.g., B1, C1, D3)
+    K33: evens with uppercase letter + ' (e.g., B'2, C'2, D'4)
+    K29: odds with uppercase letter + ' (e.g., B'1, C'1, D'3)
+    K11: evens with lowercase letter (e.g., b2, c2, d4)
+    K6:  odds with lowercase letter (e.g., b1, c1, d3)
+    K27: evens with lowercase letter + ' (e.g., b'2, c'2, d'4)
+    M1:  odds with lowercase letter + ' (e.g., b'1, c'1, d'3)
+
+  Formula: position = ((parent_letter_size + parent_number) - 1) * 2 + child_number
+
+  Where:
+    parent_letter_size: Based on parent's notation type
+      - 0 for uppercase without prime (A1, B2)
+      - 2 for uppercase with prime (A'1, B'2)
+      - 4 for lowercase without prime (a1, b2)
+      - 6 for lowercase with prime (a'1, b'2)
+    parent_number: Numeric part of parent's notation
+    child_number: +1 for K48/K29/K6/M1, +2 for K63/K33/K11/K27
+
+5. GRAPH-BASED NOMENCLATURE WITHOUT PREORDER (Strieter/Shestoperova/Ivanov)*:
+  - Represents the chain as a graph without enforcing preorder traversal or numbering.
+  - Format: Nested structure without explicit node numbers, e.g., Ub,63(Ub,63(Ub,48(Ub)),48(Ub))
+  - Useful for isomorphism checks and structural classification, focusing on connectivity rather than order.
+  - Example: Ub,63(Ub,63(Ub,48(Ub)),48(Ub))
 
 
+*Reference: During the preparation of the manuscript associated to this codebase, another graph-based representation of Ub chains was posted: Shestoperova, E. I., Ivanov, D., Zhong, J., Chien, L. & Strieter, E. Computationally driven top-down mass spectrometry of ubiquitinated proteins. bioRxiv (2025) doi:10.1101/2025.07.24.666707.
+---
 
+## 🖥️ User Interface Overview
 
+The front end of Ubiquitinformatics provides an interactive dashboard for exploring, simulating, and analyzing ubiquitin chain architectures. Each page is designed for a specific aspect of the workflow:
+
+- **Explore Reaction Pathways**: Allows users to explore the reaction pathways of all K48/K63 tetramers and pentamers.
+- **Tetramer Syntheses**: Dedicated page for the selection for synthesis of tetramers.
+- **Pentamer Syntheses**: Dedicated page for the selection for synthesis of pentamers.
+
+  > Note: The file `inhecoparadoxplate_96_tuberack_1000ul.json` is required to run the Python file generated for tetramer and pentamer synthesis.
+
+- **Reaction Path Metrics**: Displays metrics and statistics behind the reaction pathways for tetramers and pentamers.
+- **Ubiquitin Isomorphism**: Shows a subgraph containment matrix quantifying how many times smaller ubiquitin multimers (subgraphs) are found as isomorphic structures within larger multimers (supergraphs). 
+- **Nomenclature Explorer**: Enables exploration of different nomenclature systems for ubiquitin chains up to pentamers, as described above in the NOMENCLATURE FORMATS section, 
+
+This user interface is designed to support both scientific exploration and experimental planning, making it easy to visualize, analyze, and design ubiquitin chain architectures.
+
+---
+
+## 📚 Technical Documentation
+
+For detailed information about the software architecture and component structure:
+
+- **Frontend Architecture**: See `front_end/src/components/COMPONENT_STRUCTURE.md` for comprehensive documentation of React components, styling systems, and user interface patterns.
+
+- **Backend Architecture**: See `back_end/BACKEND_COMPONENT_STRUCTURE.md` for detailed documentation of Python modules, API endpoints, scientific algorithms, and data processing pipelines.
+
+These documents provide in-depth technical information for developers, researchers, and anyone interested in understanding or extending the codebase.

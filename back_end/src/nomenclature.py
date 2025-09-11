@@ -25,60 +25,82 @@ This module implements a comprehensive nomenclature system for representing ubiq
 in multiple complementary formats. The system provides bidirectional conversion between different 
 notation styles to support various scientific and computational use cases.
 
+
 NOMENCLATURE FORMATS:
---------------------
 
-1. TREE NOMENCLATURE (A1B2C4D6 format):
-   - Hierarchical representation using letters (A,B,C,D...) for levels and numbers for positions
-   - Level System: A = level 1, B = level 2, C = level 3, D = level 4, etc.
-   - Position System: Each level has 2^(level-1) capacity (A:1, B:2, C:4, D:8...)
-   - Linkage Encoding by Position Number:
-     * Position 1 = K63 linkage
-     * Position 2 = K48 linkage  
-     * Position 3 = K33 linkage
-     * Position 4 = K29 linkage
-     * Position 5 = K27 linkage
-     * Position 6 = K11 linkage
-     * Position 7 = K6 linkage
-     * Position 8 = K63 linkage (cycle repeats)
-     * Pattern: [K63, K48, K33, K29, K27, K11, K6] repeats for positions 1-7, 8-14, 15-21, etc.
-   - Binding Rules: Position x can bind to positions (7x-6) through (7x) in next level
-     * Example: A1 → B1,B2,B3,B4,B5,B6,B7 (positions 1-7)
-     * Example: A2 → B8,B9,B10,B11,B12,B13,B14 (positions 8-14)
-   - Example: A1B1B2C1C4 represents a branched tetramer with specific connectivity
+Note: The vertices (V) are numbered by pre-order traversal, enabling a standardized and biologically consistent indexing scheme. Numbering proceeds from the C-terminus to the N-terminus, following the lysine order: K63, K48, K33, K29, K27, K11, K6.
+In pre-order traversal, each branch is fully explored before the numbering returns to the current chain, ensuring that all descendants of a branch are numbered before continuing along the parent chain.
 
-2. COMPACT EDGE FORMAT (1A2-2A3-3A4 format):
-   - Linear representation of direct connections between ubiquitin units
-   - Format: SourceUnitLetterDestinationUnit (e.g., 1A2 = unit 1 connects to unit 2 via K63)
-   - Letter Mapping: A=K63, B=K48, C=K33, D=K29, E=K27, F=K11, G=K6
-   - Separators: Supports both dash (-) and comma (,) separation
-   - Example: "1A2-2A3-3B4" = linear chain with K63 linkages and one K48 branch
+1. UbID: PREORDER NODE LABELING (where nodes 1 = A, 2 = B format):
+    - Assigns each node a unique label based on preorder tree traversal. (A, B, C, ...)
+    - Labels each edge according to the lysine linkage type.
+    - Format: Node labels (A, B, C, ...) represent node numbers in preorder traversal (A=1, B=2, C=3, etc.) 
+    - Format: Edge labels the number between the letters indicates the edge or lysine linkage (63=K63, 48=K48, etc.).
+    - Highlights the connectivity and linkage chemistry between nodes.
+    - Example: "A48B-B63C" = node A (1) connects to node B (2) via K48, node B (2) connects to node C (3) via K63.
+    - Further Example: A63B-B63C-C48D-B48E = Pentamer trimer with 2 K48 branches at position B(2) and C(3)
 
-3. CONJUGATED LYSINES FORMAT ([[1,'K63',2],...] format):
-   - Explicit list representation showing source, linkage type, and destination
-   - Format: [[source_unit, 'Kxx', destination_unit], ...]
-   - Preserves preorder traversal information for tree reconstruction
-   - Example: [[1,'K63',2], [2,'K63',3], [1,'K48',4]] = branched structure
+2. PREORDER NODE LABELING (where edges K63 = A, K48 = B... format):
+    - Assigns each node a unique label based on preorder tree traversal.(1, 2, 3, ...)
+    - Format: Node labels (1, 2, 3, ...) represent node numbers in preorder traversal (A=1, B=2, C=3, etc.)
+    - Format: Edge labels (A, B, C, ...) correspond to the edge or lysine linkage (A=K63, B=K48, etc.).
+    - Highlights the connectivity and linkage chemistry between nodes.
+    - Example: "1B2-2A3" = node 1 connects to node 2 via B (K48), node 2 connects to node 3 via A (K63).
+    - Further Example: 1A2-2A3-3B4-2B5 = Pentamer trimer with 2 K48 branches at position 2 and 3
+    
+3. GRAPH-BASED NOMENCLATURE WITH PREORDER NUMBERING (Bode/Majima/Kummelstedt):
+    - Represents the chain as a nested structure, preserving the order in which nodes are added.
+    - Format: Ub1,63(Ub2,63(Ub3,48(Ub4)),48(Ub5))
+    - Useful for isomorphism checks and structural classification, focusing on connectivity while nodes are still numbered by preorder traversal.
+    - Example: Ub1,63(Ub2,63(Ub3,48(Ub4)),48(Ub5))
 
-4. FORMATTED EDGES (1 → K63 → 2 format):
-   - Human-readable arrow notation for visualization
-   - Shows explicit linkage sites and connection directions
-   - Used primarily for display and user interface components
-   - Example: "1 → K63 → 2, 2 → K63 → 3, 1 → K48 → 4"
+4. CHEMISTRY-STYLE ALL NODE LABELED NOMENCLATURE (Bode):
+    - Uses a new chemical notation conventions to label all nodes in the chain.
+    - Format: Each node is assigned a label based on its chemical context and position.
+    Level System:
+        Level 1 = A, Level 2 = B, Level 3 = C, Level 4 = D, etc.
 
-CONVERSION CAPABILITIES:
------------------------
-- Tree Nomenclature ↔ Conjugated Lysines
-- Tree Nomenclature → Polyubiquitin Structure (via ubiquitin_building_all)
-- Compact Edges → Conjugated Lysines → Tree Nomenclature
-- All formats → Formatted Edges for display
+    Position Mapping:
+        K63: evens with uppercase letter (e.g., B2, C2, D4)
+        K48: odds with uppercase letter (e.g., B1, C1, D3)
+        K33: evens with uppercase letter + ' (e.g., B'2, C'2, D'4)
+        K29: odds with uppercase letter + ' (e.g., B'1, C'1, D'3)
+        K11: evens with lowercase letter (e.g., b2, c2, d4)
+        K6:  odds with lowercase letter (e.g., b1, c1, d3)
+        K27: evens with lowercase letter + ' (e.g., b'2, c'2, d'4)
+        M1:  odds with lowercase letter + ' (e.g., b'1, c'1, d'3)
 
-VALIDATION FEATURES:
--------------------
-- Tree structure validation (binding rules, level constraints)
-- Preorder traversal preservation during conversions
-- Error handling for malformed inputs
-- Consistent position calculation algorithms
+    Formula: position = ((parent_letter_size + parent_number) - 1) * 2 + child_number
+
+    Where:
+        parent_letter_size: Based on parent's notation type
+            - 0 for uppercase without prime (A1, B2)
+            - 2 for uppercase with prime (A'1, B'2)
+            - 4 for lowercase without prime (a1, b2)
+            - 6 for lowercase with prime (a'1, b'2)
+        parent_number: Numeric part of parent's notation
+        child_number: +1 for K48/K29/K6/M1, +2 for K63/K33/K11/K27
+
+5. GRAPH-BASED NOMENCLATURE WITHOUT PREORDER (Strieter/Shestoperova/Ivanov):
+    - Represents the chain as a graph without enforcing preorder traversal or numbering.
+    - Format: Nested structure without explicit node numbers, e.g., Ub,63(Ub,63(Ub,48(Ub)),48(Ub))
+    - Useful for isomorphism checks and structural classification, focusing on connectivity rather than order.
+    - Example: Ub,63(Ub,63(Ub,48(Ub)),48(Ub))
+
+
+Other
+6. CONJUGATED LYSINES FORMAT ([[1,'K63',2],...] format):
+    - Explicit list representation showing source, linkage type, and destination
+    - Format: [[source_unit, 'Kxx', destination_unit], ...]
+    - Preserves preorder traversal information for tree reconstruction
+    - Example: [[1,'K63',2], [2,'K63',3], [1,'K48',4]] = branched structure
+
+7. FORMATTED EDGES (1 → K63 → 2 format):
+    - Human-readable arrow notation for visualization
+    - Shows explicit linkage sites and connection directions
+    - Used primarily for display and user interface components
+    - Example: "1 → K63 → 2, 2 → K63 → 3, 1 → K48 → 4"
+
 
 SCIENTIFIC APPLICATIONS:
 -----------------------
