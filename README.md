@@ -1,5 +1,7 @@
 # Ubiquitinformatics
 
+**This is the codebase associated with the preprint:** S. Majima, E. Kummelstedt, T. Mikami, L. Seidl, J. Han & J. W. Bode. Comprehensive synthesis of K48/K63 ubiquitin pentamers by graph-empowered automation. ChemRxiv 2025, preprint (Version 1, 11 Sept 2025).
+
 A Python and React application for ubiquitin chain simulation and visualization.
 
 ### 🐳 Option 1: Docker Setup (Recommended)
