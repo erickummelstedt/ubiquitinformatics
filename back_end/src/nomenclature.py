@@ -527,7 +527,7 @@ def conjugated_lysines_to_chemical_all_node_nomenclature(conjugated_lysines):
             if case_type == 'lower':
                 level_letter = level_letter.lower()
             
-            # Calculate position based on formula: ((parent_letter_size + parent_number) - 1) * 8 + child_number
+            # Calculate position based on formula: ((parent_letter_size + parent_number) - 1) * 2 + child_number
             if parent == root:
                 # Direct children of root use the child_number based on lysine type
                 position = child_number
@@ -555,7 +555,7 @@ def conjugated_lysines_to_chemical_all_node_nomenclature(conjugated_lysines):
                             parent_letter_size = 4  # lowercase without prime
                 
                 # Apply the formula
-                position = ((parent_letter_size + parent_number) - 1) * 8 + child_number
+                position = ((parent_letter_size + parent_number) - 1) * 2 + child_number
             
             # Build the notation string
             prime = "'" if has_asterisk else ""
