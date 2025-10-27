@@ -1,5 +1,5 @@
 # Core dependencies - actively used
-numpy
+numpy==1.26.4
 pandas==2.3.0
 matplotlib==3.10.3
 networkx==3.4.1
@@ -9,4 +9,4 @@ fastapi==0.115.14
 uvicorn==0.35.0
 
 # Optional - Excel file support (currently commented out in code)
-openpyxl
+openpyxl==3.1.5
