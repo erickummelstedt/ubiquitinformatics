@@ -10,3 +10,6 @@ uvicorn==0.35.0
 
 # Optional - Excel file support (currently commented out in code)
 openpyxl==3.1.5
+
+# Jupyter notebook support
+ipykernel==6.29.5

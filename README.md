@@ -1,5 +1,7 @@
 # Ubiquitinformatics
 
+⏱️ **Total setup time: ~10 minutes** (download, simulation, and user interface setup)
+
 **This is the codebase associated with the preprint:** S. Majima, E. Kummelstedt, T. Mikami, L. Seidl, J. Han & J. W. Bode. Comprehensive synthesis of K48/K63 ubiquitin pentamers by graph-empowered automation. ChemRxiv 2025, preprint (Version 1, 11 Sept 2025).
 
 A Python and React application for ubiquitin chain simulation and visualization.
@@ -47,6 +49,13 @@ cd ubiquitinformatics
 This will automatically set up Python environment, install dependencies, run simulation, and start the web interface.
 
 Access at: http://localhost:5173
+
+**Note**: For manual Python environment setup, you can create a virtual environment with:
+```bash
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
 
 ---
 
