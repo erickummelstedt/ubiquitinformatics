@@ -82,6 +82,7 @@ coverage.xml
 
 # Project files
 next_steps.txt
+back_end/revisions/revisions_text.txt
 
 node_modules
 dist
