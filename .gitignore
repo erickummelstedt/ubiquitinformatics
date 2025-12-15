@@ -106,3 +106,6 @@ README_export.pdf
 # Ignore export script and HTML export
 export_readme.py
 README_export.html
+ 
+# Analysis outputs
+back_end/revisions/volcano_plots/
