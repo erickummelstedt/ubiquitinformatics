@@ -13,3 +13,6 @@ openpyxl==3.1.5
 
 # Jupyter notebook support
 ipykernel==6.29.5
+
+# PDF manipulation
+PyPDF2==3.0.1
